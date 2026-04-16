@@ -1,223 +1,265 @@
-/* ══════════════════════════════════════════════════════════
-   TAXI MAP — Казанский район, Тюменская область
+/* ══════════════════════════════════════════════════════════════
+   TAXI MAP · Казанский район, Тюменская область
    MapLibre GL JS + Geoapify
-══════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 
-// ── Constants ──────────────────────────────────────────────────────────────
+// ── Константы ──────────────────────────────────────────────────────────────
 const GEOAPIFY_KEY = window.GEOAPIFY_KEY;
 
-// Kazansky district centre (lon, lat) — for map centre & proximity bias
-const DISTRICT_LON = 69.23;
-const DISTRICT_LAT = 55.73;
+// Центр Казанского района (lon, lat)
+const CENTER_LON = 69.23;
+const CENTER_LAT = 55.73;
 
-// Geoapify search filter: rect:lon_min,lat_min,lon_max,lat_max
-// Covers Tyumen Oblast proper (excludes Tatarstan/Kazan)
-const SEARCH_FILTER = 'rect:60.0,55.0,79.0,62.5';
-// Proximity bias for geocoding
-const SEARCH_BIAS   = `proximity:${DISTRICT_LON},${DISTRICT_LAT}`;
+// Поиск строго по Тюменской области (без ХМАО/ЯНАО и других регионов)
+// rect: lon_min, lat_min, lon_max, lat_max
+const GEO_FILTER = 'rect:64.0,55.0,73.5,58.5';
+const GEO_BIAS   = `proximity:${CENTER_LON},${CENTER_LAT}`;
 
-const ROUTE_SOURCE  = 'taxi-route';
-const ROUTE_OUTLINE = 'route-outline';
-const ROUTE_LINE    = 'route-line';
+// Популярные населённые пункты
+const PLACES = [
+  { name: 'Казанское',        q: 'Казанское, Казанский район, Тюменская область' },
+  { name: 'Ишим',             q: 'Ишим, Тюменская область' },
+  { name: 'Новоселезнево',    q: 'Новоселезнево, Казанский район, Тюменская область' },
+  { name: 'Большие Ярки',     q: 'Большие Ярки, Казанский район, Тюменская область' },
+  { name: 'Ильинка',          q: 'Ильинка, Казанский район, Тюменская область' },
+  { name: 'Яровское',         q: 'Яровское, Казанский район, Тюменская область' },
+];
 
-// ── State ──────────────────────────────────────────────────────────────────
-let map       = null;
-let markerA   = null;
-let markerB   = null;
-let pointA    = null;   // { lat, lng, address }
-let pointB    = null;
-let mode      = null;   // 'a' | 'b' | null
-let mapReady  = false;
+// ── Состояние ─────────────────────────────────────────────────────────────
+let map      = null;
+let mapReady = false;
+let markerA  = null;
+let markerB  = null;
+let pointA   = null;   // { lat, lng, address }
+let pointB   = null;
+let mode     = null;   // 'a' | 'b' | null
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────
+// Какой инпут сейчас активен (для чипов)
+let activeInput = null;  // 'a' | 'b'
+
+// Время
+let whenMode        = 'now';
+let dateOffset      = 0;   // 0=сегодня, 1=завтра, 2=послезавтра
+let pickedHour      = 12;
+let pickedMinute    = 0;
+
+// ── Инициализация ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
-  initAutocomplete('search-from', 'a', 'dropdown-from');
-  initAutocomplete('search-to',   'b', 'dropdown-to');
-  document.getElementById('order-form').addEventListener('submit', onFormSubmit);
+  initAddressInputs();
+  renderChips();
 });
 
-// ══════════════════════════════════════════════════════════
-// MAP INIT
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// КАРТА
+// ══════════════════════════════════════════════════════════════
 function initMap() {
   map = new maplibregl.Map({
     container: 'map-container',
     style: `https://maps.geoapify.com/v1/styles/osm-bright/style.json?apiKey=${GEOAPIFY_KEY}`,
-    center: [DISTRICT_LON, DISTRICT_LAT],
+    center: [CENTER_LON, CENTER_LAT],
     zoom: 10,
   });
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
   map.on('load', () => {
-    // Empty GeoJSON source for the route
-    map.addSource(ROUTE_SOURCE, {
-      type: 'geojson',
-      data: emptyGeoJSON(),
+    map.addSource('route', { type: 'geojson', data: emptyGeoJSON() });
+
+    // Белая обводка маршрута
+    map.addLayer({
+      id: 'route-outline',
+      type: 'line',
+      source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.6 },
     });
 
-    // White outline under the route for visibility
+    // Синяя линия маршрута
     map.addLayer({
-      id: ROUTE_OUTLINE,
+      id: 'route-line',
       type: 'line',
-      source: ROUTE_SOURCE,
+      source: 'route',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.35 },
-    });
-
-    // Main route line
-    map.addLayer({
-      id: ROUTE_LINE,
-      type: 'line',
-      source: ROUTE_SOURCE,
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#7c6fff', 'line-width': 4, 'line-opacity': 0.95 },
+      paint: { 'line-color': '#2563EB', 'line-width': 4 },
     });
 
     mapReady = true;
   });
 
-  // Click handler — only fires when a mode is selected
+  // Клик по карте
   map.on('click', (e) => {
     if (!mode) return;
     const { lng, lat } = e.lngLat;
     handleMapClick(lat, lng);
   });
 
-  // Change cursor when mode is active
   map.on('mousemove', () => {
-    map.getCanvas().style.cursor = mode ? 'crosshair' : '';
+    if (map) map.getCanvas().style.cursor = mode ? 'crosshair' : '';
   });
 }
 
-// ══════════════════════════════════════════════════════════
-// MODE SELECTION
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// РЕЖИМ (A / B / null)
+// ══════════════════════════════════════════════════════════════
 function setMode(newMode) {
   mode = newMode;
+  activeInput = newMode;
 
   const btnA = document.getElementById('btn-mode-a');
   const btnB = document.getElementById('btn-mode-b');
-  const hint = document.getElementById('map-hint');
 
-  btnA.classList.remove('mode-active', 'mode-active-b');
-  btnB.classList.remove('mode-active', 'mode-active-b');
+  btnA.classList.remove('active-a', 'active-b');
+  btnB.classList.remove('active-a', 'active-b');
 
-  if (newMode === 'a') {
-    btnA.classList.add('mode-active');
-    hint.textContent = 'Кликните на карте, чтобы выбрать точку ОТКУДА';
-  } else if (newMode === 'b') {
-    btnB.classList.add('mode-active-b');
-    hint.textContent = 'Кликните на карте, чтобы выбрать точку КУДА';
-  } else {
-    hint.textContent = 'Выберите режим и кликайте на карту';
-  }
+  if (newMode === 'a') btnA.classList.add('active-a');
+  if (newMode === 'b') btnB.classList.add('active-b');
 
   if (map) map.getCanvas().style.cursor = newMode ? 'crosshair' : '';
+
+  // Фокусируем нужный инпут
+  if (newMode === 'a') document.getElementById('search-from').focus();
+  if (newMode === 'b') document.getElementById('search-to').focus();
 }
 
-// ══════════════════════════════════════════════════════════
-// MAP CLICK HANDLER
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// КЛИК ПО КАРТЕ
+// ══════════════════════════════════════════════════════════════
 async function handleMapClick(lat, lng) {
-  const currentMode = mode; // capture before async
-
-  // Show loading in hint
-  const hint = document.getElementById('map-hint');
-  const prevHint = hint.textContent;
-  hint.textContent = '⏳ Определяем адрес…';
+  const capturedMode = mode;
+  showRouteBadge('loading');
 
   const address = await reverseGeocode(lat, lng);
-  hint.textContent = prevHint;
 
-  if (currentMode === 'a') {
+  if (capturedMode === 'a') {
     placePointA(lat, lng, address);
-  } else if (currentMode === 'b') {
+  } else if (capturedMode === 'b') {
     placePointB(lat, lng, address);
   }
 
   if (pointA && pointB) {
     buildRoute();
+  } else {
+    hideRouteBadge();
+  }
+
+  // После A — автоматически переключаем в режим B
+  if (capturedMode === 'a' && !pointB) {
+    setMode('b');
+  } else if (capturedMode === 'b') {
+    setMode(null);
   }
 }
 
-// ══════════════════════════════════════════════════════════
-// POINT PLACEMENT
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// УСТАНОВКА ТОЧЕК
+// ══════════════════════════════════════════════════════════════
 function placePointA(lat, lng, address) {
   if (markerA) { markerA.remove(); markerA = null; }
-
   pointA = { lat, lng, address };
 
-  markerA = new maplibregl.Marker({ element: createMarkerEl('A', '#7c6fff') })
+  markerA = new maplibregl.Marker({ element: makeMarkerEl('A', '#2563EB') })
     .setLngLat([lng, lat])
     .addTo(map);
 
-  // Sync input and hidden fields
-  setInputValue('search-from', address);
-  setHiddenFields('from', lat, lng, address);
-
-  // Clear old route when point A changes
+  setInputVal('search-from', address);
+  show('clear-a');
   clearRouteData();
+  updateChipStates();
 }
 
 function placePointB(lat, lng, address) {
   if (markerB) { markerB.remove(); markerB = null; }
-
   pointB = { lat, lng, address };
 
-  markerB = new maplibregl.Marker({ element: createMarkerEl('B', '#ff6b9d') })
+  markerB = new maplibregl.Marker({ element: makeMarkerEl('B', '#F97316') })
     .setLngLat([lng, lat])
     .addTo(map);
 
-  setInputValue('search-to', address);
-  setHiddenFields('to', lat, lng, address);
-
-  // Clear old route when point B changes
+  setInputVal('search-to', address);
+  show('clear-b');
   clearRouteData();
+  updateChipStates();
 }
 
-function setInputValue(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.value = value;
+function clearPoint(which) {
+  if (which === 'a') {
+    if (markerA) { markerA.remove(); markerA = null; }
+    pointA = null;
+    setInputVal('search-from', '');
+    hide('clear-a');
+  } else {
+    if (markerB) { markerB.remove(); markerB = null; }
+    pointB = null;
+    setInputVal('search-to', '');
+    hide('clear-b');
+  }
+  clearRouteData();
+  updateChipStates();
 }
 
-function setHiddenFields(prefix, lat, lng, address) {
-  const set = (suffix, val) => {
-    const el = document.getElementById(`${prefix}-${suffix}`);
-    if (el) el.value = val;
-  };
-  set('lat', lat);
-  set('lon', lng);
-  set('address', address);
+function swapPoints() {
+  const tmpA = pointA;
+  const tmpB = pointB;
+
+  // Убираем маркеры
+  if (markerA) { markerA.remove(); markerA = null; }
+  if (markerB) { markerB.remove(); markerB = null; }
+  pointA = null;
+  pointB = null;
+
+  // Расставляем в обратном порядке
+  if (tmpB) placePointA(tmpB.lat, tmpB.lng, tmpB.address);
+  if (tmpA) placePointB(tmpA.lat, tmpA.lng, tmpA.address);
+
+  clearRouteData();
+  if (pointA && pointB) buildRoute();
 }
 
-// ══════════════════════════════════════════════════════════
-// MARKER ELEMENT
-// ══════════════════════════════════════════════════════════
-function createMarkerEl(label, color) {
-  const wrap = document.createElement('div');
-  wrap.className = 'map-marker';
-  wrap.style.backgroundColor = color;
+function resetAll() {
+  if (markerA) { markerA.remove(); markerA = null; }
+  if (markerB) { markerB.remove(); markerB = null; }
+  pointA = null;
+  pointB = null;
+
+  setInputVal('search-from', '');
+  setInputVal('search-to', '');
+  hide('clear-a');
+  hide('clear-b');
+
+  closeAllDropdowns();
+  clearRouteData();
+  updateChipStates();
+  setMode(null);
+
+  map.flyTo({ center: [CENTER_LON, CENTER_LAT], zoom: 10, duration: 600 });
+}
+
+// ══════════════════════════════════════════════════════════════
+// МАРКЕР
+// ══════════════════════════════════════════════════════════════
+function makeMarkerEl(label, color) {
+  const el = document.createElement('div');
+  el.className = 'map-marker';
+  el.style.backgroundColor = color;
 
   const lbl = document.createElement('div');
   lbl.className = 'map-marker-label';
   lbl.textContent = label;
 
-  wrap.appendChild(lbl);
-  return wrap;
+  el.appendChild(lbl);
+  return el;
 }
 
-// ══════════════════════════════════════════════════════════
-// REVERSE GEOCODING
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// ГЕОКОДИНГ
+// ══════════════════════════════════════════════════════════════
 async function reverseGeocode(lat, lon) {
   try {
     const url = new URL('https://api.geoapify.com/v1/geocode/reverse');
-    url.searchParams.set('lat', lat);
-    url.searchParams.set('lon', lon);
-    url.searchParams.set('lang', 'ru');
+    url.searchParams.set('lat',    lat);
+    url.searchParams.set('lon',    lon);
+    url.searchParams.set('lang',   'ru');
     url.searchParams.set('apiKey', GEOAPIFY_KEY);
 
     const res  = await fetch(url.toString());
@@ -227,132 +269,223 @@ async function reverseGeocode(lat, lon) {
       return data.features[0].properties.formatted
           || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
     }
-  } catch (err) {
-    console.error('[Geocode reverse]', err);
-  }
+  } catch (e) { /* тихо */ }
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 }
 
-// ══════════════════════════════════════════════════════════
-// FORWARD GEOCODING (search autocomplete)
-// ══════════════════════════════════════════════════════════
 async function searchAddress(query) {
   if (!query || query.trim().length < 2) return [];
-
   try {
     const url = new URL('https://api.geoapify.com/v1/geocode/search');
     url.searchParams.set('text',   query.trim());
-    url.searchParams.set('filter', SEARCH_FILTER);
-    url.searchParams.set('bias',   SEARCH_BIAS);
+    url.searchParams.set('filter', GEO_FILTER);
+    url.searchParams.set('bias',   GEO_BIAS);
     url.searchParams.set('lang',   'ru');
     url.searchParams.set('limit',  '6');
     url.searchParams.set('apiKey', GEOAPIFY_KEY);
 
     const res  = await fetch(url.toString());
     const data = await res.json();
-
     return data.features || [];
-  } catch (err) {
-    console.error('[Geocode search]', err);
-    return [];
-  }
+  } catch (e) { return []; }
 }
 
-// ══════════════════════════════════════════════════════════
-// AUTOCOMPLETE WIDGET
-// ══════════════════════════════════════════════════════════
-function initAutocomplete(inputId, pointType, dropdownId) {
-  const input    = document.getElementById(inputId);
-  const dropdown = document.getElementById(dropdownId);
-  if (!input || !dropdown) return;
+// ══════════════════════════════════════════════════════════════
+// АВТОДОПОЛНЕНИЕ
+// ══════════════════════════════════════════════════════════════
+function initAddressInputs() {
+  setupInput('search-from', 'a', 'drop-from');
+  setupInput('search-to',   'b', 'drop-to');
+}
 
-  let debounceTimer;
+function setupInput(inputId, pointType, dropId) {
+  const input = document.getElementById(inputId);
+  const drop  = document.getElementById(dropId);
+  if (!input || !drop) return;
+
+  let timer;
+
+  input.addEventListener('focus', () => {
+    activeInput = pointType;
+    highlightRow(pointType, true);
+  });
+
+  input.addEventListener('blur', () => {
+    highlightRow(pointType, false);
+    setTimeout(() => hideDrop(drop), 200);
+  });
 
   input.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    const query = input.value.trim();
+    clearTimeout(timer);
+    const q = input.value.trim();
 
-    if (query.length < 2) {
-      hideDropdown(dropdown);
-      return;
-    }
+    if (q.length < 2) { hideDrop(drop); return; }
 
-    debounceTimer = setTimeout(async () => {
-      const features = await searchAddress(query);
-      renderDropdown(dropdown, features, (feature) => {
-        const props = feature.properties;
-        const addr  = props.formatted || '';
-        const lat   = props.lat;
-        const lon   = props.lon;
-
-        input.value = addr;
-        hideDropdown(dropdown);
+    timer = setTimeout(async () => {
+      const features = await searchAddress(q);
+      renderDrop(drop, features, (f) => {
+        const { formatted, lat, lon } = f.properties;
+        const addr = formatted || '';
+        hideDrop(drop);
 
         if (pointType === 'a') {
           placePointA(lat, lon, addr);
           map.flyTo({ center: [lon, lat], zoom: 13 });
+          if (!pointB) setMode('b');
         } else {
           placePointB(lat, lon, addr);
           map.flyTo({ center: [lon, lat], zoom: 13 });
+          setMode(null);
         }
 
         if (pointA && pointB) buildRoute();
       });
-    }, 300);
+    }, 280);
   });
 
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-      hideDropdown(dropdown);
-    }
-  });
-
-  // Keyboard navigation
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hideDropdown(dropdown);
+    if (e.key === 'Escape') hideDrop(drop);
   });
 }
 
-function renderDropdown(dropdown, features, onSelect) {
-  dropdown.innerHTML = '';
+function renderDrop(drop, features, onSelect) {
+  drop.innerHTML = '';
 
   if (!features.length) {
-    hideDropdown(dropdown);
+    drop.innerHTML = '<div class="drop-no-result">Ничего не найдено в Тюменской области</div>';
+    drop.style.display = 'block';
     return;
   }
 
-  features.forEach((feature) => {
+  features.forEach((f) => {
     const item = document.createElement('div');
-    item.className = 'autocomplete-item';
-    item.textContent = feature.properties.formatted || '';
+    item.className = 'drop-item';
+
+    const icon = document.createElement('span');
+    icon.className = 'drop-icon';
+    icon.textContent = '📍';
+
+    const text = document.createElement('span');
+    text.textContent = f.properties.formatted || '';
+
+    item.appendChild(icon);
+    item.appendChild(text);
+
     item.addEventListener('mousedown', (e) => {
-      e.preventDefault(); // prevent input blur before click
-      onSelect(feature);
+      e.preventDefault();
+      onSelect(f);
     });
-    dropdown.appendChild(item);
+
+    drop.appendChild(item);
   });
 
-  dropdown.style.display = 'block';
+  drop.style.display = 'block';
 }
 
-function hideDropdown(dropdown) {
-  dropdown.style.display = 'none';
-  dropdown.innerHTML = '';
+function hideDrop(drop) {
+  if (drop) { drop.style.display = 'none'; drop.innerHTML = ''; }
 }
 
-// ══════════════════════════════════════════════════════════
-// ROUTING
-// ══════════════════════════════════════════════════════════
+function closeAllDropdowns() {
+  hideDrop(document.getElementById('drop-from'));
+  hideDrop(document.getElementById('drop-to'));
+}
+
+function highlightRow(type, on) {
+  const row = document.getElementById(type === 'a' ? 'from-row' : 'to-row');
+  if (!row) return;
+  if (on) {
+    row.style.background = type === 'a' ? '#EFF6FF' : '#FFF7ED';
+  } else {
+    row.style.background = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ЧИПЫ НАСЕЛЁННЫХ ПУНКТОВ
+// ══════════════════════════════════════════════════════════════
+function renderChips() {
+  const row = document.getElementById('chips-row');
+  if (!row) return;
+
+  PLACES.forEach((place) => {
+    const btn = document.createElement('button');
+    btn.className   = 'chip';
+    btn.textContent = place.name;
+    btn.dataset.name = place.name;
+
+    btn.addEventListener('click', () => onChipClick(place, btn));
+    row.appendChild(btn);
+  });
+}
+
+async function onChipClick(place, btn) {
+  // Определяем цель: A или B
+  const target = resolveChipTarget();
+
+  btn.classList.add('chip-loading');
+  btn.disabled = true;
+
+  const features = await searchAddress(place.q);
+
+  btn.classList.remove('chip-loading');
+  btn.disabled = false;
+
+  if (!features.length) {
+    showFormMsg('error', `Не удалось найти "${place.name}" — попробуйте ввести вручную`);
+    return;
+  }
+
+  const { lat, lon, formatted } = features[0].properties;
+  const addr = formatted || place.name;
+
+  if (target === 'a') {
+    placePointA(lat, lon, addr);
+    map.flyTo({ center: [lon, lat], zoom: 12 });
+    if (!pointB) setMode('b');
+  } else {
+    placePointB(lat, lon, addr);
+    map.flyTo({ center: [lon, lat], zoom: 12 });
+    setMode(null);
+  }
+
+  if (pointA && pointB) buildRoute();
+}
+
+function resolveChipTarget() {
+  // Если есть активный инпут — используем его
+  if (activeInput) return activeInput;
+  // Иначе: заполняем A первым, потом B
+  if (!pointA) return 'a';
+  if (!pointB) return 'b';
+  return 'b';
+}
+
+function updateChipStates() {
+  const chips = document.querySelectorAll('#chips-row .chip');
+  chips.forEach((chip) => {
+    chip.classList.remove('chip-selected-a', 'chip-selected-b');
+    const name = chip.dataset.name;
+    if (pointA && pointA.address && pointA.address.includes(name)) {
+      chip.classList.add('chip-selected-a');
+    }
+    if (pointB && pointB.address && pointB.address.includes(name)) {
+      chip.classList.add('chip-selected-b');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// МАРШРУТ
+// ══════════════════════════════════════════════════════════════
 async function buildRoute() {
-  if (!pointA || !pointB) return;
-  if (!mapReady)          return;
+  if (!pointA || !pointB || !mapReady) return;
 
-  showRouteLoading(true);
+  showRouteBadge('loading');
 
   try {
     const url = new URL('https://api.geoapify.com/v1/routing');
-    // NOTE: Geoapify routing uses lat,lon order (not GeoJSON lon,lat)
+    // Geoapify routing: lat,lon порядок (не lon,lat!)
     url.searchParams.set('waypoints', `${pointA.lat},${pointA.lng}|${pointB.lat},${pointB.lng}`);
     url.searchParams.set('mode',   'drive');
     url.searchParams.set('apiKey', GEOAPIFY_KEY);
@@ -361,134 +494,135 @@ async function buildRoute() {
     const data = await res.json();
 
     if (data.features && data.features.length > 0) {
-      // Set route on map source
-      map.getSource(ROUTE_SOURCE).setData(data);
+      map.getSource('route').setData(data);
 
-      // Show route info
       const props  = data.features[0].properties;
-      const distKm = (props.distance / 1000).toFixed(1);
+      const km     = (props.distance / 1000).toFixed(1);
       const mins   = Math.round(props.time / 60);
-      showRouteInfo(`Маршрут: ${distKm} км · ~${mins} мин`);
+      showRouteBadge('info', `📍 ${km} км · ~${mins} мин`);
 
-      // Fit map to show full route
       fitBounds(data.features[0].geometry);
     } else {
-      showRouteInfo('Маршрут не найден. Проверьте точки.');
+      showRouteBadge('info', 'Маршрут не построен');
     }
-  } catch (err) {
-    console.error('[Routing]', err);
-    showRouteInfo('Ошибка построения маршрута');
-  } finally {
-    showRouteLoading(false);
+  } catch (e) {
+    console.error('[route]', e);
+    hideRouteBadge();
   }
 }
 
 function fitBounds(geometry) {
   let coords = [];
-
   if (geometry.type === 'MultiLineString') {
     geometry.coordinates.forEach((line) => coords.push(...line));
   } else if (geometry.type === 'LineString') {
     coords = geometry.coordinates;
   }
-
   if (!coords.length) return;
 
   const bounds = new maplibregl.LngLatBounds();
   coords.forEach((c) => bounds.extend(c));
-  map.fitBounds(bounds, { padding: 70, maxZoom: 14, duration: 800 });
+  map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 700 });
 }
 
 function clearRouteData() {
-  if (mapReady && map.getSource(ROUTE_SOURCE)) {
-    map.getSource(ROUTE_SOURCE).setData(emptyGeoJSON());
+  if (mapReady && map.getSource('route')) {
+    map.getSource('route').setData(emptyGeoJSON());
   }
-  hideRouteInfo();
+  hideRouteBadge();
 }
 
-// ══════════════════════════════════════════════════════════
-// RESET
-// ══════════════════════════════════════════════════════════
-function resetAll() {
-  // Remove markers
-  if (markerA) { markerA.remove(); markerA = null; }
-  if (markerB) { markerB.remove(); markerB = null; }
-  pointA = null;
-  pointB = null;
+function showRouteBadge(type, text) {
+  const info    = document.getElementById('route-info');
+  const loading = document.getElementById('route-loading');
 
-  // Clear route
-  clearRouteData();
-
-  // Clear all form / input fields
-  ['search-from', 'search-to'].forEach((id) => setInputValue(id, ''));
-  ['from-lat', 'from-lon', 'from-address',
-   'to-lat',   'to-lon',   'to-address'].forEach((id) => setInputValue(id, ''));
-
-  // Close dropdowns
-  document.querySelectorAll('.autocomplete-dropdown').forEach(hideDropdown);
-
-  // Reset mode
-  setMode(null);
-
-  // Fly back to district centre
-  map.flyTo({ center: [DISTRICT_LON, DISTRICT_LAT], zoom: 10, duration: 600 });
+  if (type === 'loading') {
+    if (loading) loading.style.display = 'flex';
+    if (info)    info.style.display    = 'none';
+  } else {
+    if (loading) loading.style.display = 'none';
+    if (info && text) {
+      info.textContent = text;
+      info.style.display = 'flex';
+    }
+  }
 }
 
-// ══════════════════════════════════════════════════════════
-// UI HELPERS
-// ══════════════════════════════════════════════════════════
-function showRouteLoading(visible) {
-  const el = document.getElementById('route-loading');
-  if (el) el.style.display = visible ? 'flex' : 'none';
+function hideRouteBadge() {
+  hide('route-info');
+  hide('route-loading');
 }
 
-function showRouteInfo(text) {
-  const el = document.getElementById('route-info');
-  if (!el) return;
-  el.textContent = text;
-  el.style.display = 'flex';
+// ══════════════════════════════════════════════════════════════
+// ВЫБОР ВРЕМЕНИ
+// ══════════════════════════════════════════════════════════════
+function setWhen(mode) {
+  whenMode = mode;
+
+  const tabNow   = document.getElementById('tab-now');
+  const tabLater = document.getElementById('tab-later');
+  const picker   = document.getElementById('time-picker');
+
+  tabNow.classList.toggle('active',   mode === 'now');
+  tabLater.classList.toggle('active', mode === 'later');
+  picker.style.display = mode === 'later' ? 'block' : 'none';
 }
 
-function hideRouteInfo() {
-  const el = document.getElementById('route-info');
-  if (el) el.style.display = 'none';
+function pickDate(offset) {
+  dateOffset = offset;
+  document.querySelectorAll('.date-chip').forEach((chip, i) => {
+    chip.classList.toggle('active', i === offset);
+  });
 }
 
-function emptyGeoJSON() {
-  return { type: 'FeatureCollection', features: [] };
+function spinHour(delta) {
+  pickedHour = (pickedHour + delta + 24) % 24;
+  // Ограничиваем разумным диапазоном
+  if (pickedHour < 0)  pickedHour = 23;
+  if (pickedHour > 23) pickedHour = 0;
+  document.getElementById('spin-hour').textContent = String(pickedHour).padStart(2, '0');
 }
 
-// ══════════════════════════════════════════════════════════
-// ORDER FORM SUBMIT
-// ══════════════════════════════════════════════════════════
-async function onFormSubmit(e) {
-  e.preventDefault();
+function spinMin(delta) {
+  const steps = [0, 15, 30, 45];
+  const idx   = steps.indexOf(pickedMinute);
+  const next  = (idx + delta + steps.length) % steps.length;
+  pickedMinute = steps[next];
+  document.getElementById('spin-min').textContent = String(pickedMinute).padStart(2, '0');
+}
 
-  const phone       = document.getElementById('phone').value.trim();
-  const fromAddress = document.getElementById('from-address').value;
-  const fromLat     = document.getElementById('from-lat').value;
-  const fromLon     = document.getElementById('from-lon').value;
-  const toAddress   = document.getElementById('to-address').value;
-  const toLat       = document.getElementById('to-lat').value;
-  const toLon       = document.getElementById('to-lon').value;
-  const scheduledAt = document.getElementById('scheduled-at').value;
+function getScheduledAt() {
+  if (whenMode === 'now') return null;
+
+  const d = new Date();
+  d.setDate(d.getDate() + dateOffset);
+  d.setHours(pickedHour, pickedMinute, 0, 0);
+
+  return d.toISOString();
+}
+
+// ══════════════════════════════════════════════════════════════
+// ОТПРАВКА ЗАКАЗА
+// ══════════════════════════════════════════════════════════════
+async function submitOrder() {
+  const phone = document.getElementById('phone').value.trim();
 
   if (!phone) {
-    showMsg('error', 'Введите номер телефона');
+    showFormMsg('error', 'Введите номер телефона');
     return;
   }
-  if (!fromLat || !fromLon) {
-    showMsg('error', 'Выберите точку ОТКУДА на карте или в поиске');
+  if (!pointA) {
+    showFormMsg('error', 'Выберите откуда ехать — нажмите на чип или кликните на карте');
     return;
   }
-  if (!toLat || !toLon) {
-    showMsg('error', 'Выберите точку КУДА на карте или в поиске');
+  if (!pointB) {
+    showFormMsg('error', 'Выберите куда ехать — нажмите на чип или кликните на карте');
     return;
   }
 
   const btn = document.getElementById('submit-btn');
   btn.disabled    = true;
-  btn.textContent = 'Отправляем…';
+  btn.innerHTML   = '<span class="mini-spinner"></span> Отправляем…';
 
   try {
     const res = await fetch('/order', {
@@ -496,62 +630,57 @@ async function onFormSubmit(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         phone,
-        from_address: fromAddress,
-        from_lat:     parseFloat(fromLat),
-        from_lon:     parseFloat(fromLon),
-        to_address:   toAddress,
-        to_lat:       parseFloat(toLat),
-        to_lon:       parseFloat(toLon),
-        scheduled_at: scheduledAt || null,
+        from_address: pointA.address,
+        from_lat:     pointA.lat,
+        from_lon:     pointA.lng,
+        to_address:   pointB.address,
+        to_lat:       pointB.lat,
+        to_lon:       pointB.lng,
+        scheduled_at: getScheduledAt(),
       }),
     });
 
     const data = await res.json();
 
     if (data.success) {
-      showMsg('success', `✅ Заказ #${data.order_id} принят! Ожидайте звонка диспетчера.`);
+      showFormMsg('success', `✅ Заказ #${data.order_id} принят! Ожидайте звонка диспетчера.`);
       resetAll();
-      document.getElementById('scheduled-at').value = '';
       document.getElementById('phone').value = '';
+      setWhen('now');
     } else {
-      showMsg('error', data.error || 'Ошибка при создании заказа');
+      showFormMsg('error', data.error || 'Не удалось создать заказ');
     }
-  } catch (err) {
-    console.error('[Order submit]', err);
-    showMsg('error', 'Ошибка сети. Попробуйте ещё раз.');
+  } catch (e) {
+    showFormMsg('error', 'Ошибка сети — проверьте соединение и попробуйте снова');
   } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Заказать поездку';
+    btn.disabled  = false;
+    btn.innerHTML = 'Заказать поездку <span class="btn-arrow">→</span>';
   }
 }
 
-function showMsg(type, text) {
+function showFormMsg(type, text) {
   const el = document.getElementById('form-message');
   if (!el) return;
-  el.textContent = text;
-  el.className   = `form-message ${type}`;
+  el.textContent   = text;
+  el.className     = `form-msg ${type}`;
   el.style.display = 'block';
-
-  // Auto-hide after a delay
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => { el.style.display = 'none'; }, type === 'success' ? 9000 : 6000);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, type === 'success' ? 9000 : 6000);
 }
 
-// ══════════════════════════════════════════════════════════
-// REVIEW FORM
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// ФОРМА ОТЗЫВА
+// ══════════════════════════════════════════════════════════════
 async function submitReview() {
   const name = document.getElementById('review-name').value.trim();
   const text = document.getElementById('review-text').value.trim();
-  const msg  = document.getElementById('review-message');
 
-  if (!name) { showReviewMsg('error', 'Введите ваше имя'); return; }
-  if (!text) { showReviewMsg('error', 'Напишите текст отзыва'); return; }
-  if (text.length < 10) { showReviewMsg('error', 'Отзыв слишком короткий'); return; }
+  if (!name) { showReviewMsg('error', 'Введите имя'); return; }
+  if (!text || text.length < 5) { showReviewMsg('error', 'Напишите отзыв (минимум 5 символов)'); return; }
 
   try {
-    const res = await fetch('/review', {
-      method:  'POST',
+    const res  = await fetch('/review', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, text }),
     });
@@ -562,19 +691,25 @@ async function submitReview() {
       document.getElementById('review-name').value = '';
       document.getElementById('review-text').value = '';
     } else {
-      showReviewMsg('error', data.error || 'Ошибка при отправке');
+      showReviewMsg('error', data.error || 'Ошибка');
     }
-  } catch (err) {
-    showReviewMsg('error', 'Ошибка сети. Попробуйте позже.');
-  }
+  } catch { showReviewMsg('error', 'Ошибка сети'); }
 }
 
 function showReviewMsg(type, text) {
   const el = document.getElementById('review-message');
   if (!el) return;
   el.textContent   = text;
-  el.className     = `form-message ${type}`;
+  el.className     = `form-msg ${type}`;
   el.style.display = 'block';
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => { el.style.display = 'none'; }, 6000);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
+
+// ══════════════════════════════════════════════════════════════
+// УТИЛИТЫ
+// ══════════════════════════════════════════════════════════════
+function emptyGeoJSON() { return { type: 'FeatureCollection', features: [] }; }
+function setInputVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+function show(id) { const el = document.getElementById(id); if (el) el.style.display = ''; }
+function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }

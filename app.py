@@ -161,7 +161,11 @@ def set_webhook():
     if not tg_token:
         return jsonify({'error': 'TELEGRAM_TOKEN не задан'}), 400
 
-    webhook_url = f"{request.host_url.rstrip('/')}/webhook/{tg_token}"
+    # Railway (and most PaaS) terminate SSL at the load balancer,
+    # so request.host_url returns http:// — force https://
+    host = request.host_url.rstrip('/')
+    host = host.replace('http://', 'https://', 1)
+    webhook_url = f"{host}/webhook/{tg_token}"
     resp = req.post(
         f'https://api.telegram.org/bot{tg_token}/setWebhook',
         json={'url': webhook_url},
