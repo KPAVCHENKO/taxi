@@ -87,6 +87,24 @@ def notify_drivers(order):
     db.session.commit()
 
 
+def notify_driver_assigned(order, driver):
+    """Уведомить водителя о ручном назначении диспетчером."""
+    sched = ''
+    if order.scheduled_at:
+        from datetime import timedelta
+        ekb = order.scheduled_at + timedelta(hours=5)
+        sched = f'\n🕐 <b>Время (UTC+5):</b> {ekb.strftime("%d.%m.%Y %H:%M")}'
+
+    text = (
+        f'📋 <b>Заказ #{order.id} — назначен диспетчером</b>\n\n'
+        f'📍 <b>Откуда:</b> {order.from_address}\n'
+        f'🏁 <b>Куда:</b> {order.to_address}'
+        f'{sched}\n\n'
+        f'📞 <b>Телефон клиента:</b> <code>{order.phone}</code>'
+    )
+    send_message(driver.telegram_id, text)
+
+
 def handle_update(update):
     """Process incoming Telegram update (webhook)."""
     from models import db, Order  # lazy import — requires app context

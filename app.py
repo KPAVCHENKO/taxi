@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import (
@@ -32,6 +32,15 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+
+
+# ── Jinja фильтр: UTC → UTC+5 (Екатеринбург) ─────────────────────────────────
+@app.template_filter('ekb')
+def ekb_time(dt):
+    """Конвертирует UTC datetime в строку UTC+5 для отображения."""
+    if not dt:
+        return '—'
+    return (dt + timedelta(hours=5)).strftime('%d.%m.%Y %H:%M')
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -182,8 +191,26 @@ def admin_orders():
     q = Order.query
     if status:
         q = q.filter_by(status=status)
-    orders = q.order_by(Order.created_at.desc()).all()
-    return render_template('admin_orders.html', orders=orders, current_status=status)
+    orders  = q.order_by(Order.created_at.desc()).all()
+    drivers = Driver.query.filter_by(active=True).order_by(Driver.name).all()
+    return render_template('admin_orders.html', orders=orders,
+                           current_status=status, drivers=drivers)
+
+
+@app.route('/admin/orders/<int:order_id>/assign', methods=['POST'])
+@admin_required
+def assign_driver_to_order(order_id):
+    order = Order.query.get_or_404(order_id)
+    driver_id = request.form.get('driver_id', type=int)
+    if driver_id:
+        driver = Driver.query.get(driver_id)
+        if driver:
+            order.driver_telegram_id = driver.telegram_id
+            order.driver_name = driver.name
+            order.status = 'accepted'
+            db.session.commit()
+            telegram_bot.notify_driver_assigned(order, driver)
+    return redirect(url_for('admin_orders', status=request.args.get('status', '')))
 
 
 @app.route('/admin/orders/<int:order_id>/status', methods=['POST'])

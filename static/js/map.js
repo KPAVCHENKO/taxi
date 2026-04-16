@@ -10,19 +10,21 @@ const GEOAPIFY_KEY = window.GEOAPIFY_KEY;
 const CENTER_LON = 69.23;
 const CENTER_LAT = 55.73;
 
-// Поиск строго по Тюменской области (без ХМАО/ЯНАО и других регионов)
+// Поиск строго по 4 ближайшим районам:
+// Казанский, Бердюжский, Сладковский, Ишимский
 // rect: lon_min, lat_min, lon_max, lat_max
-const GEO_FILTER = 'rect:64.0,55.0,73.5,58.5';
+const GEO_FILTER = 'rect:66.5,54.8,71.5,57.2';
 const GEO_BIAS   = `proximity:${CENTER_LON},${CENTER_LAT}`;
 
-// Популярные населённые пункты
+// Популярные населённые пункты — всегда показываются в поиске
+// q — запрос для геокодинга с максимальным контекстом
 const PLACES = [
-  { name: 'Казанское',        q: 'Казанское, Казанский район, Тюменская область' },
-  { name: 'Ишим',             q: 'Ишим, Тюменская область' },
-  { name: 'Новоселезнево',    q: 'Новоселезнево, Казанский район, Тюменская область' },
-  { name: 'Большие Ярки',     q: 'Большие Ярки, Казанский район, Тюменская область' },
-  { name: 'Ильинка',          q: 'Ильинка, Казанский район, Тюменская область' },
-  { name: 'Яровское',         q: 'Яровское, Казанский район, Тюменская область' },
+  { name: 'Казанское',        q: 'Казанское, Казанский район, Тюменская область, Россия' },
+  { name: 'Ишим',             q: 'Ишим, Тюменская область, Россия' },
+  { name: 'Новоселезнево',    q: 'Новоселезнево, Казанский район, Тюменская область, Россия' },
+  { name: 'Большие Ярки',     q: 'Большие Ярки, Казанский район, Тюменская область, Россия' },
+  { name: 'Ильинка',          q: 'Ильинка, Казанский район, Тюменская область, Россия' },
+  { name: 'Яровское',         q: 'Яровское, Казанский район, Тюменская область, Россия' },
 ];
 
 // ── Состояние ─────────────────────────────────────────────────────────────
@@ -273,6 +275,22 @@ async function reverseGeocode(lat, lon) {
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 }
 
+// Геокодинг с максимальным контекстом для конкретного запроса (чипы)
+async function geocodeExact(query) {
+  try {
+    const url = new URL('https://api.geoapify.com/v1/geocode/search');
+    url.searchParams.set('text',    query);
+    url.searchParams.set('lang',    'ru');
+    url.searchParams.set('limit',   '1');
+    url.searchParams.set('bias',    GEO_BIAS);
+    url.searchParams.set('apiKey',  GEOAPIFY_KEY);
+    const res  = await fetch(url.toString());
+    const data = await res.json();
+    return data.features || [];
+  } catch (e) { return []; }
+}
+
+// Геокодинг для текстового поиска — строгий фильтр по 4 районам
 async function searchAddress(query) {
   if (!query || query.trim().length < 2) return [];
   try {
@@ -288,6 +306,35 @@ async function searchAddress(query) {
     const data = await res.json();
     return data.features || [];
   } catch (e) { return []; }
+}
+
+// Объединяем локальные совпадения + API результаты
+// Локальные всегда показываются первыми (даже если Geoapify их не знает)
+function getLocalMatches(query) {
+  const q = query.toLowerCase().trim();
+  return PLACES.filter(p => p.name.toLowerCase().includes(q));
+}
+
+async function getSearchSuggestions(query) {
+  if (!query || query.trim().length < 2) return [];
+
+  const localMatches = getLocalMatches(query);
+  const [apiFeatures] = await Promise.all([searchAddress(query)]);
+
+  // Превращаем локальные совпадения в «виртуальные» фичи
+  const localFeatures = localMatches.map(p => ({
+    _isLocal: true,
+    _localName: p.name,
+    _localQuery: p.q,
+  }));
+
+  // API-результаты — убираем те, что совпадают с локальными по названию
+  const filteredApi = apiFeatures.filter(f => {
+    const addr = (f.properties.formatted || '').toLowerCase();
+    return !localMatches.some(p => addr.includes(p.name.toLowerCase()));
+  });
+
+  return [...localFeatures, ...filteredApi].slice(0, 7);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -322,11 +369,28 @@ function setupInput(inputId, pointType, dropId) {
     if (q.length < 2) { hideDrop(drop); return; }
 
     timer = setTimeout(async () => {
-      const features = await searchAddress(q);
-      renderDrop(drop, features, (f) => {
-        const { formatted, lat, lon } = f.properties;
-        const addr = formatted || '';
+      const suggestions = await getSearchSuggestions(q);
+
+      renderDrop(drop, suggestions, async (item) => {
         hideDrop(drop);
+
+        let lat, lon, addr;
+
+        if (item._isLocal) {
+          // Локальная подсказка — геокодируем через точный запрос
+          const features = await geocodeExact(item._localQuery);
+          if (!features.length) {
+            showFormMsg('error', `Не удалось найти "${item._localName}"`);
+            return;
+          }
+          lat  = features[0].properties.lat;
+          lon  = features[0].properties.lon;
+          addr = features[0].properties.formatted || item._localName;
+        } else {
+          lat  = item.properties.lat;
+          lon  = item.properties.lon;
+          addr = item.properties.formatted || '';
+        }
 
         if (pointType === 'a') {
           placePointA(lat, lon, addr);
@@ -348,35 +412,44 @@ function setupInput(inputId, pointType, dropId) {
   });
 }
 
-function renderDrop(drop, features, onSelect) {
+function renderDrop(drop, suggestions, onSelect) {
   drop.innerHTML = '';
 
-  if (!features.length) {
-    drop.innerHTML = '<div class="drop-no-result">Ничего не найдено в Тюменской области</div>';
+  if (!suggestions.length) {
+    drop.innerHTML = '<div class="drop-no-result">Ничего не найдено — попробуйте другой запрос</div>';
     drop.style.display = 'block';
     return;
   }
 
-  features.forEach((f) => {
-    const item = document.createElement('div');
-    item.className = 'drop-item';
+  suggestions.forEach((item) => {
+    const el   = document.createElement('div');
+    el.className = 'drop-item';
 
-    const icon = document.createElement('span');
+    const icon  = document.createElement('span');
     icon.className = 'drop-icon';
-    icon.textContent = '📍';
 
-    const text = document.createElement('span');
-    text.textContent = f.properties.formatted || '';
+    const label = document.createElement('span');
 
-    item.appendChild(icon);
-    item.appendChild(text);
+    if (item._isLocal) {
+      // Локальная подсказка (наш населённый пункт)
+      icon.textContent  = '🏘';
+      label.innerHTML   = `<strong>${item._localName}</strong>
+        <span class="drop-sub">Казанский район, Тюменская область</span>`;
+      el.classList.add('drop-item-local');
+    } else {
+      icon.textContent = '📍';
+      label.textContent = item.properties.formatted || '';
+    }
 
-    item.addEventListener('mousedown', (e) => {
+    el.appendChild(icon);
+    el.appendChild(label);
+
+    el.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      onSelect(f);
+      onSelect(item);
     });
 
-    drop.appendChild(item);
+    drop.appendChild(el);
   });
 
   drop.style.display = 'block';
@@ -426,7 +499,7 @@ async function onChipClick(place, btn) {
   btn.classList.add('chip-loading');
   btn.disabled = true;
 
-  const features = await searchAddress(place.q);
+  const features = await geocodeExact(place.q);
 
   btn.classList.remove('chip-loading');
   btn.disabled = false;

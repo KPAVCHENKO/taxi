@@ -7,10 +7,14 @@
 
 <!-- Filter bar -->
 <div class="filter-bar">
-  <a href="{{ url_for('admin_orders') }}" class="{{ 'active' if not current_status else '' }}">Все</a>
-  <a href="{{ url_for('admin_orders', status='new') }}" class="{{ 'active' if current_status == 'new' else '' }}">🔵 Новые</a>
-  <a href="{{ url_for('admin_orders', status='accepted') }}" class="{{ 'active' if current_status == 'accepted' else '' }}">🟢 Принятые</a>
-  <a href="{{ url_for('admin_orders', status='completed') }}" class="{{ 'active' if current_status == 'completed' else '' }}">⚫ Завершённые</a>
+  <a href="{{ url_for('admin_orders') }}"
+     class="{{ 'active' if not current_status else '' }}">Все</a>
+  <a href="{{ url_for('admin_orders', status='new') }}"
+     class="{{ 'active' if current_status == 'new' else '' }}">🔵 Новые</a>
+  <a href="{{ url_for('admin_orders', status='accepted') }}"
+     class="{{ 'active' if current_status == 'accepted' else '' }}">🟢 Принятые</a>
+  <a href="{{ url_for('admin_orders', status='completed') }}"
+     class="{{ 'active' if current_status == 'completed' else '' }}">⚫ Завершённые</a>
 </div>
 
 <div class="card">
@@ -21,10 +25,10 @@
         <th>#</th>
         <th>Статус</th>
         <th>Откуда → Куда</th>
-        <th>Дата/время</th>
+        <th>Время (UTC+5)</th>
         <th>Телефон</th>
         <th>Водитель</th>
-        <th>Создан</th>
+        <th>Создан (UTC+5)</th>
         <th>Действия</th>
       </tr>
     </thead>
@@ -32,6 +36,7 @@
       {% for o in orders %}
       <tr>
         <td style="color:#64748b; font-size:13px;">{{ o.id }}</td>
+
         <td>
           {% if o.status == 'new' %}
             <span class="badge badge-new">Новый</span>
@@ -41,49 +46,78 @@
             <span class="badge badge-completed">Завершён</span>
           {% endif %}
         </td>
-        <td style="max-width:260px;">
-          <div style="font-size:13px; color:#94a3b8; margin-bottom:2px;">
-            📍 {{ o.from_address[:60] }}{% if o.from_address|length > 60 %}…{% endif %}
+
+        <td style="max-width:240px;">
+          <div style="font-size:12px; color:#94a3b8; margin-bottom:2px;">
+            📍 {{ o.from_address[:55] }}{% if o.from_address|length > 55 %}…{% endif %}
           </div>
-          <div style="font-size:13px;">
-            🏁 {{ o.to_address[:60] }}{% if o.to_address|length > 60 %}…{% endif %}
+          <div style="font-size:12px;">
+            🏁 {{ o.to_address[:55] }}{% if o.to_address|length > 55 %}…{% endif %}
           </div>
         </td>
+
         <td style="font-size:13px; white-space:nowrap;">
           {% if o.scheduled_at %}
-            {{ o.scheduled_at.strftime('%d.%m.%Y %H:%M') }}<br>
-            <span style="color:#64748b;">UTC+5</span>
+            {{ o.scheduled_at | ekb }}
           {% else %}
             <span style="color:#64748b;">Как можно скорее</span>
           {% endif %}
         </td>
+
         <td style="font-size:13px;">
           <a href="tel:{{ o.phone }}" style="color:#7c6fff; text-decoration:none;">{{ o.phone }}</a>
         </td>
-        <td style="font-size:13px; color:#94a3b8;">
-          {{ o.driver_name or '—' }}
-        </td>
-        <td style="font-size:12px; color:#64748b; white-space:nowrap;">
-          {{ o.created_at.strftime('%d.%m %H:%M') }}
-        </td>
-        <td>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            {% if o.status != 'completed' %}
-            <form method="POST" action="{{ url_for('update_order_status', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}">
-              {% if o.status == 'new' %}
-                <input type="hidden" name="status" value="accepted" />
-                <button class="btn btn-success" type="submit">✓ Принят</button>
-              {% elif o.status == 'accepted' %}
-                <input type="hidden" name="status" value="completed" />
-                <button class="btn btn-ghost" type="submit">✓ Завершён</button>
-              {% endif %}
+
+        <!-- Водитель: показать или форму назначения -->
+        <td style="min-width:190px;">
+          {% if o.driver_name %}
+            <span style="font-size:13px;">{{ o.driver_name }}</span>
+          {% elif o.status == 'new' and drivers %}
+            <form method="POST"
+                  action="{{ url_for('assign_driver_to_order', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}"
+                  style="display:flex; gap:5px; align-items:center;">
+              <select name="driver_id"
+                      style="flex:1; padding:5px 8px; background:rgba(255,255,255,0.06);
+                             border:1px solid rgba(255,255,255,0.12); border-radius:6px;
+                             color:#e2e8f0; font-size:12px; min-width:0;">
+                <option value="">— назначить —</option>
+                {% for d in drivers %}
+                  <option value="{{ d.id }}">{{ d.name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-primary-sm" style="font-size:11px; padding:5px 10px; white-space:nowrap;">
+                ✓ OK
+              </button>
             </form>
+          {% else %}
+            <span style="color:#64748b; font-size:13px;">—</span>
+          {% endif %}
+        </td>
+
+        <td style="font-size:12px; color:#64748b; white-space:nowrap;">
+          {{ o.created_at | ekb }}
+        </td>
+
+        <td>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            {% if o.status != 'completed' %}
+              <form method="POST"
+                    action="{{ url_for('update_order_status', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}">
+                {% if o.status == 'new' %}
+                  <input type="hidden" name="status" value="accepted" />
+                  <button class="btn btn-success" type="submit">✓ Принят</button>
+                {% elif o.status == 'accepted' %}
+                  <input type="hidden" name="status" value="completed" />
+                  <button class="btn btn-ghost" type="submit">✓ Завершён</button>
+                {% endif %}
+              </form>
             {% endif %}
             {% if o.status != 'new' %}
-            <form method="POST" action="{{ url_for('update_order_status', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}">
-              <input type="hidden" name="status" value="new" />
-              <button class="btn btn-warning" type="submit">↩ Сброс</button>
-            </form>
+              <form method="POST"
+                    action="{{ url_for('update_order_status', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}">
+                <input type="hidden" name="status" value="new" />
+                <button class="btn btn-warning" type="submit">↩</button>
+              </form>
             {% endif %}
           </div>
         </td>
