@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Такси — Казанский район</title>
+
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🚖</span>
+      <div>
+        <div class="logo-title">Такси Казанское</div>
+        <div class="logo-sub">Казанский район · Тюменская область</div>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a href="#order-section">Заказать</a>
+      <a href="#reviews-section">Отзывы</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ══════════════ HERO ══════════════ -->
+<section class="hero">
+  <div class="hero-inner">
+    <h1 class="hero-title">Быстро. Надёжно. По Казанскому району.</h1>
+    <p class="hero-desc">Местная служба такси — принимаем заказы круглосуточно. Цена уточняется диспетчером.</p>
+    <a href="#order-section" class="btn-primary hero-cta">Заказать поездку</a>
+  </div>
+</section>
+
+<!-- ══════════════ ORDER SECTION ══════════════ -->
+<section class="order-section" id="order-section">
+  <div class="order-layout">
+
+    <!-- LEFT: MAP -->
+    <div class="map-col">
+      <div class="map-controls glass-card">
+        <span class="map-hint" id="map-hint">Выберите режим и кликайте на карту</span>
+        <div class="mode-buttons">
+          <button id="btn-mode-a" class="btn-mode" onclick="setMode('a')">
+            <span class="mode-dot dot-a"></span> Откуда
+          </button>
+          <button id="btn-mode-b" class="btn-mode" onclick="setMode('b')">
+            <span class="mode-dot dot-b"></span> Куда
+          </button>
+          <button class="btn-reset" onclick="resetAll()">✕ Сбросить</button>
+        </div>
+      </div>
+
+      <div id="map-container"></div>
+
+      <div id="route-loading" class="route-status" style="display:none">
+        <span class="spinner"></span> Строим маршрут…
+      </div>
+      <div id="route-info" class="route-status route-info-bar" style="display:none"></div>
+    </div>
+
+    <!-- RIGHT: FORM -->
+    <div class="form-col">
+      <div class="glass-card order-card">
+        <h2 class="card-title">Заказать поездку</h2>
+
+        <form id="order-form" novalidate>
+          <!-- Hidden coordinate fields -->
+          <input type="hidden" id="from-lat" />
+          <input type="hidden" id="from-lon" />
+          <input type="hidden" id="from-address" />
+          <input type="hidden" id="to-lat" />
+          <input type="hidden" id="to-lon" />
+          <input type="hidden" id="to-address" />
+
+          <!-- FROM -->
+          <div class="form-group">
+            <label for="search-from">
+              <span class="point-badge badge-a">A</span> Откуда
+            </label>
+            <div class="autocomplete-wrap">
+              <input
+                type="text"
+                id="search-from"
+                class="form-input"
+                placeholder="Введите адрес или кликните на карте"
+                autocomplete="off"
+              />
+              <div class="autocomplete-dropdown" id="dropdown-from"></div>
+            </div>
+          </div>
+
+          <!-- TO -->
+          <div class="form-group">
+            <label for="search-to">
+              <span class="point-badge badge-b">B</span> Куда
+            </label>
+            <div class="autocomplete-wrap">
+              <input
+                type="text"
+                id="search-to"
+                class="form-input"
+                placeholder="Введите адрес или кликните на карте"
+                autocomplete="off"
+              />
+              <div class="autocomplete-dropdown" id="dropdown-to"></div>
+            </div>
+          </div>
+
+          <!-- DATETIME -->
+          <div class="form-group">
+            <label for="scheduled-at">Дата и время поездки (UTC+5)</label>
+            <input
+              type="datetime-local"
+              id="scheduled-at"
+              class="form-input"
+            />
+            <div class="field-hint">Оставьте пустым — заберём как можно скорее</div>
+          </div>
+
+          <!-- PHONE -->
+          <div class="form-group">
+            <label for="phone">Телефон <span class="required">*</span></label>
+            <input
+              type="tel"
+              id="phone"
+              class="form-input"
+              placeholder="+7 (xxx) xxx-xx-xx"
+              required
+            />
+          </div>
+
+          <!-- PRICE NOTE -->
+          <div class="price-note">
+            <span class="price-icon">💰</span>
+            Цена уточняется диспетчером
+          </div>
+
+          <!-- SUBMIT -->
+          <button type="submit" id="submit-btn" class="btn-primary btn-submit">
+            Заказать поездку
+          </button>
+
+          <!-- MESSAGES -->
+          <div id="form-message" class="form-message" style="display:none"></div>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /order-layout -->
+</section>
+
+<!-- ══════════════ REVIEWS ══════════════ -->
+<section class="reviews-section" id="reviews-section">
+  <div class="section-inner">
+    <h2 class="section-title">Отзывы клиентов</h2>
+
+    {% if reviews %}
+    <div class="reviews-grid">
+      {% for r in reviews %}
+      <div class="review-card glass-card">
+        <div class="review-header">
+          <span class="review-avatar">{{ r.name[0]|upper }}</span>
+          <div>
+            <div class="review-name">{{ r.name }}</div>
+            <div class="review-date">{{ r.created_at.strftime('%d.%m.%Y') }}</div>
+          </div>
+        </div>
+        <p class="review-text">{{ r.text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="no-reviews">Станьте первым, кто оставит отзыв!</p>
+    {% endif %}
+
+    <!-- REVIEW FORM -->
+    <div class="review-form-wrap">
+      <div class="glass-card review-form-card">
+        <h3 class="card-title">Оставить отзыв</h3>
+        <div class="form-group">
+          <label for="review-name">Ваше имя</label>
+          <input type="text" id="review-name" class="form-input" placeholder="Иван" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label for="review-text">Ваш отзыв</label>
+          <textarea id="review-text" class="form-input" rows="4" placeholder="Всё прошло отлично!" maxlength="1000"></textarea>
+        </div>
+        <button class="btn-primary" onclick="submitReview()">Отправить отзыв</button>
+        <div id="review-message" class="form-message" style="display:none"></div>
+        <p class="review-notice">Отзывы публикуются после проверки модератором</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2025 Такси Казанское</span>
+    <span>Казанский район, Тюменская область</span>
+    <span>Работаем круглосуточно</span>
+  </div>
+</footer>
+
+<!-- Pass API key to JS -->
+<script>window.GEOAPIFY_KEY = '{{ geoapify_key }}';</script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+</body>
+</html>

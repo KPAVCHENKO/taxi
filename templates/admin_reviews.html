@@ -1,0 +1,91 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Отзывы{% endblock %}
+{% block page_title %}Модерация отзывов{% endblock %}
+
+{% block content %}
+
+{% set pending = reviews | selectattr('approved', 'equalto', false) | list %}
+{% set approved = reviews | selectattr('approved', 'equalto', true) | list %}
+
+{% if pending %}
+<div class="alert alert-info">
+  ⏳ Ожидают проверки: <strong>{{ pending | length }}</strong> отзыв(а/ов)
+</div>
+{% endif %}
+
+<!-- PENDING -->
+{% if pending %}
+<div class="card">
+  <div class="card-header">
+    ⏳ На проверке
+    <span class="badge badge-pending">{{ pending | length }}</span>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Имя</th><th>Отзыв</th><th>Дата</th><th>Действия</th></tr>
+    </thead>
+    <tbody>
+      {% for r in pending %}
+      <tr>
+        <td style="white-space:nowrap; font-weight:500;">{{ r.name }}</td>
+        <td style="max-width:420px; font-size:14px; color:#94a3b8;">{{ r.text }}</td>
+        <td style="white-space:nowrap; font-size:13px; color:#64748b;">
+          {{ r.created_at.strftime('%d.%m.%Y %H:%M') }}
+        </td>
+        <td>
+          <div style="display:flex; gap:8px;">
+            <form method="POST" action="{{ url_for('approve_review', review_id=r.id) }}">
+              <button class="btn btn-success" type="submit">✅ Одобрить</button>
+            </form>
+            <form method="POST" action="{{ url_for('delete_review', review_id=r.id) }}"
+                  onsubmit="return confirm('Удалить отзыв?')">
+              <button class="btn btn-danger" type="submit">🗑 Удалить</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- APPROVED -->
+<div class="card">
+  <div class="card-header">
+    ✅ Опубликованные
+    <span class="badge badge-approved">{{ approved | length }}</span>
+  </div>
+  {% if approved %}
+  <table>
+    <thead>
+      <tr><th>Имя</th><th>Отзыв</th><th>Дата</th><th>Действия</th></tr>
+    </thead>
+    <tbody>
+      {% for r in approved %}
+      <tr>
+        <td style="white-space:nowrap; font-weight:500;">{{ r.name }}</td>
+        <td style="max-width:420px; font-size:14px; color:#94a3b8;">{{ r.text }}</td>
+        <td style="white-space:nowrap; font-size:13px; color:#64748b;">
+          {{ r.created_at.strftime('%d.%m.%Y %H:%M') }}
+        </td>
+        <td>
+          <form method="POST" action="{{ url_for('delete_review', review_id=r.id) }}"
+                onsubmit="return confirm('Удалить отзыв?')">
+            <button class="btn btn-danger" type="submit">🗑 Удалить</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">⭐</div>
+    <p>Одобренных отзывов пока нет</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
