@@ -19,21 +19,21 @@
   --orange-bg:    rgba(249,115,22,0.12);
   --orange-dark:  #EA6C0A;
 
-  /* ── Поверхности (тёмная тема) ── */
-  --bg:           #7992dd;
-  --surface:      #7f99d1;
-  --surface-2:    #7b9bd4;
-  --surface-3:    #84a4df;
+  /* ── Поверхности ── */
+  --bg:           #1E2535;
+  --surface:      #273047;
+  --surface-2:    #2F3A55;
+  --surface-3:    #374460;
 
   /* ── Текст ── */
-  --text:         #F1F5F9;
-  --text-2:       #8B9AB5;
-  --text-muted:   #475569;
+  --text:         #FFFFFF;
+  --text-2:       #C2CEDF;
+  --text-muted:   #8998B0;
 
   /* ── Границы ── */
-  --border:       rgba(255,255,255,0.07);
-  --border-2:     rgba(255,255,255,0.12);
-  --border-gold:  rgba(245,184,0,0.22);
+  --border:       rgba(255,255,255,0.11);
+  --border-2:     rgba(255,255,255,0.20);
+  --border-gold:  rgba(245,184,0,0.35);
 
   /* ── Состояния ── */
   --success:      #10B981;
@@ -72,7 +72,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 200;
-  background: rgba(8,12,24,0.92);
+  background: rgba(20,28,50,0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-gold);
@@ -143,7 +143,7 @@ body {
   background:
     linear-gradient(160deg, rgba(8,12,24,0.55) 0%, rgba(10,16,30,0.75) 100%),
     url('/static/img/hero-bg.jpg') center 30% / cover no-repeat;
-  background-color: #0A1020;
+  background-color: #1A2438;
   padding: 36px 20px 32px;
   color: white;
   border-bottom: 1px solid var(--border-gold);
@@ -1224,3 +1224,69 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(245,184,0,0.25); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════════
+   ФОТО-СЕКЦИЯ
+═══════════════════════════════════════════════════════ */
+.photo-section {
+  padding: 0;
+  overflow: hidden;
+}
+
+.photo-card {
+  position: relative;
+  min-height: 240px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+}
+
+.photo-card-interior {
+  background-image:
+    linear-gradient(to top, rgba(13,22,40,0.92) 0%, rgba(13,22,40,0.40) 60%, rgba(13,22,40,0.15) 100%),
+    url('/static/img/interior.jpg');
+  background-color: #1C2B45;
+  min-height: 280px;
+}
+
+/* Если фото нет — красивый градиент-заглушка */
+.photo-card-interior:not([style*="background-image"]) {
+  background: linear-gradient(135deg, #0D1628 0%, #1C2B45 50%, #0D2040 100%);
+}
+
+.photo-overlay {
+  padding: 24px 20px 28px;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.photo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245,184,0,0.15);
+  border: 1px solid rgba(245,184,0,0.30);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+.photo-title {
+  font-size: clamp(18px, 5vw, 26px);
+  font-weight: 800;
+  color: #F1F5F9;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+.photo-sub {
+  font-size: 14px;
+  color: rgba(241,245,249,0.65);
+  line-height: 1.5;
+}
