@@ -168,6 +168,7 @@ function placePointA(lat, lng, address) {
   show('clear-a');
   clearRouteData();
   updateChipStates();
+  checkAddressVagueness(address);
 }
 
 function placePointB(lat, lng, address) {
@@ -182,6 +183,7 @@ function placePointB(lat, lng, address) {
   show('clear-b');
   clearRouteData();
   updateChipStates();
+  checkAddressVagueness(address);
 }
 
 function clearPoint(which) {
@@ -675,27 +677,48 @@ function getScheduledAt() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// СПОСОБ ОПЛАТЫ
+// ══════════════════════════════════════════════════════════════
+let paymentMethod = 'cash';
+
+function setPayment(method) {
+  paymentMethod = method;
+  document.getElementById('payment-method').value = method;
+  document.getElementById('pay-cash').classList.toggle('active',     method === 'cash');
+  document.getElementById('pay-transfer').classList.toggle('active', method === 'transfer');
+}
+
+// ══════════════════════════════════════════════════════════════
 // ОТПРАВКА ЗАКАЗА
 // ══════════════════════════════════════════════════════════════
 async function submitOrder() {
-  const phone = document.getElementById('phone').value.trim();
+  const phone   = document.getElementById('phone').value.trim();
+  const comment = document.getElementById('order-comment').value.trim();
+
+  // Адрес: берём из точки на карте или из текста в поле
+  const fromAddress = pointA
+    ? pointA.address
+    : document.getElementById('search-from').value.trim();
+  const toAddress   = pointB
+    ? pointB.address
+    : document.getElementById('search-to').value.trim();
 
   if (!phone) {
     showFormMsg('error', 'Введите номер телефона');
     return;
   }
-  if (!pointA) {
-    showFormMsg('error', 'Выберите откуда ехать — нажмите на чип или кликните на карте');
+  if (!fromAddress) {
+    showFormMsg('error', 'Укажите откуда ехать — нажмите чип, введите текст или кликните на карте');
     return;
   }
-  if (!pointB) {
-    showFormMsg('error', 'Выберите куда ехать — нажмите на чип или кликните на карте');
+  if (!toAddress) {
+    showFormMsg('error', 'Укажите куда ехать — нажмите чип, введите текст или кликните на карте');
     return;
   }
 
   const btn = document.getElementById('submit-btn');
-  btn.disabled    = true;
-  btn.innerHTML   = '<span class="mini-spinner"></span> Отправляем…';
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="mini-spinner"></span> Отправляем…';
 
   try {
     const res = await fetch('/order', {
@@ -703,12 +726,14 @@ async function submitOrder() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         phone,
-        from_address: pointA.address,
-        from_lat:     pointA.lat,
-        from_lon:     pointA.lng,
-        to_address:   pointB.address,
-        to_lat:       pointB.lat,
-        to_lon:       pointB.lng,
+        from_address: fromAddress,
+        from_lat:     pointA ? pointA.lat : null,
+        from_lon:     pointA ? pointA.lng : null,
+        to_address:   toAddress,
+        to_lat:       pointB ? pointB.lat : null,
+        to_lon:       pointB ? pointB.lng : null,
+        comment:      comment || null,
+        payment:      paymentMethod,
         scheduled_at: getScheduledAt(),
       }),
     });
@@ -719,7 +744,10 @@ async function submitOrder() {
       showFormMsg('success', `✅ Заказ #${data.order_id} принят! Ожидайте звонка диспетчера.`);
       resetAll();
       document.getElementById('phone').value = '';
+      document.getElementById('order-comment').value = '';
       setWhen('now');
+      setPayment('cash');
+      hideCommentHint();
     } else {
       showFormMsg('error', data.error || 'Не удалось создать заказ');
     }
@@ -739,6 +767,29 @@ function showFormMsg(type, text) {
   el.style.display = 'block';
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.display = 'none'; }, type === 'success' ? 9000 : 6000);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ПОДСКАЗКА "АДРЕС ПРИБЛИЗИТЕЛЬНЫЙ"
+// ══════════════════════════════════════════════════════════════
+// Если в адресе нет признаков улицы — показываем подсказку добавить комментарий
+function checkAddressVagueness(address) {
+  const hasStreet = /\b(ул|улица|пер|переулок|пр|проспект|шоссе|тракт|набережная|д\.|дом)\b/i.test(address);
+  if (!hasStreet) {
+    showCommentHint();
+  } else {
+    hideCommentHint();
+  }
+}
+
+function showCommentHint() {
+  const el = document.getElementById('comment-hint');
+  if (el) el.style.display = 'flex';
+}
+
+function hideCommentHint() {
+  const el = document.getElementById('comment-hint');
+  if (el) el.style.display = 'none';
 }
 
 // ══════════════════════════════════════════════════════════════

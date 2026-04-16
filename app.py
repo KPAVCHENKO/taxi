@@ -72,11 +72,27 @@ def create_order():
     if not data:
         return jsonify({'error': 'Нет данных'}), 400
 
-    required = ['phone', 'from_address', 'from_lat', 'from_lon',
-                'to_address', 'to_lat', 'to_lon']
-    for field in required:
-        if not str(data.get(field, '')).strip():
-            return jsonify({'error': f'Поле обязательно: {field}'}), 400
+    phone        = str(data.get('phone', '')).strip()
+    from_address = str(data.get('from_address', '')).strip()
+    to_address   = str(data.get('to_address', '')).strip()
+    comment      = str(data.get('comment', '')).strip()
+    payment_raw  = str(data.get('payment', 'cash')).strip()
+    payment      = 'transfer' if payment_raw == 'transfer' else 'cash'
+
+    if not phone:
+        return jsonify({'error': 'Укажите телефон'}), 400
+    if not from_address:
+        return jsonify({'error': 'Укажите откуда ехать'}), 400
+    if not to_address:
+        return jsonify({'error': 'Укажите куда ехать'}), 400
+
+    # Координаты необязательны — водитель поймёт по адресу + комментарию
+    def _float_or_none(key):
+        v = data.get(key)
+        try:
+            return float(v) if v not in (None, '', 'null') else None
+        except (ValueError, TypeError):
+            return None
 
     scheduled_at = None
     raw_dt = data.get('scheduled_at', '')
@@ -87,13 +103,15 @@ def create_order():
             pass
 
     order = Order(
-        phone=str(data['phone']).strip(),
-        from_address=str(data['from_address']).strip(),
-        from_lat=float(data['from_lat']),
-        from_lon=float(data['from_lon']),
-        to_address=str(data['to_address']).strip(),
-        to_lat=float(data['to_lat']),
-        to_lon=float(data['to_lon']),
+        phone=phone,
+        from_address=from_address,
+        from_lat=_float_or_none('from_lat'),
+        from_lon=_float_or_none('from_lon'),
+        to_address=to_address,
+        to_lat=_float_or_none('to_lat'),
+        to_lon=_float_or_none('to_lon'),
+        comment=comment or None,
+        payment=payment,
         scheduled_at=scheduled_at,
     )
     db.session.add(order)
@@ -183,6 +201,47 @@ def set_webhook():
     return jsonify({'webhook_url': webhook_url, 'telegram_response': resp.json()})
 
 
+# ── Статус занятости водителей ────────────────────────────────────────────────
+def compute_driver_statuses(drivers):
+    """
+    Возвращает dict {driver.id: {'label': str, 'level': 'free'|'maybe'|'busy'}}.
+    Расчёт по последнему принятому заказу.
+    """
+    from datetime import datetime
+    result = {}
+    for d in drivers:
+        # Активный незавершённый заказ
+        active = (
+            Order.query
+            .filter_by(driver_telegram_id=d.telegram_id, status='accepted')
+            .order_by(Order.created_at.desc())
+            .first()
+        )
+        if active:
+            mins = int((datetime.utcnow() - active.created_at).total_seconds() / 60)
+            if mins < 90:
+                result[d.id] = {'label': f'Выполняет заказ · {mins} мин', 'level': 'busy'}
+            else:
+                result[d.id] = {'label': f'Возможно занят · {mins} мин', 'level': 'maybe'}
+            continue
+
+        # Недавно завершённый (< 20 мин назад)
+        recent = (
+            Order.query
+            .filter_by(driver_telegram_id=d.telegram_id, status='completed')
+            .order_by(Order.created_at.desc())
+            .first()
+        )
+        if recent:
+            mins = int((datetime.utcnow() - recent.created_at).total_seconds() / 60)
+            if mins < 20:
+                result[d.id] = {'label': f'Только завершил · {mins} мин назад', 'level': 'maybe'}
+                continue
+
+        result[d.id] = {'label': 'Свободен', 'level': 'free'}
+    return result
+
+
 # ── Admin: orders ─────────────────────────────────────────────────────────────
 @app.route('/admin/orders')
 @admin_required
@@ -193,8 +252,10 @@ def admin_orders():
         q = q.filter_by(status=status)
     orders  = q.order_by(Order.created_at.desc()).all()
     drivers = Driver.query.filter_by(active=True).order_by(Driver.name).all()
+    driver_statuses = compute_driver_statuses(drivers)
     return render_template('admin_orders.html', orders=orders,
-                           current_status=status, drivers=drivers)
+                           current_status=status, drivers=drivers,
+                           driver_statuses=driver_statuses)
 
 
 @app.route('/admin/orders/<int:order_id>/assign', methods=['POST'])

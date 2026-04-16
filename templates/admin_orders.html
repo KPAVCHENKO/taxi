@@ -5,7 +5,6 @@
 
 {% block content %}
 
-<!-- Filter bar -->
 <div class="filter-bar">
   <a href="{{ url_for('admin_orders') }}"
      class="{{ 'active' if not current_status else '' }}">Все</a>
@@ -19,12 +18,14 @@
 
 <div class="card">
   {% if orders %}
+  <div style="overflow-x:auto;">
   <table>
     <thead>
       <tr>
         <th>#</th>
         <th>Статус</th>
-        <th>Откуда → Куда</th>
+        <th>Маршрут + комментарий</th>
+        <th>Оплата</th>
         <th>Время (UTC+5)</th>
         <th>Телефон</th>
         <th>Водитель</th>
@@ -35,7 +36,7 @@
     <tbody>
       {% for o in orders %}
       <tr>
-        <td style="color:#64748b; font-size:13px;">{{ o.id }}</td>
+        <td style="color:#64748b; font-size:12px; white-space:nowrap;">{{ o.id }}</td>
 
         <td>
           {% if o.status == 'new' %}
@@ -47,16 +48,36 @@
           {% endif %}
         </td>
 
-        <td style="max-width:240px;">
+        <!-- Маршрут + координаты + комментарий -->
+        <td style="max-width:260px;">
           <div style="font-size:12px; color:#94a3b8; margin-bottom:2px;">
             📍 {{ o.from_address[:55] }}{% if o.from_address|length > 55 %}…{% endif %}
+            {% if not o.has_coords %}
+              <span style="color:#f59e0b; font-size:10px;" title="Без координат">⚠️</span>
+            {% endif %}
           </div>
-          <div style="font-size:12px;">
+          <div style="font-size:12px; margin-bottom:4px;">
             🏁 {{ o.to_address[:55] }}{% if o.to_address|length > 55 %}…{% endif %}
           </div>
+          {% if o.comment %}
+          <div style="font-size:12px; background:rgba(124,111,255,0.1); border-radius:6px;
+                      padding:4px 8px; color:#a78bfa; border-left:2px solid #7c6fff;">
+            💬 {{ o.comment[:80] }}{% if o.comment|length > 80 %}…{% endif %}
+          </div>
+          {% endif %}
         </td>
 
-        <td style="font-size:13px; white-space:nowrap;">
+        <!-- Оплата -->
+        <td style="white-space:nowrap;">
+          {% if o.payment == 'transfer' %}
+            <span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399;">📲 Перевод</span>
+          {% else %}
+            <span class="badge" style="background:rgba(100,116,139,0.15); color:#94a3b8;">💵 Наличные</span>
+          {% endif %}
+        </td>
+
+        <!-- Время поездки -->
+        <td style="font-size:12px; white-space:nowrap;">
           {% if o.scheduled_at %}
             {{ o.scheduled_at | ekb }}
           {% else %}
@@ -64,29 +85,47 @@
           {% endif %}
         </td>
 
-        <td style="font-size:13px;">
+        <td style="font-size:12px; white-space:nowrap;">
           <a href="tel:{{ o.phone }}" style="color:#7c6fff; text-decoration:none;">{{ o.phone }}</a>
         </td>
 
-        <!-- Водитель: показать или форму назначения -->
-        <td style="min-width:190px;">
+        <!-- Водитель: текущий или форма назначения -->
+        <td style="min-width:210px;">
           {% if o.driver_name %}
-            <span style="font-size:13px;">{{ o.driver_name }}</span>
+            <div style="font-size:13px; font-weight:500;">{{ o.driver_name }}</div>
+            {# Показать статус текущего водителя #}
+            {% if driver_statuses and o.driver_telegram_id %}
+              {% for d in drivers %}
+                {% if d.telegram_id == o.driver_telegram_id %}
+                  {% set st = driver_statuses.get(d.id) %}
+                  {% if st %}
+                    <div style="font-size:11px; margin-top:2px;
+                      color: {{ '#f87171' if st.level == 'busy' else '#fbbf24' if st.level == 'maybe' else '#34d399' }}">
+                      {{ st.label }}
+                    </div>
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
           {% elif o.status == 'new' and drivers %}
             <form method="POST"
                   action="{{ url_for('assign_driver_to_order', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}"
-                  style="display:flex; gap:5px; align-items:center;">
-              <select name="driver_id"
-                      style="flex:1; padding:5px 8px; background:rgba(255,255,255,0.06);
-                             border:1px solid rgba(255,255,255,0.12); border-radius:6px;
-                             color:#e2e8f0; font-size:12px; min-width:0;">
+                  style="display:flex; flex-direction:column; gap:5px;">
+              <select name="driver_id" style="padding:5px 8px; background:rgba(255,255,255,0.06);
+                     border:1px solid rgba(255,255,255,0.12); border-radius:6px;
+                     color:#e2e8f0; font-size:12px;">
                 <option value="">— назначить —</option>
                 {% for d in drivers %}
-                  <option value="{{ d.id }}">{{ d.name }}</option>
+                  {% set st = driver_statuses.get(d.id, {}) %}
+                  <option value="{{ d.id }}"
+                    {% if st.level == 'busy' %}style="color:#f87171"{% elif st.level == 'maybe' %}style="color:#fbbf24"{% endif %}>
+                    {{ d.name }}
+                    {% if st.label and st.label != 'Свободен' %} · {{ st.label }}{% endif %}
+                  </option>
                 {% endfor %}
               </select>
-              <button type="submit" class="btn btn-primary-sm" style="font-size:11px; padding:5px 10px; white-space:nowrap;">
-                ✓ OK
+              <button type="submit" class="btn btn-primary-sm" style="font-size:11px; padding:5px 10px;">
+                ✓ Назначить
               </button>
             </form>
           {% else %}
@@ -94,7 +133,7 @@
           {% endif %}
         </td>
 
-        <td style="font-size:12px; color:#64748b; white-space:nowrap;">
+        <td style="font-size:11px; color:#64748b; white-space:nowrap;">
           {{ o.created_at | ekb }}
         </td>
 
@@ -116,7 +155,7 @@
               <form method="POST"
                     action="{{ url_for('update_order_status', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}">
                 <input type="hidden" name="status" value="new" />
-                <button class="btn btn-warning" type="submit">↩</button>
+                <button class="btn btn-warning" type="submit" title="Сбросить статус">↩</button>
               </form>
             {% endif %}
           </div>
@@ -125,6 +164,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% else %}
   <div class="empty-state">
     <div class="empty-icon">📭</div>

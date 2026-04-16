@@ -176,6 +176,35 @@
       />
     </div>
 
+    <!-- ── Комментарий ── -->
+    <div class="comment-section">
+      <div class="field-label">Комментарий <span class="opt-label">необязательно</span></div>
+      <textarea
+        id="order-comment"
+        class="phone-input comment-input"
+        rows="2"
+        placeholder="Уточните адрес, ориентир или любые детали для водителя&#10;Например: «рядом с магазином», «второй дом от угла»"
+        maxlength="500"
+      ></textarea>
+      <div id="comment-hint" class="addr-vague-hint" style="display:none">
+        📌 Адрес приблизительный — добавьте ориентир в комментарии
+      </div>
+    </div>
+
+    <!-- ── Способ оплаты ── -->
+    <div class="payment-section">
+      <div class="field-label">Способ оплаты</div>
+      <div class="payment-tabs">
+        <button type="button" class="pay-tab active" id="pay-cash" onclick="setPayment('cash')">
+          💵 Наличные
+        </button>
+        <button type="button" class="pay-tab" id="pay-transfer" onclick="setPayment('transfer')">
+          📲 Перевод
+        </button>
+      </div>
+      <input type="hidden" id="payment-method" value="cash" />
+    </div>
+
     <!-- ── Цена + кнопка ── -->
     <div class="price-row">
       <span class="price-text">💰 Цена уточняется диспетчером</span>

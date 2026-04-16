@@ -841,6 +841,72 @@ body {
 
 .req { color: var(--error); }
 
+/* ── Комментарий ── */
+.comment-section { margin-bottom: 16px; }
+
+.opt-label {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.comment-input {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  min-height: 68px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.addr-vague-hint {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: rgba(249,115,22,0.08);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: #c2460a;
+  line-height: 1.4;
+}
+
+/* ── Способ оплаты ── */
+.payment-section { margin-bottom: 16px; }
+
+.payment-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pay-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1.5px solid var(--border-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+  font-family: inherit;
+}
+
+.pay-tab:hover {
+  border-color: var(--blue);
+  color: var(--text);
+}
+
+.pay-tab.active {
+  border-color: var(--blue);
+  background: rgba(37,99,235,0.08);
+  color: var(--blue);
+}
+
 /* ── Цена + кнопка ── */
 .price-row {
   display: flex;
