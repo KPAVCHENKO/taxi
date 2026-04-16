@@ -7,6 +7,7 @@ from flask import (
     session, redirect, url_for, flash,
 )
 
+from sqlalchemy import text
 from models import db, Order, Driver, Review
 import telegram_bot
 
@@ -32,6 +33,22 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+    # ── Миграция: добавляем колонки, которых может не быть в старой БД ──
+    _migrations = [
+        "ALTER TABLE orders ADD COLUMN comment TEXT",
+        "ALTER TABLE orders ADD COLUMN payment VARCHAR(20) DEFAULT 'cash'",
+        "ALTER TABLE orders ADD COLUMN from_lat FLOAT",
+        "ALTER TABLE orders ADD COLUMN from_lon FLOAT",
+        "ALTER TABLE orders ADD COLUMN to_lat FLOAT",
+        "ALTER TABLE orders ADD COLUMN to_lon FLOAT",
+    ]
+    with db.engine.connect() as _conn:
+        for _sql in _migrations:
+            try:
+                _conn.execute(text(_sql))
+                _conn.commit()
+            except Exception:
+                pass  # колонка уже существует — игнорируем
 
 
 # ── Jinja фильтр: UTC → UTC+5 (Екатеринбург) ─────────────────────────────────
