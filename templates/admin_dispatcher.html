@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Диспетчер" />
+  <meta name="theme-color" content="#F5B800" />
+  <title>Диспетчер — Казанское Такси</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="apple-touch-icon" href="/static/img/icon-192.png" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dispatcher.css') }}" />
+</head>
+<body>
+
+<!-- ══════════════ ШАПКА ══════════════ -->
+<header class="app-header">
+  <div class="app-header-inner">
+    <div class="app-logo">
+      <span class="app-logo-icon">🚖</span>
+      <div>
+        <div class="app-logo-text">Диспетчер</div>
+        <div class="app-logo-sub">Казанское Такси</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot" id="status-dot" title="Статус соединения"></div>
+      <button class="refresh-btn" onclick="manualRefresh()" title="Обновить">
+        <span id="refresh-icon">↻</span>
+      </button>
+      <a href="/admin/orders" style="padding:6px 10px; background:rgba(124,111,255,0.15);
+         border:1px solid rgba(124,111,255,0.3); border-radius:8px; color:#a78bfa;
+         font-size:12px; text-decoration:none; white-space:nowrap;">
+        Полная панель
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════ КОНТЕНТ ══════════════ -->
+<div class="app-content">
+
+  <!-- ── Вкладка: Новые ── -->
+  <div class="tab-panel active" id="panel-new">
+    <div class="section-head">
+      <h2>🔵 Новые заказы</h2>
+      <span class="section-count" id="count-new">0</span>
+    </div>
+    <div id="list-new">
+      <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Загрузка…</div></div>
+    </div>
+  </div>
+
+  <!-- ── Вкладка: В работе ── -->
+  <div class="tab-panel" id="panel-accepted">
+    <div class="section-head">
+      <h2>🚖 В работе</h2>
+      <span class="section-count" id="count-accepted">0</span>
+    </div>
+    <div id="list-accepted"></div>
+  </div>
+
+  <!-- ── Вкладка: Завершённые ── -->
+  <div class="tab-panel" id="panel-completed">
+    <div class="section-head">
+      <h2>✅ Завершённые</h2>
+      <span class="section-count" id="count-completed">0</span>
+    </div>
+    <div id="list-completed"></div>
+  </div>
+
+  <!-- ── Вкладка: Водители ── -->
+  <div class="tab-panel" id="panel-drivers">
+    <div class="section-head">
+      <h2>🚗 Водители</h2>
+    </div>
+    <div id="list-drivers"></div>
+  </div>
+
+  <!-- ── Вкладка: Сводка ── -->
+  <div class="tab-panel" id="panel-stats">
+    <div class="section-head"><h2>📊 Сводка</h2></div>
+    <div class="stats-grid">
+      <div class="stat-card c-blue">
+        <div class="stat-val" id="stat-new">—</div>
+        <div class="stat-label">Новых</div>
+      </div>
+      <div class="stat-card c-teal">
+        <div class="stat-val" id="stat-accepted">—</div>
+        <div class="stat-label">В работе</div>
+      </div>
+      <div class="stat-card c-gold">
+        <div class="stat-val" id="stat-today">—</div>
+        <div class="stat-label">За сегодня</div>
+      </div>
+      <div class="stat-card c-purple">
+        <div class="stat-val" id="stat-drivers">—</div>
+        <div class="stat-label">Водителей</div>
+      </div>
+    </div>
+
+    <div style="background:#111827; border:1px solid rgba(255,255,255,0.07); border-radius:12px;
+                padding:16px; margin-top:4px; text-align:center;">
+      <div style="font-size:13px; color:#8B9AB5; margin-bottom:12px;">
+        Авто-обновление каждые 15 сек
+      </div>
+      <div id="last-update" class="last-update" style="margin:0;">—</div>
+    </div>
+
+    <div style="margin-top:12px; background:#111827; border:1px solid rgba(245,184,0,0.15);
+                border-radius:12px; padding:16px;">
+      <div style="font-size:13px; font-weight:600; color:#F5B800; margin-bottom:10px;">
+        📱 Установить как приложение
+      </div>
+      <div style="font-size:12px; color:#8B9AB5; line-height:1.6;">
+        Android: нажмите ⋮ в браузере → «Добавить на главный экран»<br>
+        iOS: нажмите 🔗 → «На экран Домой»
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-content -->
+
+<!-- ══════════════ НИЖНЯЯ НАВИГАЦИЯ ══════════════ -->
+<nav class="bottom-nav">
+
+  <button class="nav-tab active" id="nav-new" onclick="switchTab('new')">
+    <span class="nav-tab-icon">🔵</span>
+    <span>Новые</span>
+    <span class="nav-badge" id="badge-new" style="display:none">0</span>
+  </button>
+
+  <button class="nav-tab" id="nav-accepted" onclick="switchTab('accepted')">
+    <span class="nav-tab-icon">🚖</span>
+    <span>В работе</span>
+    <span class="nav-badge" id="badge-accepted" style="display:none">0</span>
+  </button>
+
+  <button class="nav-tab" id="nav-completed" onclick="switchTab('completed')">
+    <span class="nav-tab-icon">✅</span>
+    <span>Готово</span>
+  </button>
+
+  <button class="nav-tab" id="nav-drivers" onclick="switchTab('drivers')">
+    <span class="nav-tab-icon">🚗</span>
+    <span>Водители</span>
+  </button>
+
+  <button class="nav-tab" id="nav-stats" onclick="switchTab('stats')">
+    <span class="nav-tab-icon">📊</span>
+    <span>Сводка</span>
+  </button>
+
+</nav>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/dispatcher.js') }}"></script>
+</body>
+</html>

@@ -174,11 +174,50 @@ def telegram_webhook(token):
     return jsonify({'ok': True})
 
 
+# ── Admin: dashboard ─────────────────────────────────────────────────────────
+@app.route('/admin')
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    from datetime import date
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    total_new       = Order.query.filter_by(status='new').count()
+    total_accepted  = Order.query.filter_by(status='accepted').count()
+    today_all       = Order.query.filter(Order.created_at >= today_start).count()
+    today_completed = Order.query.filter(
+        Order.created_at >= today_start, Order.status == 'completed'
+    ).count()
+    today_accepted  = Order.query.filter(
+        Order.created_at >= today_start, Order.status != 'new'
+    ).count()
+
+    active_drivers = Driver.query.filter_by(active=True).count()
+
+    conversion = round(today_accepted / today_all * 100) if today_all else 0
+
+    recent_orders = (
+        Order.query.filter_by(status='new')
+        .order_by(Order.created_at.desc())
+        .limit(5).all()
+    )
+
+    return render_template('admin_dashboard.html',
+        total_new=total_new,
+        total_accepted=total_accepted,
+        today_all=today_all,
+        today_completed=today_completed,
+        active_drivers=active_drivers,
+        conversion=conversion,
+        recent_orders=recent_orders,
+    )
+
+
 # ── Admin: auth ───────────────────────────────────────────────────────────────
 @app.route('/a', methods=['GET', 'POST'])
 def admin_login():
     if session.get('admin'):
-        return redirect(url_for('admin_orders'))
+        return redirect(url_for('admin_dashboard'))
 
     error = None
     if request.method == 'POST':
@@ -235,6 +274,10 @@ def compute_driver_statuses(drivers):
             .first()
         )
         if active:
+            # Заказ на будущее — водитель сейчас свободен
+            if active.scheduled_at and active.scheduled_at > datetime.utcnow() + timedelta(hours=1):
+                result[d.id] = {'label': 'Свободен', 'level': 'free'}
+                continue
             mins = int((datetime.utcnow() - active.created_at).total_seconds() / 60)
             if mins < 90:
                 result[d.id] = {'label': f'Выполняет заказ · {mins} мин', 'level': 'busy'}
@@ -300,6 +343,53 @@ def update_order_status(order_id):
         order.status = new_status
         db.session.commit()
     return redirect(url_for('admin_orders', status=request.args.get('status', '')))
+
+
+# ── Admin: dispatcher PWA ────────────────────────────────────────────────────
+@app.route('/admin/dispatcher')
+@admin_required
+def admin_dispatcher():
+    return render_template('admin_dispatcher.html')
+
+
+@app.route('/api/dispatcher')
+@admin_required
+def api_dispatcher():
+    """JSON API для PWA-диспетчера — polling каждые 15 сек."""
+    from datetime import date as _date
+
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def order_dict(o):
+        sched = None
+        if o.scheduled_at:
+            sched = (o.scheduled_at + timedelta(hours=5)).strftime('%d.%m %H:%M')
+        return {
+            'id':           o.id,
+            'status':       o.status,
+            'from_address': o.from_address,
+            'to_address':   o.to_address,
+            'phone':        o.phone,
+            'comment':      o.comment or '',
+            'payment':      o.payment or 'cash',
+            'scheduled_at': sched,
+            'driver_name':  o.driver_name or '',
+            'has_coords':   o.has_coords,
+            'created_at':   (o.created_at + timedelta(hours=5)).strftime('%d.%m %H:%M'),
+        }
+
+    drivers  = Driver.query.filter_by(active=True).order_by(Driver.name).all()
+    statuses = compute_driver_statuses(drivers)
+
+    return jsonify({
+        'orders_new':       [order_dict(o) for o in Order.query.filter_by(status='new').order_by(Order.created_at.desc()).all()],
+        'orders_accepted':  [order_dict(o) for o in Order.query.filter_by(status='accepted').order_by(Order.created_at.desc()).all()],
+        'orders_completed': [order_dict(o) for o in Order.query.filter_by(status='completed').order_by(Order.created_at.desc()).limit(20).all()],
+        'drivers':          [{'id': d.id, 'name': d.name, 'telegram_id': d.telegram_id} for d in drivers],
+        'driver_statuses':  {str(k): v for k, v in statuses.items()},
+        'today_count':      Order.query.filter(Order.created_at >= today_start).count(),
+        'active_drivers':   len(drivers),
+    })
 
 
 # ── Admin: reviews ────────────────────────────────────────────────────────────

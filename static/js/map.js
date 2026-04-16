@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initMap();
   initAddressInputs();
   renderChips();
+  renderDateChips();
+  // По умолчанию — режим выбора "Откуда", чтобы карта реагировала сразу
+  setMode('a');
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -108,18 +111,28 @@ function setMode(newMode) {
   mode = newMode;
   activeInput = newMode;
 
+  // Кнопки на карте
   const btnA = document.getElementById('btn-mode-a');
   const btnB = document.getElementById('btn-mode-b');
+  if (btnA) { btnA.classList.remove('active-a', 'active-b'); }
+  if (btnB) { btnB.classList.remove('active-a', 'active-b'); }
+  if (newMode === 'a' && btnA) btnA.classList.add('active-a');
+  if (newMode === 'b' && btnB) btnB.classList.add('active-b');
 
-  btnA.classList.remove('active-a', 'active-b');
-  btnB.classList.remove('active-a', 'active-b');
+  // Кнопки ниже карты (дублируют)
+  const tapA = document.getElementById('tap-btn-a');
+  const tapB = document.getElementById('tap-btn-b');
+  if (tapA) tapA.classList.toggle('tap-active-a', newMode === 'a');
+  if (tapB) tapB.classList.toggle('tap-active-b', newMode === 'b');
 
-  if (newMode === 'a') btnA.classList.add('active-a');
-  if (newMode === 'b') btnB.classList.add('active-b');
+  // Подсветка строки адреса
+  const fromRow = document.getElementById('from-row');
+  const toRow   = document.getElementById('to-row');
+  if (fromRow) fromRow.classList.toggle('addr-row-active', newMode === 'a');
+  if (toRow)   toRow.classList.toggle('addr-row-active',   newMode === 'b');
 
   if (map) map.getCanvas().style.cursor = newMode ? 'crosshair' : '';
 
-  // Фокусируем нужный инпут
   if (newMode === 'a') document.getElementById('search-from').focus();
   if (newMode === 'b') document.getElementById('search-to').focus();
 }
@@ -645,9 +658,35 @@ function setWhen(mode) {
 
 function pickDate(offset) {
   dateOffset = offset;
-  document.querySelectorAll('.date-chip').forEach((chip, i) => {
+  document.querySelectorAll('#date-chips .date-chip').forEach((chip, i) => {
     chip.classList.toggle('active', i === offset);
   });
+}
+
+function renderDateChips() {
+  const container = document.getElementById('date-chips');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const weekdays = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  const today = new Date();
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    let label;
+    if (i === 0) label = 'Сегодня';
+    else if (i === 1) label = 'Завтра';
+    else label = weekdays[d.getDay()] + ' ' + d.getDate();
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'date-chip' + (i === 0 ? ' active' : '');
+    btn.textContent = label;
+    const idx = i;
+    btn.onclick = () => pickDate(idx);
+    container.appendChild(btn);
+  }
 }
 
 function spinHour(delta) {

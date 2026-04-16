@@ -1,0 +1,162 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Дашборд{% endblock %}
+{% block page_title %}Дашборд{% endblock %}
+
+{% block content %}
+
+<!-- ── Stat cards ── -->
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; margin-bottom:28px;">
+
+  <div style="background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-top:2px solid #60a5fa;
+              border-radius:12px; padding:18px 20px;">
+    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Новых заказов</div>
+    <div style="font-size:32px; font-weight:800; color:#60a5fa; line-height:1;">{{ total_new }}</div>
+    <div style="font-size:12px; color:#475569; margin-top:4px;">ожидают обработки</div>
+  </div>
+
+  <div style="background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-top:2px solid #34d399;
+              border-radius:12px; padding:18px 20px;">
+    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">В работе</div>
+    <div style="font-size:32px; font-weight:800; color:#34d399; line-height:1;">{{ total_accepted }}</div>
+    <div style="font-size:12px; color:#475569; margin-top:4px;">активных поездок</div>
+  </div>
+
+  <div style="background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-top:2px solid #f5b800;
+              border-radius:12px; padding:18px 20px;">
+    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Завершено сегодня</div>
+    <div style="font-size:32px; font-weight:800; color:#f5b800; line-height:1;">{{ today_completed }}</div>
+    <div style="font-size:12px; color:#475569; margin-top:4px;">из {{ today_all }} за сутки</div>
+  </div>
+
+  <div style="background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-top:2px solid #a78bfa;
+              border-radius:12px; padding:18px 20px;">
+    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Принято сегодня</div>
+    <div style="font-size:32px; font-weight:800; color:#a78bfa; line-height:1;">{{ conversion }}%</div>
+    <div style="font-size:12px; color:#475569; margin-top:4px;">конверсия принятия</div>
+  </div>
+
+  <div style="background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-top:2px solid #34d399;
+              border-radius:12px; padding:18px 20px;">
+    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Активных водителей</div>
+    <div style="font-size:32px; font-weight:800; color:#34d399; line-height:1;">{{ active_drivers }}</div>
+    <div style="font-size:12px; color:#475569; margin-top:4px;">в системе</div>
+  </div>
+
+</div>
+
+<!-- ── Новые заказы ── -->
+<div class="card">
+  <div class="card-header">
+    🔵 Новые заказы
+    <a href="{{ url_for('admin_orders', status='new') }}" class="btn btn-primary-sm" style="font-size:12px;">Все →</a>
+  </div>
+
+  {% if recent_orders %}
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Маршрут</th>
+        <th>Оплата</th>
+        <th>Время</th>
+        <th>Телефон</th>
+        <th>Создан</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in recent_orders %}
+      <tr>
+        <td style="color:#64748b; font-size:12px;">{{ o.id }}</td>
+        <td style="max-width:240px; font-size:13px;">
+          <div style="color:#94a3b8; font-size:12px; margin-bottom:2px;">
+            📍 {{ o.from_address[:45] }}{% if o.from_address|length > 45 %}…{% endif %}
+          </div>
+          <div>🏁 {{ o.to_address[:45] }}{% if o.to_address|length > 45 %}…{% endif %}</div>
+          {% if o.comment %}
+          <div style="font-size:11px; color:#a78bfa; margin-top:3px;">💬 {{ o.comment[:60] }}…</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if o.payment == 'transfer' %}
+            <span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399;">📲</span>
+          {% else %}
+            <span class="badge" style="background:rgba(100,116,139,0.15); color:#94a3b8;">💵</span>
+          {% endif %}
+        </td>
+        <td style="font-size:12px; white-space:nowrap; color:#94a3b8;">
+          {% if o.scheduled_at %}{{ o.scheduled_at | ekb }}{% else %}Сейчас{% endif %}
+        </td>
+        <td style="font-size:12px;">
+          <a href="tel:{{ o.phone }}" style="color:#7c6fff;">{{ o.phone }}</a>
+        </td>
+        <td style="font-size:11px; color:#64748b; white-space:nowrap;">{{ o.created_at | ekb }}</td>
+        <td>
+          <a href="{{ url_for('admin_orders', status='new') }}" class="btn btn-primary-sm" style="font-size:11px; padding:5px 10px;">
+            Открыть
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🎉</div>
+    <p>Новых заказов нет</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Быстрые ссылки ── -->
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+  <a href="{{ url_for('admin_orders') }}" style="display:flex; align-items:center; gap:12px;
+     background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+     padding:14px 16px; text-decoration:none; color:#e2e8f0; transition:background 0.15s;"
+     onmouseover="this.style.background='rgba(124,111,255,0.12)'"
+     onmouseout="this.style.background='#1a1d2e'">
+    <span style="font-size:22px;">📋</span>
+    <div>
+      <div style="font-weight:600; font-size:14px;">Все заказы</div>
+      <div style="font-size:12px; color:#64748b;">Управление заказами</div>
+    </div>
+  </a>
+  <a href="{{ url_for('admin_drivers') }}" style="display:flex; align-items:center; gap:12px;
+     background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+     padding:14px 16px; text-decoration:none; color:#e2e8f0; transition:background 0.15s;"
+     onmouseover="this.style.background='rgba(124,111,255,0.12)'"
+     onmouseout="this.style.background='#1a1d2e'">
+    <span style="font-size:22px;">🚗</span>
+    <div>
+      <div style="font-weight:600; font-size:14px;">Водители</div>
+      <div style="font-size:12px; color:#64748b;">{{ active_drivers }} активных</div>
+    </div>
+  </a>
+  <a href="{{ url_for('admin_reviews') }}" style="display:flex; align-items:center; gap:12px;
+     background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+     padding:14px 16px; text-decoration:none; color:#e2e8f0; transition:background 0.15s;"
+     onmouseover="this.style.background='rgba(124,111,255,0.12)'"
+     onmouseout="this.style.background='#1a1d2e'">
+    <span style="font-size:22px;">⭐</span>
+    <div>
+      <div style="font-weight:600; font-size:14px;">Отзывы</div>
+      <div style="font-size:12px; color:#64748b;">Модерация</div>
+    </div>
+  </a>
+  <a href="{{ url_for('set_webhook') }}" target="_blank" style="display:flex; align-items:center; gap:12px;
+     background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+     padding:14px 16px; text-decoration:none; color:#e2e8f0; transition:background 0.15s;"
+     onmouseover="this.style.background='rgba(124,111,255,0.12)'"
+     onmouseout="this.style.background='#1a1d2e'">
+    <span style="font-size:22px;">🤖</span>
+    <div>
+      <div style="font-weight:600; font-size:14px;">Telegram Webhook</div>
+      <div style="font-size:12px; color:#64748b;">Настройка бота</div>
+    </div>
+  </a>
+</div>
+
+{% endblock %}

@@ -212,6 +212,9 @@
     <div class="logo-sub">Казанский район</div>
   </div>
   <div class="sidebar-nav">
+    <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if request.endpoint in ('admin_dashboard',) else '' }}">
+      <span class="nav-icon">📊</span> <span>Дашборд</span>
+    </a>
     <a href="{{ url_for('admin_orders') }}" class="{{ 'active' if request.endpoint == 'admin_orders' else '' }}">
       <span class="nav-icon">📋</span> <span>Заказы</span>
     </a>
@@ -220,6 +223,9 @@
     </a>
     <a href="{{ url_for('admin_reviews') }}" class="{{ 'active' if request.endpoint == 'admin_reviews' else '' }}">
       <span class="nav-icon">⭐</span> <span>Отзывы</span>
+    </a>
+    <a href="{{ url_for('admin_dispatcher') }}" target="_blank">
+      <span class="nav-icon">📱</span> <span>Приложение</span>
     </a>
     <a href="{{ url_for('set_webhook') }}" target="_blank">
       <span class="nav-icon">🤖</span> <span>Webhook</span>

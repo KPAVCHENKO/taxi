@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Такси — Казанский район</title>
+  <title>Казанское Такси — Казанский район</title>
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
@@ -13,9 +13,13 @@
 <!-- ═══════════ ШАПКА ═══════════ -->
 <header class="topbar">
   <div class="topbar-logo">
-    <span class="topbar-icon">🚖</span>
+    <img src="{{ url_for('static', filename='img/logo.png') }}"
+         class="topbar-logo-img"
+         alt="Казанское Такси"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+    <span class="topbar-icon" style="display:none">🚖</span>
     <div>
-      <div class="topbar-name">Такси Казанское</div>
+      <div class="topbar-name">Казанское Такси</div>
       <div class="topbar-region">Казанский район · Тюменская область</div>
     </div>
   </div>
@@ -25,10 +29,12 @@
 <!-- ═══════════ HERO ═══════════ -->
 <section class="hero-section">
   <div class="hero-inner">
-    <div class="hero-text">
-      <h1 class="hero-title">Такси по<br>Казанскому<br>району</h1>
-      <p class="hero-sub">Казанское · Ишим · Новоселезнево<br>и все населённые пункты района</p>
-    </div>
+    <h1 class="hero-title">
+      Такси по<br>
+      <span class="hero-title-accent">Казанскому</span><br>
+      району
+    </h1>
+    <p class="hero-sub">Казанское · Ишим · Новоселезнево<br>и все населённые пункты района</p>
     <div class="hero-features">
       <div class="hero-feat">
         <span class="feat-icon">🚗</span>
@@ -44,9 +50,37 @@
       </div>
     </div>
   </div>
-  <!-- декоративные круги -->
   <div class="hero-circle hero-circle-1"></div>
   <div class="hero-circle hero-circle-2"></div>
+</section>
+
+<!-- ═══════════ КАК ЭТО РАБОТАЕТ ═══════════ -->
+<section class="steps-section">
+  <div class="steps-inner">
+    <h2 class="steps-title">Как заказать поездку?</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-icon">📍</div>
+        <div class="step-name">Выберите маршрут</div>
+        <div class="step-desc">Нажмите на чип с населённым пунктом или кликните на карте</div>
+      </div>
+      <div class="step-arrow">›</div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-icon">📞</div>
+        <div class="step-name">Введите телефон</div>
+        <div class="step-desc">Укажите номер для связи с диспетчером</div>
+      </div>
+      <div class="step-arrow">›</div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-icon">🚖</div>
+        <div class="step-name">Ждите водителя</div>
+        <div class="step-desc">Диспетчер назначит водителя и сообщит время и цену</div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ═══════════ КАРТА ═══════════ -->
@@ -64,11 +98,22 @@
     <button class="mode-pill mode-reset" onclick="resetAll()">✕</button>
   </div>
 
-  <!-- Инфо о маршруте поверх карты -->
+  <!-- Инфо о маршруте -->
   <div id="route-info" class="route-badge" style="display:none"></div>
   <div id="route-loading" class="route-badge route-loading" style="display:none">
     <span class="mini-spinner"></span> Строим маршрут…
   </div>
+</div>
+
+<!-- ═══════════ ТАП-БАР (ниже карты) ═══════════ -->
+<div class="map-tap-bar">
+  <button id="tap-btn-a" class="tap-btn tap-active-a" onclick="setMode('a')">
+    <span class="mode-dot dot-blue"></span> Откуда
+  </button>
+  <span class="tap-hint-text">нажмите на карту</span>
+  <button id="tap-btn-b" class="tap-btn" onclick="setMode('b')">
+    <span class="mode-dot dot-orange"></span> Куда
+  </button>
 </div>
 
 <!-- ═══════════ ФОРМА ЗАКАЗА ═══════════ -->
@@ -79,7 +124,7 @@
     <div class="addr-block">
 
       <!-- Откуда -->
-      <div class="addr-row" id="from-row">
+      <div class="addr-row addr-row-active" id="from-row">
         <span class="addr-dot dot-blue"></span>
         <div class="addr-input-wrap">
           <input
@@ -139,12 +184,8 @@
       </div>
 
       <div id="time-picker" style="display:none">
-        <!-- Дата -->
-        <div class="date-chips-row" id="date-chips">
-          <button class="date-chip active" onclick="pickDate(0)">Сегодня</button>
-          <button class="date-chip" onclick="pickDate(1)">Завтра</button>
-          <button class="date-chip" onclick="pickDate(2)">Послезавтра</button>
-        </div>
+        <!-- Дата — заполняется JS (7 дней) -->
+        <div class="date-chips-row" id="date-chips"></div>
         <!-- Время -->
         <div class="time-row">
           <div class="time-spin">
@@ -183,7 +224,7 @@
         id="order-comment"
         class="phone-input comment-input"
         rows="2"
-        placeholder="Уточните адрес, ориентир или любые детали для водителя&#10;Например: «рядом с магазином», «второй дом от угла»"
+        placeholder="Уточните адрес, ориентир или любые детали&#10;Например: «рядом с магазином», «второй дом от угла»"
         maxlength="500"
       ></textarea>
       <div id="comment-hint" class="addr-vague-hint" style="display:none">
@@ -219,35 +260,6 @@
 
   </div><!-- /booking-card -->
 </div><!-- /booking-wrap -->
-
-<!-- ═══════════ КАК ЭТО РАБОТАЕТ ═══════════ -->
-<section class="steps-section">
-  <div class="steps-inner">
-    <h2 class="steps-title">Как заказать поездку?</h2>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <div class="step-icon">📍</div>
-        <div class="step-name">Выберите маршрут</div>
-        <div class="step-desc">Нажмите на чип с нужным населённым пунктом или кликните на карте</div>
-      </div>
-      <div class="step-arrow">›</div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <div class="step-icon">📞</div>
-        <div class="step-name">Введите телефон</div>
-        <div class="step-desc">Укажите номер, по которому диспетчер свяжется с вами</div>
-      </div>
-      <div class="step-arrow">›</div>
-      <div class="step-card">
-        <div class="step-num">3</div>
-        <div class="step-icon">🚖</div>
-        <div class="step-name">Ждите водителя</div>
-        <div class="step-desc">Диспетчер назначит водителя и сообщит точное время и цену</div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ═══════════ ОТЗЫВЫ ═══════════ -->
 <section class="reviews-section" id="reviews-section">
@@ -287,7 +299,7 @@
 
 <!-- ═══════════ ПОДВАЛ ═══════════ -->
 <footer class="site-footer">
-  <span>© 2025 Такси Казанское</span>
+  <span>© 2025 Казанское Такси</span>
   <span>·</span>
   <span>Казанский район, Тюменская область</span>
   <span>·</span>
