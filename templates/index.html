@@ -22,7 +22,11 @@
       <div class="topbar-region">Казанский район · Тюменская область</div>
     </div>
   </div>
-  <a href="#reviews-section" class="topbar-link">Отзывы</a>
+  <div class="topbar-right">
+    <a href="tel:+79630608419" class="topbar-phone">📞 +7 (963) 060-84-19</a>
+    <a href="#prices-section" class="topbar-link">Цены</a>
+    <a href="#reviews-section" class="topbar-link">Отзывы</a>
+  </div>
 </header>
 
 <!-- ═══════════ HERO ═══════════ -->
@@ -31,9 +35,9 @@
     <h1 class="hero-title">
       Такси по<br>
       <span class="hero-title-accent">Казанскому</span><br>
-      району
+      району и межгороду
     </h1>
-    <p class="hero-sub">Казанское · Ишим · Новоселезнево<br>и все населённые пункты района</p>
+    <p class="hero-sub">Ишим · Петропавловск · любые населённые пункты<br>Фиксированные цены. Быстрая подача. Свои водители</p>
     <div class="hero-features">
       <div class="hero-feat">
         <span class="feat-icon">🚗</span>
@@ -41,11 +45,15 @@
       </div>
       <div class="hero-feat">
         <span class="feat-icon">⏱</span>
-        <span>Быстрая подача</span>
+        <span>Подача от 10–20 минут</span>
+      </div>
+      <div class="hero-feat">
+        <span class="feat-icon">💰</span>
+        <span>Цена известна заранее</span>
       </div>
       <div class="hero-feat">
         <span class="feat-icon">📞</span>
-        <span>Диспетчер 24/7</span>
+        <span>Можно просто позвонить</span>
       </div>
     </div>
   </div>
@@ -231,6 +239,30 @@
       </div>
     </div>
 
+    <!-- ── Тип поездки ── -->
+    <div class="ridetype-section">
+      <div class="field-label">Тип поездки</div>
+      <div class="ridetype-cards">
+        <button type="button" class="ridetype-card rt-active" id="rt-individual" onclick="setRideType('individual')">
+          <span class="rt-icon">🚗</span>
+          <div class="rt-body">
+            <div class="rt-name">Индивидуально</div>
+            <div class="rt-desc">Только вы · Едете сразу</div>
+          </div>
+          <span class="rt-badge rt-badge-normal">Обычная цена</span>
+        </button>
+        <button type="button" class="ridetype-card" id="rt-shared" onclick="setRideType('shared')">
+          <span class="rt-icon">👥</span>
+          <div class="rt-body">
+            <div class="rt-name">Попутно</div>
+            <div class="rt-desc">Если не спешите — подберём попутчиков и цена будет ниже</div>
+          </div>
+          <span class="rt-badge rt-badge-cheap">Дешевле</span>
+        </button>
+      </div>
+      <input type="hidden" id="ride-type" value="individual" />
+    </div>
+
     <!-- ── Способ оплаты ── -->
     <div class="payment-section">
       <div class="field-label">Способ оплаты</div>
@@ -259,6 +291,60 @@
 
   </div><!-- /booking-card -->
 </div><!-- /booking-wrap -->
+
+<!-- ═══════════ ЦЕНЫ ═══════════ -->
+<section class="prices-section" id="prices-section">
+  <div class="prices-inner">
+    <h2 class="section-title">Цены из Казанского</h2>
+    <p class="prices-note">Стоимость в одну сторону · заказ попутно — дешевле</p>
+    <div class="prices-grid">
+      <div class="price-item"><span class="pi-dest">По Казанскому</span><span class="pi-price">150 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Новоселезнево</span><span class="pi-price">200 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Шадринка</span><span class="pi-price">300 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Яровское</span><span class="pi-price">300 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Большие Ярки</span><span class="pi-price">300 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Малые Ярки</span><span class="pi-price">400 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Гагарье</span><span class="pi-price">500 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Сладчанка</span><span class="pi-price">500 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Боровлянка</span><span class="pi-price">600 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Дальнетравное</span><span class="pi-price">600 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Ильинка</span><span class="pi-price">700 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Кугаево</span><span class="pi-price">700 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Чирки</span><span class="pi-price">700 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Огнево</span><span class="pi-price">800 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Дубынка, Заречка</span><span class="pi-price">900 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Смирное</span><span class="pi-price">900 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Афонькино</span><span class="pi-price">1 000 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Пешнево, Копотилово</span><span class="pi-price">1 000 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Ченчерь</span><span class="pi-price">1 000 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Ельцово</span><span class="pi-price">1 000 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Коротаевка</span><span class="pi-price">1 100 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Грачи</span><span class="pi-price">1 200 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Паленка</span><span class="pi-price">1 200 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Новогеоргиевка</span><span class="pi-price">1 500 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Новоалександровка</span><span class="pi-price">1 500 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Челюскинцев</span><span class="pi-price">1 500 ₽</span></div>
+      <div class="price-item"><span class="pi-dest">Викторовка, Долматово</span><span class="pi-price">1 800 ₽</span></div>
+    </div>
+    <div class="ic-section-label">Межгород</div>
+    <div class="prices-intercity">
+      <div class="intercity-card">
+        <div class="ic-city">Казанское → Ишим</div>
+        <div class="ic-prices">
+          <div class="ic-row"><span>В одну сторону</span><strong>2 000 ₽</strong></div>
+          <div class="ic-row"><span>Туда-обратно</span><strong>3 000 ₽</strong></div>
+        </div>
+      </div>
+      <div class="intercity-card">
+        <div class="ic-city">Казанское → Петропавловск</div>
+        <div class="ic-prices">
+          <div class="ic-row"><span>В одну сторону</span><strong>5 000 ₽</strong></div>
+          <div class="ic-row"><span>Туда-обратно</span><strong>7 500 ₽</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ═══════════ ФОТО-СЕКЦИЯ ═══════════ -->
 <section class="photo-section">

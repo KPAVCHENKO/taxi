@@ -8,12 +8,13 @@ const CENTER = [55.73, 69.23]; // Центр Казанского района
 
 // Популярные населённые пункты
 const PLACES = [
-  { name: 'Казанское',     q: 'Казанское, Казанский район, Тюменская область' },
-  { name: 'Ишим',          q: 'Ишим, Тюменская область' },
-  { name: 'Новоселезнево', q: 'Новоселезнево, Казанский район, Тюменская область' },
-  { name: 'Большие Ярки',  q: 'Большие Ярки, Казанский район, Тюменская область' },
-  { name: 'Ильинка',       q: 'Ильинка, Казанский район, Тюменская область' },
-  { name: 'Яровское',      q: 'Яровское, Казанский район, Тюменская область' },
+  { name: 'Казанское',        q: 'Казанское, Казанский район, Тюменская область' },
+  { name: 'Ишим',             q: 'Ишим, Тюменская область' },
+  { name: 'Новоселезнево',    q: 'Новоселезнево, Казанский район, Тюменская область' },
+  { name: 'Большие Ярки',     q: 'Большие Ярки, Казанский район, Тюменская область' },
+  { name: 'Ильинка',          q: 'Ильинка, Казанский район, Тюменская область' },
+  { name: 'Яровское',         q: 'Яровское, Казанский район, Тюменская область' },
+  { name: 'Петропавловск',    q: 'Петропавловск, Северо-Казахстанская область, Казахстан' },
 ];
 
 // ── Состояние ──────────────────────────────────────────
@@ -306,7 +307,7 @@ async function getSuggestions(query) {
   const local = getLocalMatches(query);
 
   try {
-    const items = await ymaps.suggest(query + ', Тюменская область', {
+    const items = await ymaps.suggest(query, {
       boundedBy:    BOUNDS,
       strictBounds: false,
       results:      7,
@@ -387,7 +388,7 @@ function renderDrop(drop, items, onSelect) {
   drop.innerHTML = '';
 
   if (!items.length) {
-    drop.innerHTML = '<div class="drop-no-result">Не найдено — попробуйте другой запрос</div>';
+    drop.innerHTML = '<div class="drop-no-result">Не найдено — попробуйте написать только населённый пункт или улицу</div>';
     drop.style.display = 'block';
     return;
   }
@@ -553,6 +554,18 @@ function getScheduledAt() {
 }
 
 // ══════════════════════════════════════════════════════
+// ТИП ПОЕЗДКИ
+// ══════════════════════════════════════════════════════
+let rideType = 'individual';
+
+function setRideType(type) {
+  rideType = type;
+  document.getElementById('ride-type').value = type;
+  document.getElementById('rt-individual').classList.toggle('rt-active', type === 'individual');
+  document.getElementById('rt-shared').classList.toggle('rt-active', type === 'shared');
+}
+
+// ══════════════════════════════════════════════════════
 // ОПЛАТА
 // ══════════════════════════════════════════════════════
 function setPayment(method) {
@@ -593,6 +606,7 @@ async function submitOrder() {
         to_lon:       pointB ? pointB.lon : null,
         comment:      comment || null,
         payment:      paymentMethod,
+        ride_type:    rideType,
         scheduled_at: getScheduledAt(),
       }),
     });
@@ -605,6 +619,7 @@ async function submitOrder() {
       document.getElementById('order-comment').value = '';
       setWhen('now');
       setPayment('cash');
+      setRideType('individual');
       hideCommentHint();
     } else {
       showFormMsg('error', data.error || 'Не удалось создать заказ');

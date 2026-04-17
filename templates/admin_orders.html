@@ -67,8 +67,17 @@
           {% endif %}
         </td>
 
-        <!-- Оплата -->
+        <!-- Тип + Оплата -->
         <td style="white-space:nowrap;">
+          {% if o.ride_type == 'shared' %}
+            <div style="margin-bottom:4px;">
+              <span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3);">👥 Попутно</span>
+            </div>
+          {% else %}
+            <div style="margin-bottom:4px;">
+              <span class="badge" style="background:rgba(79,158,255,0.12); color:#60a5fa;">🚗 Индив.</span>
+            </div>
+          {% endif %}
           {% if o.payment == 'transfer' %}
             <span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399;">📲 Перевод</span>
           {% else %}

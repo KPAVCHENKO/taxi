@@ -115,6 +115,40 @@ body {
   text-overflow: ellipsis;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.topbar-phone {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-gold);
+  background: var(--gold-bg);
+  transition: all 0.18s;
+}
+
+.topbar-phone:hover {
+  background: rgba(245,184,0,0.2);
+  box-shadow: 0 2px 12px rgba(245,184,0,0.25);
+}
+
+@media (max-width: 480px) {
+  .topbar-phone { font-size: 12px; padding: 5px 10px; }
+  .topbar-link { display: none; }
+}
+
+@media (max-width: 360px) {
+  .topbar-phone { font-size: 11px; padding: 5px 8px; }
+}
+
 .topbar-link {
   font-size: 14px;
   font-weight: 500;
@@ -952,6 +986,87 @@ body {
   line-height: 1.4;
 }
 
+/* ── Тип поездки ── */
+.ridetype-section { margin-bottom: 16px; }
+
+.ridetype-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.ridetype-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s;
+  position: relative;
+}
+
+.ridetype-card:hover {
+  border-color: var(--gold);
+  background: var(--surface-3);
+}
+
+.ridetype-card.rt-active {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+  box-shadow: 0 0 0 1px var(--border-gold);
+}
+
+.rt-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.rt-body { flex: 1; min-width: 0; }
+
+.rt-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.ridetype-card.rt-active .rt-name { color: var(--gold); }
+
+.rt-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.rt-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rt-badge-normal {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-muted);
+}
+
+.rt-badge-cheap {
+  background: rgba(16,185,129,0.18);
+  color: #34d399;
+  border: 1px solid rgba(16,185,129,0.3);
+}
+
 /* ── Способ оплаты ── */
 .payment-section { margin-bottom: 16px; }
 
@@ -1224,6 +1339,111 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(245,184,0,0.25); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════════
+   ЦЕНЫ
+═══════════════════════════════════════════════════════ */
+.prices-section {
+  padding: 40px 16px 48px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+.prices-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.prices-note {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+.prices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.price-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  transition: border-color 0.15s;
+}
+
+.price-item:hover {
+  border-color: var(--border-gold);
+}
+
+.pi-dest {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.pi-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.ic-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+}
+
+.prices-intercity {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.intercity-card {
+  background: var(--surface);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+}
+
+.ic-city {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.ic-prices { display: flex; flex-direction: column; gap: 8px; }
+
+.ic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.ic-row span { color: var(--text-muted); }
+.ic-row strong { color: var(--text); font-size: 16px; }
+
+@media (max-width: 480px) {
+  .prices-intercity { grid-template-columns: 1fr; }
+  .prices-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .price-item { padding: 9px 12px; }
+  .pi-dest { font-size: 13px; }
+  .pi-price { font-size: 14px; }
+}
 
 /* ═══════════════════════════════════════════════════════
    ФОТО-СЕКЦИЯ

@@ -17,6 +17,7 @@ class Order(db.Model):
     to_lon             = db.Column(db.Float,        nullable=True)
     comment            = db.Column(db.Text,         nullable=True)   # уточнение адреса / доп. инфо
     payment            = db.Column(db.String(20),   default='cash')  # cash | transfer
+    ride_type          = db.Column(db.String(20),   default='individual')  # individual | shared
     scheduled_at       = db.Column(db.DateTime,     nullable=True)
     status             = db.Column(db.String(20),   default='new')   # new | accepted | completed
     driver_telegram_id = db.Column(db.String(50),   nullable=True)

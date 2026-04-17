@@ -41,6 +41,7 @@ with app.app_context():
         "ALTER TABLE orders ADD COLUMN from_lon FLOAT",
         "ALTER TABLE orders ADD COLUMN to_lat FLOAT",
         "ALTER TABLE orders ADD COLUMN to_lon FLOAT",
+        "ALTER TABLE orders ADD COLUMN ride_type VARCHAR(20) DEFAULT 'individual'",
     ]
     with db.engine.connect() as _conn:
         for _sql in _migrations:
@@ -93,8 +94,10 @@ def create_order():
     from_address = str(data.get('from_address', '')).strip()
     to_address   = str(data.get('to_address', '')).strip()
     comment      = str(data.get('comment', '')).strip()
-    payment_raw  = str(data.get('payment', 'cash')).strip()
-    payment      = 'transfer' if payment_raw == 'transfer' else 'cash'
+    payment_raw   = str(data.get('payment', 'cash')).strip()
+    payment       = 'transfer' if payment_raw == 'transfer' else 'cash'
+    ride_type_raw = str(data.get('ride_type', 'individual')).strip()
+    ride_type     = 'shared' if ride_type_raw == 'shared' else 'individual'
 
     if not phone:
         return jsonify({'error': 'Укажите телефон'}), 400
@@ -129,6 +132,7 @@ def create_order():
         to_lon=_float_or_none('to_lon'),
         comment=comment or None,
         payment=payment,
+        ride_type=ride_type,
         scheduled_at=scheduled_at,
     )
     db.session.add(order)

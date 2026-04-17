@@ -64,6 +64,9 @@ def notify_drivers(order):
     comment_line = f'\n💬 <b>Комментарий:</b> {order.comment}' if order.comment else ''
     coords_note  = '' if (order.from_lat and order.to_lat) else '\n⚠️ Координаты не указаны'
     pay_label    = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
+    ride_raw     = getattr(order, 'ride_type', 'individual') or 'individual'
+    ride_label   = '👥 Попутно (дешевле)' if ride_raw == 'shared' else '🚗 Индивидуально'
+    ride_note    = '\n⚡️ <b>Можно взять попутчиков!</b>' if ride_raw == 'shared' else ''
 
     text = (
         f'🚖 <b>Новый заказ #{order.id}</b>\n\n'
@@ -72,6 +75,7 @@ def notify_drivers(order):
         f'{comment_line}'
         f'{sched}'
         f'{coords_note}\n\n'
+        f'🎫 <b>Тип:</b> {ride_label}{ride_note}\n'
         f'💳 <b>Оплата:</b> {pay_label}\n'
         f'💰 Цена уточняется диспетчером\n'
         f'📞 Телефон скрыт до принятия'
@@ -180,6 +184,8 @@ def handle_update(update):
 
     comment_line = f'\n💬 <b>Комментарий:</b> {order.comment}' if order.comment else ''
     pay_label    = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
+    ride_raw2    = getattr(order, 'ride_type', 'individual') or 'individual'
+    ride_label2  = '👥 Попутно' if ride_raw2 == 'shared' else '🚗 Индивидуально'
 
     accepted_text = (
         f'✅ <b>Заказ #{order.id} — ПРИНЯТ ВАМИ</b>\n\n'
@@ -187,6 +193,7 @@ def handle_update(update):
         f'🏁 <b>Куда:</b> {order.to_address}'
         f'{comment_line}'
         f'{sched}\n\n'
+        f'🎫 <b>Тип:</b> {ride_label2}\n'
         f'💳 <b>Оплата:</b> {pay_label}\n'
         f'📞 <b>Телефон клиента:</b> <code>{order.phone}</code>'
     )
