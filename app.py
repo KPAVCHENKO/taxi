@@ -29,6 +29,29 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 ADMIN_PASSWORD    = os.environ.get('ADMIN_PASSWORD', 'admin123')
 YANDEX_MAPS_KEY   = os.environ.get('YANDEX_MAPS_KEY', '')
 
+# ── Реквизиты владельца (заполните в переменных окружения или здесь) ──────────
+OWNER_NAME    = os.environ.get('OWNER_NAME',    'ИП Иванов Иван Иванович')
+OWNER_OGRN    = os.environ.get('OWNER_OGRN',    '000000000000000')
+OWNER_INN     = os.environ.get('OWNER_INN',     '000000000000')
+OWNER_ADDRESS = os.environ.get('OWNER_ADDRESS', 'Тюменская область, Казанский район, с. Казанское')
+OWNER_PHONE   = os.environ.get('OWNER_PHONE',   '+7 (963) 060-84-19')
+OWNER_PHONE_RAW = os.environ.get('OWNER_PHONE_RAW', '+79630608419')
+OWNER_EMAIL   = os.environ.get('OWNER_EMAIL',   'info@example.ru')
+SITE_URL      = os.environ.get('SITE_URL',      'https://kazanskoe-taxi.ru')
+
+def legal_ctx():
+    """Общий контекст для юридических страниц."""
+    return dict(
+        owner_name=OWNER_NAME,
+        owner_ogrn=OWNER_OGRN,
+        owner_inn=OWNER_INN,
+        owner_address=OWNER_ADDRESS,
+        owner_phone=OWNER_PHONE,
+        owner_phone_raw=OWNER_PHONE_RAW,
+        owner_email=OWNER_EMAIL,
+        site_url=SITE_URL,
+    )
+
 db.init_app(app)
 
 with app.app_context():
@@ -155,6 +178,16 @@ def create_order():
     telegram_bot.notify_drivers(order)
 
     return jsonify({'success': True, 'order_id': order.id})
+
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html', **legal_ctx())
+
+
+@app.route('/offer')
+def offer():
+    return render_template('offer.html', **legal_ctx())
 
 
 @app.route('/review', methods=['POST'])

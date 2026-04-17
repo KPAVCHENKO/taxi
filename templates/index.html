@@ -294,7 +294,20 @@
       <span class="price-text">💰 Цена уточняется диспетчером</span>
     </div>
 
-    <button id="submit-btn" class="btn-order" onclick="submitOrder()">
+    <!-- ── Согласие с ПД ── -->
+    <div class="consent-section">
+      <label class="consent-label" id="consent-label">
+        <input type="checkbox" id="consent-checkbox" onchange="updateConsentState()" />
+        <span class="consent-text">
+          Нажимая «Заказать», я соглашаюсь с
+          <a href="/privacy" target="_blank" rel="noopener">обработкой персональных данных</a>
+          и принимаю условия
+          <a href="/offer" target="_blank" rel="noopener">публичной оферты</a>
+        </span>
+      </label>
+    </div>
+
+    <button id="submit-btn" class="btn-order" onclick="submitOrder()" disabled>
       Заказать поездку
       <span class="btn-arrow">→</span>
     </button>
@@ -344,14 +357,14 @@
         <div class="ic-city">Казанское → Ишим</div>
         <div class="ic-prices">
           <div class="ic-row"><span>В одну сторону</span><strong>2 000 ₽</strong></div>
-          <div class="ic-row"><span>Туда-обратно</span><strong>3 000 ₽</strong></div>
+          <div class="ic-row"><span>Туда-обратно (с ожиданием)</span><strong>3 000 ₽</strong></div>
         </div>
       </div>
       <div class="intercity-card">
         <div class="ic-city">Казанское → Петропавловск</div>
         <div class="ic-prices">
           <div class="ic-row"><span>В одну сторону</span><strong>5 000 ₽</strong></div>
-          <div class="ic-row"><span>Туда-обратно</span><strong>7 500 ₽</strong></div>
+          <div class="ic-row"><span>Туда-обратно (с ожиданием)</span><strong>7 500 ₽</strong></div>
         </div>
       </div>
     </div>
@@ -407,13 +420,55 @@
 
 <!-- ═══════════ ПОДВАЛ ═══════════ -->
 <footer class="site-footer">
-  <span>© 2025 Казанское Такси</span>
-  <span>·</span>
-  <span>Казанский район, Тюменская область</span>
-  <span>·</span>
-  <span>Круглосуточно</span>
+  <div>
+    <span>© 2025 Казанское Такси</span>
+    <span class="footer-sep">·</span>
+    <span>Казанский район, Тюменская область</span>
+    <span class="footer-sep">·</span>
+    <span>Круглосуточно</span>
+  </div>
+  <div class="footer-legal">
+    <a href="/privacy" target="_blank" rel="noopener">Политика персональных данных</a>
+    <span class="footer-sep">·</span>
+    <a href="/offer" target="_blank" rel="noopener">Публичная оферта</a>
+  </div>
 </footer>
 
+<!-- ═══════════ COOKIE BANNER ═══════════ -->
+<div id="cookie-banner" class="cookie-banner" style="display:none">
+  <div class="cookie-text">
+    🍪 Сайт использует куки для работы Яндекс.Карт.
+    Продолжая использование, вы соглашаетесь с
+    <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a>.
+  </div>
+  <button class="cookie-btn" onclick="acceptCookies()">Понятно</button>
+</div>
+
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+// ── Согласие с ПД ──────────────────────────────────────
+function updateConsentState() {
+  const checked = document.getElementById('consent-checkbox').checked;
+  const btn     = document.getElementById('submit-btn');
+  const label   = document.getElementById('consent-label');
+  btn.disabled  = !checked;
+  label.classList.toggle('consent-checked', checked);
+}
+
+// ── Cookie banner ───────────────────────────────────────
+(function () {
+  if (!localStorage.getItem('cookie_ok')) {
+    document.getElementById('cookie-banner').style.display = 'flex';
+  }
+})();
+
+function acceptCookies() {
+  localStorage.setItem('cookie_ok', '1');
+  const el = document.getElementById('cookie-banner');
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.4s';
+  setTimeout(() => el.style.display = 'none', 420);
+}
+</script>
 </body>
 </html>

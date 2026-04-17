@@ -54,7 +54,7 @@
   --r-xl:  24px;
 }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
@@ -63,6 +63,7 @@ body {
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -123,30 +124,34 @@ body {
 }
 
 .topbar-phone {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--gold);
+  font-size: 15px;
+  font-weight: 700;
+  color: #1E2535;
   text-decoration: none;
   white-space: nowrap;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--border-gold);
-  background: var(--gold-bg);
+  border: none;
+  background: var(--gold);
+  box-shadow: 0 2px 12px rgba(245,184,0,0.45);
   transition: all 0.18s;
+  flex-shrink: 0;
 }
 
 .topbar-phone:hover {
-  background: rgba(245,184,0,0.2);
-  box-shadow: 0 2px 12px rgba(245,184,0,0.25);
+  background: var(--gold-light);
+  box-shadow: 0 4px 20px rgba(245,184,0,0.6);
 }
 
 @media (max-width: 480px) {
-  .topbar-phone { font-size: 12px; padding: 5px 10px; }
+  .topbar-phone { font-size: 13px; padding: 7px 12px; }
   .topbar-link { display: none; }
+  .topbar-name { font-size: 14px; }
+  .topbar-region { display: none; }
 }
 
 @media (max-width: 360px) {
-  .topbar-phone { font-size: 11px; padding: 5px 8px; }
+  .topbar-phone { font-size: 12px; padding: 6px 10px; }
 }
 
 .topbar-link {
@@ -1371,13 +1376,143 @@ body {
 .site-footer {
   background: #060A14;
   color: rgba(255,255,255,0.35);
-  padding: 18px 16px;
+  padding: 18px 16px 20px;
   display: flex;
   gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
   font-size: 13px;
   border-top: 1px solid var(--border-gold);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.site-footer > div:first-of-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer-sep { opacity: 0.4; }
+
+.footer-legal {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.footer-legal a {
+  color: rgba(245,184,0,0.55);
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.15s;
+}
+
+.footer-legal a:hover { color: var(--gold); }
+
+/* ── Согласие с ПД ── */
+.consent-section { margin-bottom: 14px; }
+
+.consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--border-2);
+  background: var(--surface-2);
+  transition: all 0.18s;
+  user-select: none;
+}
+
+.consent-label:hover {
+  border-color: rgba(245,184,0,0.4);
+  background: var(--surface-3);
+}
+
+.consent-label.consent-checked {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+}
+
+.consent-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.consent-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.consent-text a {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn-order:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Cookie banner ── */
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: rgba(10,16,30,0.97);
+  border-top: 1px solid rgba(245,184,0,0.3);
+  backdrop-filter: blur(12px);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.cookie-text {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  flex: 1;
+  min-width: 240px;
+  line-height: 1.5;
+}
+
+.cookie-text a { color: var(--gold); text-decoration: underline; }
+
+.cookie-btn {
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-gold);
+  background: var(--gold-bg);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.cookie-btn:hover {
+  background: rgba(245,184,0,0.2);
 }
 
 /* ═══════════════════════════════════════════════════════

@@ -846,6 +846,12 @@ async function submitOrder() {
   const fromAddress = pointA ? pointA.address : document.getElementById('search-from').value.trim();
   const toAddress   = pointB ? pointB.address : document.getElementById('search-to').value.trim();
 
+  const consentEl = document.getElementById('consent-checkbox');
+  if (consentEl && !consentEl.checked) {
+    showFormMsg('error', 'Необходимо согласиться с обработкой персональных данных');
+    consentEl.closest('.consent-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
   if (!phone)       { showFormMsg('error', 'Введите номер телефона'); return; }
   if (!fromAddress) { showFormMsg('error', 'Укажите откуда ехать — чип, поиск или точка на карте'); return; }
   if (!toAddress)   { showFormMsg('error', 'Укажите куда ехать — чип, поиск или точка на карте'); return; }
