@@ -191,24 +191,35 @@
       </div>
 
       <div id="time-picker" style="display:none">
-        <!-- Дата — заполняется JS (7 дней) -->
-        <div class="date-chips-row" id="date-chips"></div>
-        <!-- Время -->
-        <div class="time-row">
-          <div class="time-spin">
-            <button class="spin-btn" onclick="spinHour(-1)">−</button>
-            <span class="spin-val" id="spin-hour">12</span>
-            <button class="spin-btn" onclick="spinHour(1)">+</button>
-            <span class="spin-unit">ч</span>
-          </div>
-          <span class="time-colon">:</span>
-          <div class="time-spin">
-            <button class="spin-btn" onclick="spinMin(-1)">−</button>
-            <span class="spin-val" id="spin-min">00</span>
-            <button class="spin-btn" onclick="spinMin(1)">+</button>
-            <span class="spin-unit">мин</span>
-          </div>
-          <div class="time-tz-note">UTC+5</div>
+
+        <!-- ── Дата ── -->
+        <div class="dp-label">Дата</div>
+        <div class="dp-quick-row">
+          <button type="button" class="dp-chip dp-chip-active" id="dpq-0" onclick="pickDateQuick(0)">Сегодня</button>
+          <button type="button" class="dp-chip" id="dpq-1" onclick="pickDateQuick(1)">Завтра</button>
+          <button type="button" class="dp-chip" id="dpq-2" onclick="pickDateQuick(2)">Послезавтра</button>
+          <button type="button" class="dp-chip dp-chip-cal" id="dpq-custom" onclick="openCalendar()">
+            📅 <span id="dp-custom-label">Другая дата</span>
+          </button>
+          <!-- скрытый нативный input -->
+          <input type="date" id="dp-date-input"
+                 style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+                 onchange="onCalendarChange(this.value)" />
+        </div>
+
+        <!-- ── Время ── -->
+        <div class="dp-label" style="margin-top:14px;">Время <span class="time-tz-badge">UTC+5</span></div>
+        <div class="dp-time-presets" id="dp-time-presets">
+          <!-- заполняется JS -->
+        </div>
+        <div class="dp-time-manual">
+          <button class="spin-btn" onclick="spinHour(-1)">−</button>
+          <span class="spin-val" id="spin-hour">12</span>
+          <span class="spin-sep">:</span>
+          <span class="spin-val" id="spin-min">00</span>
+          <button class="spin-btn" onclick="spinMin(1)">+</button>
+          <button class="spin-btn" onclick="spinMin(-1)">−</button>
+          <span class="dp-manual-hint">мин ±15</span>
         </div>
       </div>
     </div>
@@ -275,6 +286,7 @@
         </button>
       </div>
       <input type="hidden" id="payment-method" value="cash" />
+      <input type="hidden" id="estimated-price" value="" />
     </div>
 
     <!-- ── Цена + кнопка ── -->

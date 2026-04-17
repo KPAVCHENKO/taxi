@@ -61,12 +61,22 @@ def notify_drivers(order):
     if order.scheduled_at:
         sched = f'\n🕐 <b>Время (UTC+5):</b> {order.scheduled_at.strftime("%d.%m.%Y %H:%M")}'
 
-    comment_line = f'\n💬 <b>Комментарий:</b> {order.comment}' if order.comment else ''
-    coords_note  = '' if (order.from_lat and order.to_lat) else '\n⚠️ Координаты не указаны'
-    pay_label    = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
-    ride_raw     = getattr(order, 'ride_type', 'individual') or 'individual'
-    ride_label   = '👥 Попутно (дешевле)' if ride_raw == 'shared' else '🚗 Индивидуально'
-    ride_note    = '\n⚡️ <b>Можно взять попутчиков!</b>' if ride_raw == 'shared' else ''
+    _comment      = getattr(order, 'comment', None)
+    comment_line  = (f'\n💬 <b>Комментарий:</b> {_comment}'
+                     if _comment and str(_comment).strip() not in ('', 'None') else '')
+    coords_note   = '' if (order.from_lat and order.to_lat) else '\n⚠️ Координаты не указаны'
+    pay_label     = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
+    ride_raw      = getattr(order, 'ride_type', 'individual') or 'individual'
+    ride_label    = '👥 Попутно (дешевле)' if ride_raw == 'shared' else '🚗 Индивидуально'
+    ride_note     = '\n⚡️ <b>Можно взять попутчиков!</b>' if ride_raw == 'shared' else ''
+
+    _ep = getattr(order, 'estimated_price', None)
+    if _ep:
+        price_line = f'💰 <b>Цена:</b> {_ep:,} ₽'.replace(',', ' ')
+        if ride_raw == 'shared':
+            price_line += ' (попутно — дешевле)'
+    else:
+        price_line = '💰 Цена уточняется диспетчером'
 
     text = (
         f'🚖 <b>Новый заказ #{order.id}</b>\n\n'
@@ -77,7 +87,7 @@ def notify_drivers(order):
         f'{coords_note}\n\n'
         f'🎫 <b>Тип:</b> {ride_label}{ride_note}\n'
         f'💳 <b>Оплата:</b> {pay_label}\n'
-        f'💰 Цена уточняется диспетчером\n'
+        f'{price_line}\n'
         f'📞 Телефон скрыт до принятия'
     )
 
@@ -106,7 +116,13 @@ def notify_driver_assigned(order, driver):
         ekb = order.scheduled_at + timedelta(hours=5)
         sched = f'\n🕐 <b>Время (UTC+5):</b> {ekb.strftime("%d.%m.%Y %H:%M")}'
 
-    comment_line = f'\n💬 <b>Комментарий:</b> {order.comment}' if order.comment else ''
+    _c3 = getattr(order, 'comment', None)
+    comment_line = (f'\n💬 <b>Комментарий:</b> {_c3}'
+                    if _c3 and str(_c3).strip() not in ('', 'None') else '')
+    _ep3 = getattr(order, 'estimated_price', None)
+    price_line3  = (f'\n💰 <b>Цена:</b> {_ep3:,} ₽'.replace(',', ' ')
+                    if _ep3 else '')
+    pay_label3   = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
 
     text = (
         f'📋 <b>Заказ #{order.id} — назначен диспетчером</b>\n\n'
@@ -114,6 +130,8 @@ def notify_driver_assigned(order, driver):
         f'🏁 <b>Куда:</b> {order.to_address}'
         f'{comment_line}'
         f'{sched}\n\n'
+        f'💳 <b>Оплата:</b> {pay_label3}'
+        f'{price_line3}\n'
         f'📞 <b>Телефон клиента:</b> <code>{order.phone}</code>'
     )
     send_message(driver.telegram_id, text)
@@ -182,10 +200,16 @@ def handle_update(update):
     if order.scheduled_at:
         sched = f'\n🕐 <b>Время (UTC+5):</b> {order.scheduled_at.strftime("%d.%m.%Y %H:%M")}'
 
-    comment_line = f'\n💬 <b>Комментарий:</b> {order.comment}' if order.comment else ''
-    pay_label    = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
-    ride_raw2    = getattr(order, 'ride_type', 'individual') or 'individual'
-    ride_label2  = '👥 Попутно' if ride_raw2 == 'shared' else '🚗 Индивидуально'
+    _comment2     = getattr(order, 'comment', None)
+    comment_line  = (f'\n💬 <b>Комментарий:</b> {_comment2}'
+                     if _comment2 and str(_comment2).strip() not in ('', 'None') else '')
+    pay_label     = '💵 Наличные' if getattr(order, 'payment', 'cash') == 'cash' else '📲 Перевод'
+    ride_raw2     = getattr(order, 'ride_type', 'individual') or 'individual'
+    ride_label2   = '👥 Попутно' if ride_raw2 == 'shared' else '🚗 Индивидуально'
+
+    _ep2 = getattr(order, 'estimated_price', None)
+    price_line2 = (f'💰 <b>Цена:</b> {_ep2:,} ₽'.replace(',', ' ')
+                   if _ep2 else '💰 Цена уточняется диспетчером')
 
     accepted_text = (
         f'✅ <b>Заказ #{order.id} — ПРИНЯТ ВАМИ</b>\n\n'
@@ -195,6 +219,7 @@ def handle_update(update):
         f'{sched}\n\n'
         f'🎫 <b>Тип:</b> {ride_label2}\n'
         f'💳 <b>Оплата:</b> {pay_label}\n'
+        f'{price_line2}\n'
         f'📞 <b>Телефон клиента:</b> <code>{order.phone}</code>'
     )
     if msg_id:

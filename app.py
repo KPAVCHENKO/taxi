@@ -42,6 +42,7 @@ with app.app_context():
         "ALTER TABLE orders ADD COLUMN to_lat FLOAT",
         "ALTER TABLE orders ADD COLUMN to_lon FLOAT",
         "ALTER TABLE orders ADD COLUMN ride_type VARCHAR(20) DEFAULT 'individual'",
+        "ALTER TABLE orders ADD COLUMN estimated_price INTEGER",
     ]
     with db.engine.connect() as _conn:
         for _sql in _migrations:
@@ -93,11 +94,20 @@ def create_order():
     phone        = str(data.get('phone', '')).strip()
     from_address = str(data.get('from_address', '')).strip()
     to_address   = str(data.get('to_address', '')).strip()
-    comment      = str(data.get('comment', '')).strip()
+    # comment может прийти как null из JSON → None → str(None)='None' — баг
+    _comment_raw = data.get('comment')
+    comment      = str(_comment_raw).strip() if _comment_raw else ''
     payment_raw   = str(data.get('payment', 'cash')).strip()
     payment       = 'transfer' if payment_raw == 'transfer' else 'cash'
     ride_type_raw = str(data.get('ride_type', 'individual')).strip()
     ride_type     = 'shared' if ride_type_raw == 'shared' else 'individual'
+
+    # estimated_price — int или None (вычисляется на клиенте по таблице цен)
+    _ep = data.get('estimated_price')
+    try:
+        estimated_price = int(_ep) if _ep not in (None, '', 'null') else None
+    except (ValueError, TypeError):
+        estimated_price = None
 
     if not phone:
         return jsonify({'error': 'Укажите телефон'}), 400
@@ -133,6 +143,7 @@ def create_order():
         comment=comment or None,
         payment=payment,
         ride_type=ride_type,
+        estimated_price=estimated_price,
         scheduled_at=scheduled_at,
     )
     db.session.add(order)

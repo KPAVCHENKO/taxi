@@ -17,6 +17,45 @@ const PLACES = [
   { name: 'Петропавловск',    q: 'Петропавловск, Северо-Казахстанская область, Казахстан' },
 ];
 
+// ── Таблица цен (из Казанского) ────────────────────────
+const PRICE_TABLE = {
+  'казанское':         150,
+  'новоселезнево':     200,
+  'шадринка':          300,
+  'яровское':          300,
+  'большие ярки':      300,
+  'малые ярки':        400,
+  'гагарье':           500,
+  'сладчанка':         500,
+  'боровлянка':        600,
+  'дальнетравное':     600,
+  'ильинка':           700,
+  'кугаево':           700,
+  'чирки':             700,
+  'огнево':            800,
+  'дубынка':           900,
+  'заречка':           900,
+  'смирное':           900,
+  'афонькино':         1000,
+  'пешнево':           1000,
+  'копотилово':        1000,
+  'ченчерь':           1000,
+  'ельцово':           1000,
+  'коротаевка':        1100,
+  'грачи':             1200,
+  'паленка':           1200,
+  'новогеоргиевка':    1500,
+  'новоалександровка': 1500,
+  'челюскинцев':       1500,
+  'викторовка':        1800,
+  'долматово':         1800,
+};
+
+const PRICE_INTERCITY = {
+  'ишим':          { one_way: 2000, round_trip: 3000 },
+  'петропавловск': { one_way: 5000, round_trip: 7500 },
+};
+
 // ── Состояние ──────────────────────────────────────────
 let ymap       = null;
 let placemarkA = null, placemarkB = null;
@@ -24,10 +63,12 @@ let pointA     = null, pointB = null; // { lat, lon, address }
 let mode       = 'a';
 let routeObj   = null;
 
-let whenMode     = 'now';
-let dateOffset   = 0;
-let pickedHour   = 12;
-let pickedMinute = 0;
+let whenMode      = 'now';
+let dateOffset    = 0;       // 0=сегодня, 1=завтра, 2=послезавтра
+let customDate    = null;    // 'YYYY-MM-DD' если выбрано через календарь
+let dateMode      = 'quick'; // 'quick' | 'custom'
+let pickedHour    = 12;
+let pickedMinute  = 0;
 let paymentMethod = 'cash';
 
 // ══════════════════════════════════════════════════════
@@ -38,6 +79,7 @@ ymaps.ready(function () {
   initAddressInputs();
   renderChips();
   renderDateChips();
+  renderTimePresets();
   setMode('a');
 });
 
@@ -147,6 +189,7 @@ function placePointA(lat, lon, address) {
   clearRouteData();
   updateChipStates();
   checkAddressVagueness(address);
+  updatePriceDisplay();
 }
 
 function placePointB(lat, lon, address) {
@@ -177,6 +220,7 @@ function placePointB(lat, lon, address) {
   clearRouteData();
   updateChipStates();
   checkAddressVagueness(address);
+  updatePriceDisplay();
 }
 
 function clearPoint(which) {
@@ -194,6 +238,7 @@ function clearPoint(which) {
   }
   clearRouteData();
   updateChipStates();
+  updatePriceDisplay();
 }
 
 function swapPoints() {
@@ -303,11 +348,24 @@ function getLocalMatches(query) {
     .map(p => ({ _isLocal: true, _localName: p.name, _localQuery: p.q, displayName: p.name }));
 }
 
+// Строим поисковый запрос: для улиц добавляем контекст района,
+// для крупных городов — нет (они и так известны Яндексу).
+function buildSuggestQuery(q) {
+  const lower = q.toLowerCase();
+  // Крупные города не нуждаются в контексте района
+  if (/петропавловск|ишим|тюмень|омск|новосибирск/.test(lower)) return q;
+  // Если в запросе уже есть название района/области — не дублируем
+  if (/казанск|тюменск|сибирск/.test(lower)) return q;
+  // Для улиц и домов добавляем контекст, чтобы Яндекс искал в нужном месте
+  return q + ', Казанский район, Тюменская область';
+}
+
 async function getSuggestions(query) {
   const local = getLocalMatches(query);
 
   try {
-    const items = await ymaps.suggest(query, {
+    const suggestQ = buildSuggestQuery(query);
+    const items = await ymaps.suggest(suggestQ, {
       boundedBy:    BOUNDS,
       strictBounds: false,
       results:      7,
@@ -504,53 +562,196 @@ function setWhen(w) {
   document.getElementById('tab-now').classList.toggle('active',   w === 'now');
   document.getElementById('tab-later').classList.toggle('active', w === 'later');
   document.getElementById('time-picker').style.display = w === 'later' ? 'block' : 'none';
-}
-
-function renderDateChips() {
-  const container = document.getElementById('date-chips');
-  if (!container) return;
-  container.innerHTML = '';
-  const weekdays = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-  const today = new Date();
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const label = i === 0 ? 'Сегодня' : i === 1 ? 'Завтра' : weekdays[d.getDay()] + ' ' + d.getDate();
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'date-chip' + (i === 0 ? ' active' : '');
-    btn.textContent = label;
-    const idx = i;
-    btn.onclick = () => pickDate(idx);
-    container.appendChild(btn);
+  if (w === 'later') {
+    // прокрутить пресеты до текущего часа
+    const active = document.querySelector('.dp-time-btn.dp-time-active');
+    if (active) setTimeout(() => active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 120);
   }
 }
 
-function pickDate(offset) {
+// ── Дата ────────────────────────────────────────────────
+function renderDateChips() {
+  // Устанавливаем min у скрытого input (сегодня)
+  const inp = document.getElementById('dp-date-input');
+  if (inp) {
+    const today = new Date();
+    inp.min = today.toISOString().slice(0, 10);
+  }
+}
+
+function pickDateQuick(offset) {
   dateOffset = offset;
-  document.querySelectorAll('#date-chips .date-chip').forEach((c, i) => {
-    c.classList.toggle('active', i === offset);
+  dateMode   = 'quick';
+  customDate = null;
+
+  // сбросить подсветку всех быстрых кнопок
+  [0, 1, 2].forEach(i => {
+    const el = document.getElementById('dpq-' + i);
+    if (el) el.classList.toggle('dp-chip-active', i === offset);
   });
+  const cal = document.getElementById('dpq-custom');
+  if (cal) {
+    cal.classList.remove('dp-chip-active');
+    document.getElementById('dp-custom-label').textContent = 'Другая дата';
+  }
+}
+
+function openCalendar() {
+  const inp = document.getElementById('dp-date-input');
+  if (!inp) return;
+  inp.click();
+}
+
+function onCalendarChange(val) {
+  if (!val) return;
+  customDate = val;
+  dateMode   = 'custom';
+
+  // снять выделение с быстрых кнопок
+  [0, 1, 2].forEach(i => {
+    const el = document.getElementById('dpq-' + i);
+    if (el) el.classList.remove('dp-chip-active');
+  });
+
+  // показать выбранную дату на кнопке календаря
+  const d = new Date(val + 'T00:00:00');
+  const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const weekdays = ['вс','пн','вт','ср','чт','пт','сб'];
+  const label = weekdays[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()];
+  document.getElementById('dp-custom-label').textContent = label;
+  const cal = document.getElementById('dpq-custom');
+  if (cal) cal.classList.add('dp-chip-active');
+}
+
+// ── Время ────────────────────────────────────────────────
+const TIME_PRESETS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+
+function renderTimePresets() {
+  const container = document.getElementById('dp-time-presets');
+  if (!container) return;
+  container.innerHTML = '';
+  TIME_PRESETS.forEach(h => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dp-time-btn' + (h === pickedHour && pickedMinute === 0 ? ' dp-time-active' : '');
+    btn.textContent = String(h).padStart(2, '0') + ':00';
+    btn.onclick = () => {
+      pickedHour = h;
+      pickedMinute = 0;
+      updateTimeDisplay();
+      document.querySelectorAll('.dp-time-btn').forEach(b => b.classList.remove('dp-time-active'));
+      btn.classList.add('dp-time-active');
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    };
+    container.appendChild(btn);
+  });
+}
+
+function updateTimeDisplay() {
+  const h = document.getElementById('spin-hour');
+  const m = document.getElementById('spin-min');
+  if (h) h.textContent = String(pickedHour).padStart(2, '0');
+  if (m) m.textContent = String(pickedMinute).padStart(2, '0');
 }
 
 function spinHour(delta) {
   pickedHour = (pickedHour + delta + 24) % 24;
-  document.getElementById('spin-hour').textContent = String(pickedHour).padStart(2, '0');
+  updateTimeDisplay();
+  // снять выделение с пресетов, подсветить если есть совпадение
+  document.querySelectorAll('.dp-time-btn').forEach(b => {
+    b.classList.toggle('dp-time-active',
+      b.textContent === String(pickedHour).padStart(2,'0') + ':00' && pickedMinute === 0);
+  });
 }
 
 function spinMin(delta) {
   const steps = [0, 15, 30, 45];
   const idx = steps.indexOf(pickedMinute);
   pickedMinute = steps[(idx + delta + steps.length) % steps.length];
-  document.getElementById('spin-min').textContent = String(pickedMinute).padStart(2, '0');
+  updateTimeDisplay();
+  // если минуты ≠ 0, снять выделение с пресетов
+  if (pickedMinute !== 0) {
+    document.querySelectorAll('.dp-time-btn').forEach(b => b.classList.remove('dp-time-active'));
+  }
 }
 
 function getScheduledAt() {
   if (whenMode === 'now') return null;
-  const d = new Date();
-  d.setDate(d.getDate() + dateOffset);
+  let d;
+  if (dateMode === 'custom' && customDate) {
+    d = new Date(customDate + 'T00:00:00');
+  } else {
+    d = new Date();
+    d.setDate(d.getDate() + dateOffset);
+  }
   d.setHours(pickedHour, pickedMinute, 0, 0);
   return d.toISOString();
+}
+
+// ══════════════════════════════════════════════════════
+// АВТОЦЕНА
+// ══════════════════════════════════════════════════════
+function matchSettlement(addr) {
+  if (!addr) return null;
+  const a = addr.toLowerCase();
+  for (const name of Object.keys(PRICE_INTERCITY)) {
+    if (a.includes(name)) return { name, type: 'intercity' };
+  }
+  for (const name of Object.keys(PRICE_TABLE)) {
+    if (a.includes(name)) return { name, type: 'local' };
+  }
+  return null;
+}
+
+function lookupPrice() {
+  if (!pointA || !pointB) return null;
+  const mA = matchSettlement(pointA.address);
+  const mB = matchSettlement(pointB.address);
+  if (!mA || !mB) return null;
+
+  // Один из пунктов должен быть Казанское
+  let dest = null;
+  if (mA.name === 'казанское') dest = mB;
+  else if (mB.name === 'казанское') dest = mA;
+  else return null; // маршрут не из Казанского — не авторасчёт
+
+  if (dest.type === 'intercity') {
+    return { ...PRICE_INTERCITY[dest.name], type: 'intercity' };
+  }
+  return { price: PRICE_TABLE[dest.name], type: 'local' };
+}
+
+function updatePriceDisplay() {
+  const el = document.querySelector('.price-text');
+  if (!el) return;
+
+  const p = lookupPrice();
+  const hiddenInput = document.getElementById('estimated-price');
+
+  if (!p) {
+    el.innerHTML = '💰 Цена уточняется диспетчером';
+    if (hiddenInput) hiddenInput.value = '';
+    return;
+  }
+
+  let priceVal, html;
+  if (p.type === 'intercity') {
+    priceVal = p.one_way;
+    const ow = p.one_way.toLocaleString('ru-RU');
+    const rt = p.round_trip.toLocaleString('ru-RU');
+    html = `💰 <strong class="price-amount">${ow} ₽</strong>`
+         + `<span class="price-detail"> · туда-обратно ${rt} ₽</span>`;
+  } else {
+    priceVal = p.price;
+    html = `💰 <strong class="price-amount">${p.price.toLocaleString('ru-RU')} ₽</strong>`;
+  }
+
+  if (rideType === 'shared') {
+    html += '<span class="price-shared-note"> попутно — дешевле</span>';
+  }
+
+  el.innerHTML = html;
+  if (hiddenInput) hiddenInput.value = priceVal;
 }
 
 // ══════════════════════════════════════════════════════
@@ -563,6 +764,7 @@ function setRideType(type) {
   document.getElementById('ride-type').value = type;
   document.getElementById('rt-individual').classList.toggle('rt-active', type === 'individual');
   document.getElementById('rt-shared').classList.toggle('rt-active', type === 'shared');
+  updatePriceDisplay();
 }
 
 // ══════════════════════════════════════════════════════
@@ -604,10 +806,11 @@ async function submitOrder() {
         to_address:   toAddress,
         to_lat:       pointB ? pointB.lat : null,
         to_lon:       pointB ? pointB.lon : null,
-        comment:      comment || null,
-        payment:      paymentMethod,
-        ride_type:    rideType,
-        scheduled_at: getScheduledAt(),
+        comment:         comment || null,
+        payment:         paymentMethod,
+        ride_type:       rideType,
+        estimated_price: document.getElementById('estimated-price').value || null,
+        scheduled_at:    getScheduledAt(),
       }),
     });
 
@@ -620,6 +823,7 @@ async function submitOrder() {
       setWhen('now');
       setPayment('cash');
       setRideType('individual');
+      pickDateQuick(0);
       hideCommentHint();
     } else {
       showFormMsg('error', data.error || 'Не удалось создать заказ');
