@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Казанское Такси — Казанский район</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
   <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
@@ -31,34 +32,37 @@
 
 <!-- ═══════════ HERO ═══════════ -->
 <section class="hero-section">
-  <div class="hero-inner">
-    <h1 class="hero-title">
-      Такси по<br>
-      <span class="hero-title-accent">Казанскому</span><br>
-      району и межгороду
-    </h1>
-    <p class="hero-sub">Ишим · Петропавловск · любые населённые пункты<br>Фиксированные цены. Быстрая подача. Свои водители</p>
-    <div class="hero-features">
-      <div class="hero-feat">
-        <span class="feat-icon">🚗</span>
-        <span>Местные водители</span>
-      </div>
-      <div class="hero-feat">
-        <span class="feat-icon">⏱</span>
-        <span>Подача от 10–20 минут</span>
-      </div>
-      <div class="hero-feat">
-        <span class="feat-icon">💰</span>
-        <span>Цена известна заранее</span>
-      </div>
-      <div class="hero-feat">
-        <span class="feat-icon">📞</span>
-        <span>Можно просто позвонить</span>
+  <div class="hero-photo"></div>
+  <div class="hero-content">
+    <div class="hero-inner">
+      <h1 class="hero-title">
+        Такси по<br>
+        <span class="hero-title-accent">Казанскому</span><br>
+        району и межгороду
+      </h1>
+      <p class="hero-sub">Ишим · Петропавловск · любые населённые пункты<br>Фиксированные цены. Быстрая подача. Свои водители</p>
+      <div class="hero-features">
+        <div class="hero-feat">
+          <span class="feat-icon">🚗</span>
+          <span>Местные водители</span>
+        </div>
+        <div class="hero-feat">
+          <span class="feat-icon">⏱</span>
+          <span>Подача от 10–20 минут</span>
+        </div>
+        <div class="hero-feat">
+          <span class="feat-icon">💰</span>
+          <span>Цена известна заранее</span>
+        </div>
+        <div class="hero-feat">
+          <span class="feat-icon">📞</span>
+          <span>Можно просто позвонить</span>
+        </div>
       </div>
     </div>
+    <div class="hero-circle hero-circle-1"></div>
+    <div class="hero-circle hero-circle-2"></div>
   </div>
-  <div class="hero-circle hero-circle-1"></div>
-  <div class="hero-circle hero-circle-2"></div>
 </section>
 
 <!-- ═══════════ КАК ЭТО РАБОТАЕТ ═══════════ -->
@@ -453,7 +457,17 @@ function updateConsentState() {
   const label   = document.getElementById('consent-label');
   btn.disabled  = !checked;
   label.classList.toggle('consent-checked', checked);
+  if (checked) localStorage.setItem('consent_ok', '1');
 }
+
+(function initConsent() {
+  if (localStorage.getItem('consent_ok')) {
+    const cb = document.getElementById('consent-checkbox');
+    cb.checked = true;
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('consent-label').classList.add('consent-checked');
+  }
+})();
 
 // ── Cookie banner ───────────────────────────────────────
 (function () {

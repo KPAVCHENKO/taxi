@@ -177,15 +177,26 @@ body {
    HERO
 ═══════════════════════════════════════════════════════ */
 .hero-section {
+  border-bottom: 1px solid var(--border-gold);
+  color: white;
+}
+
+.hero-photo {
+  width: 100%;
+  height: 240px;
+  background: url('/static/img/hero-bg.jpg') center 30% / cover no-repeat;
+  background-color: #1A2438;
+}
+
+@media (min-width: 600px) {
+  .hero-photo { height: 320px; }
+}
+
+.hero-content {
   position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(160deg, rgba(8,12,24,0.55) 0%, rgba(10,16,30,0.75) 100%),
-    url('/static/img/hero-bg.jpg') center 30% / cover no-repeat;
-  background-color: #1A2438;
-  padding: 36px 20px 32px;
-  color: white;
-  border-bottom: 1px solid var(--border-gold);
+  background: linear-gradient(160deg, #141C32 0%, #0D1628 100%);
+  padding: 28px 20px 32px;
 }
 
 .hero-inner {
@@ -1681,7 +1692,7 @@ body {
 .photo-card-interior {
   background-image:
     linear-gradient(to top, rgba(13,22,40,0.92) 0%, rgba(13,22,40,0.40) 60%, rgba(13,22,40,0.15) 100%),
-    url('/static/img/interior.jpg');
+    linear-gradient(135deg, #1C2B45 0%, #0D1628 100%);
   background-color: #1C2B45;
   min-height: 280px;
 }
