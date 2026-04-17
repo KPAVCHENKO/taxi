@@ -370,14 +370,15 @@ function buildSearchQuery(query) {
   return query + ', Казанский район, Тюменская область';
 }
 
-// ── Основной поиск: ymaps.search — находит И адреса, И организации ──
-// ymaps.geocode находит только адреса; ymaps.search умеет POI:
-// «Магнит», «Пятёрочка», «аптека», «больница» и т.д.
+// ── Основной поиск через ymaps.geocode ──────────────────
+// ymaps.geocode доступен без дополнительных модулей и находит:
+// адреса улиц/домов И организации (Магнит, аптека и т.д.),
+// если они есть в базе Яндекс Карт.
 async function getSuggestions(query) {
   const local = getLocalMatches(query);
 
   try {
-    const res = await ymaps.search(buildSearchQuery(query), {
+    const res = await ymaps.geocode(buildSearchQuery(query), {
       boundedBy:    BOUNDS,
       strictBounds: false,
       results:      6,
@@ -392,13 +393,11 @@ async function getSuggestions(query) {
       const desc  = obj.properties.get('description') || '';
       const addr  = obj.getAddressLine()              || '';
 
-      // Это организация/POI если есть отдельное название отличное от адреса
+      // Это организация/POI если у объекта есть отдельное имя
       const isPOI = name && name !== addr && name.length < 80;
 
-      // Полный лейбл для поля и для водителя
-      const label = isPOI
-        ? (name + (addr ? ', ' + addr : ''))
-        : addr;
+      // Полный лейбл — то что попадёт в поле и в заказ водителю
+      const label = isPOI ? (name + (addr ? ', ' + addr : '')) : addr;
 
       // Не дублируем локальные чипы
       if (local.some(l => label.toLowerCase().includes(l._localName.toLowerCase()))) return;
@@ -406,7 +405,7 @@ async function getSuggestions(query) {
       items.push({
         displayName: isPOI ? name : addr,
         subDisplay:  isPOI ? addr : (desc || null),
-        _fullLabel:  label,   // то что попадёт в поле ввода и в заказ
+        _fullLabel:  label,
         _geoCoords:  coords,
         _isPOI:      isPOI,
       });
@@ -489,7 +488,11 @@ function renderDrop(drop, items, onSelect) {
   drop.innerHTML = '';
 
   if (!items.length) {
-    drop.innerHTML = '<div class="drop-no-result">Не найдено — попробуйте другой запрос или кликните на карте</div>';
+    drop.innerHTML =
+      '<div class="drop-no-result">' +
+        'Не найдено<br>' +
+        '<span style="font-size:11px;opacity:.7;">Добавьте название села: <em>Яровское, Новая 11</em><br>Или кликните прямо на карте</span>' +
+      '</div>';
     drop.style.display = 'block';
     return;
   }
