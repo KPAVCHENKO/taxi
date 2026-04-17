@@ -101,21 +101,24 @@
         <!-- Водитель: текущий или форма назначения -->
         <td style="min-width:210px;">
           {% if o.driver_name %}
-            <div style="font-size:13px; font-weight:500;">{{ o.driver_name }}</div>
-            {# Показать статус текущего водителя #}
-            {% if driver_statuses and o.driver_telegram_id %}
-              {% for d in drivers %}
-                {% if d.telegram_id == o.driver_telegram_id %}
-                  {% set st = driver_statuses.get(d.id) %}
-                  {% if st %}
-                    <div style="font-size:11px; margin-top:2px;
-                      color: {{ '#f87171' if st.level == 'busy' else '#fbbf24' if st.level == 'maybe' else '#34d399' }}">
-                      {{ st.label }}
-                    </div>
-                  {% endif %}
-                {% endif %}
-              {% endfor %}
-            {% endif %}
+            <div style="font-size:13px; font-weight:600;">{{ o.driver_name }}</div>
+            {# Данные авто водителя — для сообщения клиенту #}
+            {% for d in drivers if d.telegram_id == o.driver_telegram_id %}
+              {% if d.car_info %}
+                <div style="margin-top:5px; padding:5px 8px;
+                  background:rgba(79,158,255,0.1); border:1px solid rgba(79,158,255,0.2);
+                  border-radius:6px; font-size:11px; color:#7dd3fc; line-height:1.4;">
+                  🚗 <b>Сообщите клиенту:</b><br>{{ d.car_info }}
+                </div>
+              {% endif %}
+              {% set st = driver_statuses.get(d.id) %}
+              {% if st %}
+                <div style="font-size:11px; margin-top:3px;
+                  color: {{ '#f87171' if st.level == 'busy' else '#fbbf24' if st.level == 'maybe' else '#34d399' }}">
+                  {{ st.label }}
+                </div>
+              {% endif %}
+            {% endfor %}
           {% elif o.status == 'new' and drivers %}
             <form method="POST"
                   action="{{ url_for('assign_driver_to_order', order_id=o.id) }}{% if current_status %}?status={{ current_status }}{% endif %}"

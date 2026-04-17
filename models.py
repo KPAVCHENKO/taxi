@@ -42,7 +42,15 @@ class Driver(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     telegram_id = db.Column(db.String(50), unique=True, nullable=False)
     name        = db.Column(db.String(100), nullable=False)
+    car_model   = db.Column(db.String(100), nullable=True)  # напр. "Hyundai Solaris"
+    car_color   = db.Column(db.String(50),  nullable=True)  # напр. "Белый"
+    car_plate   = db.Column(db.String(20),  nullable=True)  # напр. "А123БВ 72"
     active      = db.Column(db.Boolean, default=True)
+
+    @property
+    def car_info(self):
+        parts = [p for p in [self.car_color, self.car_model, self.car_plate] if p]
+        return ' · '.join(parts) if parts else None
 
 
 class Review(db.Model):

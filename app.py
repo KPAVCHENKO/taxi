@@ -43,6 +43,9 @@ with app.app_context():
         "ALTER TABLE orders ADD COLUMN to_lon FLOAT",
         "ALTER TABLE orders ADD COLUMN ride_type VARCHAR(20) DEFAULT 'individual'",
         "ALTER TABLE orders ADD COLUMN estimated_price INTEGER",
+        "ALTER TABLE drivers ADD COLUMN car_model VARCHAR(100)",
+        "ALTER TABLE drivers ADD COLUMN car_color VARCHAR(50)",
+        "ALTER TABLE drivers ADD COLUMN car_plate VARCHAR(20)",
     ]
     with db.engine.connect() as _conn:
         for _sql in _migrations:
@@ -389,6 +392,11 @@ def api_dispatcher():
             'payment':      o.payment or 'cash',
             'scheduled_at': sched,
             'driver_name':  o.driver_name or '',
+            'driver_car':   (lambda _d: _d.car_info or '' if _d else '')(
+                                Driver.query.filter_by(telegram_id=o.driver_telegram_id).first()
+                                if o.driver_telegram_id else None),
+            'ride_type':    o.ride_type or 'individual',
+            'estimated_price': o.estimated_price,
             'has_coords':   o.has_coords,
             'created_at':   (o.created_at + timedelta(hours=5)).strftime('%d.%m %H:%M'),
         }
@@ -400,7 +408,8 @@ def api_dispatcher():
         'orders_new':       [order_dict(o) for o in Order.query.filter_by(status='new').order_by(Order.created_at.desc()).all()],
         'orders_accepted':  [order_dict(o) for o in Order.query.filter_by(status='accepted').order_by(Order.created_at.desc()).all()],
         'orders_completed': [order_dict(o) for o in Order.query.filter_by(status='completed').order_by(Order.created_at.desc()).limit(20).all()],
-        'drivers':          [{'id': d.id, 'name': d.name, 'telegram_id': d.telegram_id} for d in drivers],
+        'drivers':          [{'id': d.id, 'name': d.name, 'telegram_id': d.telegram_id,
+                               'car_info': d.car_info or ''} for d in drivers],
         'driver_statuses':  {str(k): v for k, v in statuses.items()},
         'today_count':      Order.query.filter(Order.created_at >= today_start).count(),
         'active_drivers':   len(drivers),
@@ -444,12 +453,35 @@ def admin_drivers():
 @app.route('/admin/drivers/add', methods=['POST'])
 @admin_required
 def add_driver():
-    tid = str(request.form.get('telegram_id', '')).strip()
-    name = str(request.form.get('name', '')).strip()
+    tid       = str(request.form.get('telegram_id', '')).strip()
+    name      = str(request.form.get('name', '')).strip()
+    car_model = str(request.form.get('car_model', '')).strip() or None
+    car_color = str(request.form.get('car_color', '')).strip() or None
+    car_plate = str(request.form.get('car_plate', '')).strip() or None
     if tid and name:
         if not Driver.query.filter_by(telegram_id=tid).first():
-            db.session.add(Driver(telegram_id=tid, name=name))
+            db.session.add(Driver(
+                telegram_id=tid, name=name,
+                car_model=car_model, car_color=car_color, car_plate=car_plate,
+            ))
             db.session.commit()
+    return redirect(url_for('admin_drivers'))
+
+
+@app.route('/admin/drivers/<int:driver_id>/edit', methods=['POST'])
+@admin_required
+def edit_driver(driver_id):
+    driver = Driver.query.get_or_404(driver_id)
+    name      = str(request.form.get('name', '')).strip()
+    car_model = str(request.form.get('car_model', '')).strip() or None
+    car_color = str(request.form.get('car_color', '')).strip() or None
+    car_plate = str(request.form.get('car_plate', '')).strip() or None
+    if name:
+        driver.name = name
+    driver.car_model = car_model
+    driver.car_color = car_color
+    driver.car_plate = car_plate
+    db.session.commit()
     return redirect(url_for('admin_drivers'))
 
 

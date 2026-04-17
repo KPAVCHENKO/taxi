@@ -211,6 +211,13 @@ def handle_update(update):
     price_line2 = (f'💰 <b>Цена:</b> {_ep2:,} ₽'.replace(',', ' ')
                    if _ep2 else '💰 Цена уточняется диспетчером')
 
+    # Данные авто водителя (для диспетчера — чтобы сообщить клиенту)
+    from models import Driver as _Driver
+    _drv = _Driver.query.filter_by(telegram_id=order.driver_telegram_id).first()
+    car_line = ''
+    if _drv and _drv.car_info:
+        car_line = f'\n\n🚗 <b>Сообщите клиенту:</b>\n<code>{_drv.car_info}</code>'
+
     accepted_text = (
         f'✅ <b>Заказ #{order.id} — ПРИНЯТ ВАМИ</b>\n\n'
         f'📍 <b>Откуда:</b> {order.from_address}\n'
@@ -221,6 +228,7 @@ def handle_update(update):
         f'💳 <b>Оплата:</b> {pay_label}\n'
         f'{price_line2}\n'
         f'📞 <b>Телефон клиента:</b> <code>{order.phone}</code>'
+        f'{car_line}'
     )
     if msg_id:
         edit_message_text(msg_chat_id, msg_id, accepted_text)

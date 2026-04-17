@@ -348,15 +348,13 @@ function getLocalMatches(query) {
     .map(p => ({ _isLocal: true, _localName: p.name, _localQuery: p.q, displayName: p.name }));
 }
 
-// Строим поисковый запрос: для улиц добавляем контекст района,
-// для крупных городов — нет (они и так известны Яндексу).
-function buildSuggestQuery(q) {
+// Добавляем географический контекст если его нет
+function addGeoContext(q) {
   const lower = q.toLowerCase();
-  // Крупные города не нуждаются в контексте района
+  // Крупные города знают без контекста
   if (/петропавловск|ишим|тюмень|омск|новосибирск/.test(lower)) return q;
-  // Если в запросе уже есть название района/области — не дублируем
+  // Уже есть контекст
   if (/казанск|тюменск|сибирск/.test(lower)) return q;
-  // Для улиц и домов добавляем контекст, чтобы Яндекс искал в нужном месте
   return q + ', Казанский район, Тюменская область';
 }
 
@@ -364,18 +362,30 @@ async function getSuggestions(query) {
   const local = getLocalMatches(query);
 
   try {
-    const suggestQ = buildSuggestQuery(query);
-    const items = await ymaps.suggest(suggestQ, {
+    // ymaps.geocode — находит И населённые пункты, И конкретные улицы/дома.
+    // ymaps.suggest хорош для автодополнения крупных мест, но плохо ищет
+    // адреса в малых сёлах. Geocode работает надёжнее для адресного поиска.
+    const res = await ymaps.geocode(addGeoContext(query), {
       boundedBy:    BOUNDS,
       strictBounds: false,
-      results:      7,
-      highlight:    false,
+      results:      6,
     });
-    // Убираем дубли с локальными
-    const api = items.filter(i =>
-      !local.some(l => i.displayName && i.displayName.includes(l._localName))
-    );
-    return [...local, ...api];
+
+    const geoItems = [];
+    res.geoObjects.each(function (obj) {
+      const addr   = obj.getAddressLine();
+      const coords = obj.geometry.getCoordinates();
+      // Не дублируем локальные чипы
+      if (!local.some(l => addr.toLowerCase().includes(l._localName.toLowerCase()))) {
+        geoItems.push({
+          displayName: addr,
+          value:       addr,
+          _geoCoords:  coords, // уже есть координаты — не нужен повторный geocode
+        });
+      }
+    });
+
+    return [...local, ...geoItems];
   } catch (_) {
     return local;
   }
@@ -414,11 +424,16 @@ function setupInput(inputId, dropId, pointType) {
 
         let lat, lon, addr;
 
-        if (item._isLocal) {
+        if (item._geoCoords) {
+          // geocode-результат — координаты уже есть, второй запрос не нужен
+          lat  = item._geoCoords[0];
+          lon  = item._geoCoords[1];
+          addr = item.displayName;
+        } else if (item._isLocal) {
           const r = await geocodeQuery(item._localQuery);
           if (!r) { showFormMsg('error', `Не удалось найти «${item._localName}»`); return; }
           lat = r.lat; lon = r.lon;
-          addr = item._localName + ', Казанский район';
+          addr = item._localName;
         } else {
           const r = await geocodeQuery(item.value || item.displayName);
           if (!r) { showFormMsg('error', 'Не удалось определить координаты адреса'); return; }
