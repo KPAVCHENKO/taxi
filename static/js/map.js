@@ -2,8 +2,8 @@
    TAXI MAP · Казанский район — Yandex Maps 2.1
 ══════════════════════════════════════════════════════ */
 
-// Ограничивающий прямоугольник: Казанский + соседние районы
-const BOUNDS = [[54.8, 66.5], [57.2, 71.5]];
+// Ограничивающий прямоугольник: Казанский район + Ишим + Петропавловск
+const BOUNDS = [[54.3, 65.5], [57.5, 72.5]];
 const CENTER = [55.73, 69.23]; // Центр Казанского района
 
 // Популярные населённые пункты
@@ -348,44 +348,71 @@ function getLocalMatches(query) {
     .map(p => ({ _isLocal: true, _localName: p.name, _localQuery: p.q, displayName: p.name }));
 }
 
-// Добавляем географический контекст если его нет
-function addGeoContext(q) {
-  const lower = q.toLowerCase();
-  // Крупные города знают без контекста
-  if (/петропавловск|ишим|тюмень|омск|новосибирск/.test(lower)) return q;
-  // Уже есть контекст
-  if (/казанск|тюменск|сибирск/.test(lower)) return q;
-  return q + ', Казанский район, Тюменская область';
+// ── Строим поисковый запрос со смарт-контекстом ──────────
+// Если уже известна другая точка — добавляем её город как контекст,
+// чтобы "улица Ленина" нашла нужный город, а не любой.
+function buildSearchQuery(query) {
+  const lower = query.toLowerCase();
+
+  // Пользователь явно написал город — не добавляем
+  if (/петропавловск|ишим|тюмень|омск|новосибирск/.test(lower)) return query;
+  if (/казанск|тюменск/.test(lower)) return query;
+
+  // Смотрим на другую уже установленную точку
+  const otherAddr = (mode === 'b' && pointA) ? (pointA.address  || '').toLowerCase()
+                  : (mode === 'a' && pointB) ? (pointB.address  || '').toLowerCase()
+                  : '';
+
+  if (otherAddr.includes('ишим'))          return query + ', Ишим, Тюменская область';
+  if (otherAddr.includes('петропавловск')) return query + ', Петропавловск, Казахстан';
+
+  // По умолчанию — Казанский район
+  return query + ', Казанский район, Тюменская область';
 }
 
+// ── Основной поиск: ymaps.search — находит И адреса, И организации ──
+// ymaps.geocode находит только адреса; ymaps.search умеет POI:
+// «Магнит», «Пятёрочка», «аптека», «больница» и т.д.
 async function getSuggestions(query) {
   const local = getLocalMatches(query);
 
   try {
-    // ymaps.geocode — находит И населённые пункты, И конкретные улицы/дома.
-    // ymaps.suggest хорош для автодополнения крупных мест, но плохо ищет
-    // адреса в малых сёлах. Geocode работает надёжнее для адресного поиска.
-    const res = await ymaps.geocode(addGeoContext(query), {
+    const res = await ymaps.search(buildSearchQuery(query), {
       boundedBy:    BOUNDS,
       strictBounds: false,
       results:      6,
     });
 
-    const geoItems = [];
+    const items = [];
     res.geoObjects.each(function (obj) {
-      const addr   = obj.getAddressLine();
-      const coords = obj.geometry.getCoordinates();
+      const coords = obj.geometry ? obj.geometry.getCoordinates() : null;
+      if (!coords) return;
+
+      const name  = obj.properties.get('name')        || '';
+      const desc  = obj.properties.get('description') || '';
+      const addr  = obj.getAddressLine()              || '';
+
+      // Это организация/POI если есть отдельное название отличное от адреса
+      const isPOI = name && name !== addr && name.length < 80;
+
+      // Полный лейбл для поля и для водителя
+      const label = isPOI
+        ? (name + (addr ? ', ' + addr : ''))
+        : addr;
+
       // Не дублируем локальные чипы
-      if (!local.some(l => addr.toLowerCase().includes(l._localName.toLowerCase()))) {
-        geoItems.push({
-          displayName: addr,
-          value:       addr,
-          _geoCoords:  coords, // уже есть координаты — не нужен повторный geocode
-        });
-      }
+      if (local.some(l => label.toLowerCase().includes(l._localName.toLowerCase()))) return;
+
+      items.push({
+        displayName: isPOI ? name : addr,
+        subDisplay:  isPOI ? addr : (desc || null),
+        _fullLabel:  label,   // то что попадёт в поле ввода и в заказ
+        _geoCoords:  coords,
+        _isPOI:      isPOI,
+      });
     });
 
-    return [...local, ...geoItems];
+    return [...local, ...items];
   } catch (_) {
     return local;
   }
@@ -419,16 +446,17 @@ function setupInput(inputId, dropId, pointType) {
 
     timer = setTimeout(async () => {
       const suggestions = await getSuggestions(q);
+
       renderDrop(drop, suggestions, async (item) => {
         hideDrop(drop);
 
         let lat, lon, addr;
 
         if (item._geoCoords) {
-          // geocode-результат — координаты уже есть, второй запрос не нужен
+          // search/geocode-результат — координаты уже есть
           lat  = item._geoCoords[0];
           lon  = item._geoCoords[1];
-          addr = item.displayName;
+          addr = item._fullLabel || item.displayName;
         } else if (item._isLocal) {
           const r = await geocodeQuery(item._localQuery);
           if (!r) { showFormMsg('error', `Не удалось найти «${item._localName}»`); return; }
@@ -461,25 +489,39 @@ function renderDrop(drop, items, onSelect) {
   drop.innerHTML = '';
 
   if (!items.length) {
-    drop.innerHTML = '<div class="drop-no-result">Не найдено — попробуйте написать только населённый пункт или улицу</div>';
+    drop.innerHTML = '<div class="drop-no-result">Не найдено — попробуйте другой запрос или кликните на карте</div>';
     drop.style.display = 'block';
     return;
   }
 
   items.forEach(item => {
     const div = document.createElement('div');
-    div.className = 'drop-item' + (item._isLocal ? ' drop-item-local' : '');
 
-    const icon = item._isLocal ? '🏘' : '📍';
-    const main = item._isLocal ? item._localName : (item.displayName || item.value || '');
-    const sub  = item._isLocal
-      ? 'Казанский район'
-      : (item.value && item.value !== main ? item.value : '');
+    let icon, main, sub, cls;
 
+    if (item._isLocal) {
+      cls  = 'drop-item drop-item-local';
+      icon = '🏘';
+      main = item._localName;
+      sub  = 'Казанский район';
+    } else if (item._isPOI) {
+      cls  = 'drop-item drop-item-poi';
+      icon = '🏪';
+      main = item.displayName;
+      sub  = item.subDisplay || '';
+    } else {
+      cls  = 'drop-item';
+      icon = '📍';
+      main = item.displayName;
+      sub  = item.subDisplay || '';
+    }
+
+    div.className = cls;
     div.innerHTML =
       `<span class="drop-icon">${icon}</span>` +
-      `<span><strong>${escHtml(main)}</strong>` +
-      (sub ? `<span class="drop-sub">${escHtml(sub)}</span>` : '') +
+      `<span class="drop-text">` +
+        `<strong>${escHtml(main)}</strong>` +
+        (sub ? `<span class="drop-sub">${escHtml(sub)}</span>` : '') +
       `</span>`;
 
     div.addEventListener('mousedown', e => { e.preventDefault(); onSelect(item); });

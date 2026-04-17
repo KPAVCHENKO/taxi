@@ -681,7 +681,7 @@ body {
 }
 
 .drop-item {
-  padding: 11px 14px;
+  padding: 10px 14px;
   font-size: 14px;
   color: var(--text-2);
   cursor: pointer;
@@ -689,39 +689,53 @@ body {
   transition: background 0.12s;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   line-height: 1.4;
 }
 
 .drop-item:last-child { border-bottom: none; }
 .drop-item:hover { background: var(--gold-bg); color: var(--text); }
+.drop-item:hover .drop-sub { color: var(--text-muted); }
 
 .drop-icon {
-  font-size: 14px;
+  font-size: 15px;
   flex-shrink: 0;
   margin-top: 1px;
-  opacity: 0.5;
+  line-height: 1;
 }
 
+.drop-text { flex: 1; min-width: 0; }
+
 .drop-no-result {
-  padding: 12px 14px;
+  padding: 14px;
   font-size: 13px;
   color: var(--text-muted);
   text-align: center;
 }
 
+/* Населённые пункты (быстрый выбор) */
 .drop-item-local {
-  background: rgba(79,158,255,0.08);
+  background: rgba(79,158,255,0.07);
   border-left: 3px solid var(--blue);
 }
-.drop-item-local:hover { background: rgba(79,158,255,0.16); }
+.drop-item-local:hover { background: rgba(79,158,255,0.14); }
+.drop-item-local .drop-icon { opacity: 1; }
+
+/* Организации / POI */
+.drop-item-poi {
+  border-left: 3px solid rgba(245,184,0,0.4);
+}
+.drop-item-poi .drop-icon { opacity: 1; }
 
 .drop-sub {
   display: block;
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 400;
-  margin-top: 1px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Чипы населённых пунктов ── */
