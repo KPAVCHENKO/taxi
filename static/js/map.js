@@ -1,115 +1,68 @@
-/* ══════════════════════════════════════════════════════════════
-   TAXI MAP · Казанский район, Тюменская область
-   MapLibre GL JS + Geoapify
-══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   TAXI MAP · Казанский район — Yandex Maps 2.1
+══════════════════════════════════════════════════════ */
 
-// ── Константы ──────────────────────────────────────────────────────────────
-const GEOAPIFY_KEY = window.GEOAPIFY_KEY;
+// Ограничивающий прямоугольник: Казанский + соседние районы
+const BOUNDS = [[54.8, 66.5], [57.2, 71.5]];
+const CENTER = [55.73, 69.23]; // Центр Казанского района
 
-// Центр Казанского района (lon, lat)
-const CENTER_LON = 69.23;
-const CENTER_LAT = 55.73;
-
-// Поиск строго по 4 ближайшим районам:
-// Казанский, Бердюжский, Сладковский, Ишимский
-// rect: lon_min, lat_min, lon_max, lat_max
-const GEO_FILTER = 'rect:66.5,54.8,71.5,57.2';
-const GEO_BIAS   = `proximity:${CENTER_LON},${CENTER_LAT}`;
-
-// Популярные населённые пункты — всегда показываются в поиске
-// q — запрос для геокодинга с максимальным контекстом
+// Популярные населённые пункты
 const PLACES = [
-  { name: 'Казанское',        q: 'Казанское, Казанский район, Тюменская область, Россия' },
-  { name: 'Ишим',             q: 'Ишим, Тюменская область, Россия' },
-  { name: 'Новоселезнево',    q: 'Новоселезнево, Казанский район, Тюменская область, Россия' },
-  { name: 'Большие Ярки',     q: 'Большие Ярки, Казанский район, Тюменская область, Россия' },
-  { name: 'Ильинка',          q: 'Ильинка, Казанский район, Тюменская область, Россия' },
-  { name: 'Яровское',         q: 'Яровское, Казанский район, Тюменская область, Россия' },
+  { name: 'Казанское',     q: 'Казанское, Казанский район, Тюменская область' },
+  { name: 'Ишим',          q: 'Ишим, Тюменская область' },
+  { name: 'Новоселезнево', q: 'Новоселезнево, Казанский район, Тюменская область' },
+  { name: 'Большие Ярки',  q: 'Большие Ярки, Казанский район, Тюменская область' },
+  { name: 'Ильинка',       q: 'Ильинка, Казанский район, Тюменская область' },
+  { name: 'Яровское',      q: 'Яровское, Казанский район, Тюменская область' },
 ];
 
-// ── Состояние ─────────────────────────────────────────────────────────────
-let map      = null;
-let mapReady = false;
-let markerA  = null;
-let markerB  = null;
-let pointA   = null;   // { lat, lng, address }
-let pointB   = null;
-let mode     = null;   // 'a' | 'b' | null
+// ── Состояние ──────────────────────────────────────────
+let ymap       = null;
+let placemarkA = null, placemarkB = null;
+let pointA     = null, pointB = null; // { lat, lon, address }
+let mode       = 'a';
+let routeObj   = null;
 
-// Какой инпут сейчас активен (для чипов)
-let activeInput = null;  // 'a' | 'b'
+let whenMode     = 'now';
+let dateOffset   = 0;
+let pickedHour   = 12;
+let pickedMinute = 0;
+let paymentMethod = 'cash';
 
-// Время
-let whenMode        = 'now';
-let dateOffset      = 0;   // 0=сегодня, 1=завтра, 2=послезавтра
-let pickedHour      = 12;
-let pickedMinute    = 0;
-
-// ── Инициализация ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+// ══════════════════════════════════════════════════════
+// ИНИЦИАЛИЗАЦИЯ
+// ══════════════════════════════════════════════════════
+ymaps.ready(function () {
   initMap();
   initAddressInputs();
   renderChips();
   renderDateChips();
-  // По умолчанию — режим выбора "Откуда", чтобы карта реагировала сразу
   setMode('a');
 });
 
-// ══════════════════════════════════════════════════════════════
-// КАРТА
-// ══════════════════════════════════════════════════════════════
 function initMap() {
-  map = new maplibregl.Map({
-    container: 'map-container',
-    style: `https://maps.geoapify.com/v1/styles/osm-bright/style.json?apiKey=${GEOAPIFY_KEY}`,
-    center: [CENTER_LON, CENTER_LAT],
+  ymap = new ymaps.Map('map-container', {
+    center: CENTER,
     zoom: 10,
+    controls: ['zoomControl'],
+  }, {
+    suppressMapOpenBlock: true,
+    yandexMapDisablePoiInteractivity: true,
   });
 
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-
-  map.on('load', () => {
-    map.addSource('route', { type: 'geojson', data: emptyGeoJSON() });
-
-    // Белая обводка маршрута
-    map.addLayer({
-      id: 'route-outline',
-      type: 'line',
-      source: 'route',
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.6 },
-    });
-
-    // Синяя линия маршрута
-    map.addLayer({
-      id: 'route-line',
-      type: 'line',
-      source: 'route',
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#2563EB', 'line-width': 4 },
-    });
-
-    mapReady = true;
-  });
-
-  // Клик по карте
-  map.on('click', (e) => {
+  // Клик по карте — ставим точку
+  ymap.events.add('click', function (e) {
     if (!mode) return;
-    const { lng, lat } = e.lngLat;
-    handleMapClick(lat, lng);
-  });
-
-  map.on('mousemove', () => {
-    if (map) map.getCanvas().style.cursor = mode ? 'crosshair' : '';
+    const coords = e.get('coords'); // [lat, lon]
+    handleMapClick(coords[0], coords[1]);
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// РЕЖИМ (A / B / null)
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// РЕЖИМ (a / b / null)
+// ══════════════════════════════════════════════════════
 function setMode(newMode) {
   mode = newMode;
-  activeInput = newMode;
 
   // Кнопки на карте
   const btnA = document.getElementById('btn-mode-a');
@@ -119,64 +72,75 @@ function setMode(newMode) {
   if (newMode === 'a' && btnA) btnA.classList.add('active-a');
   if (newMode === 'b' && btnB) btnB.classList.add('active-b');
 
-  // Кнопки ниже карты (дублируют)
+  // Кнопки ниже карты
   const tapA = document.getElementById('tap-btn-a');
   const tapB = document.getElementById('tap-btn-b');
   if (tapA) tapA.classList.toggle('tap-active-a', newMode === 'a');
   if (tapB) tapB.classList.toggle('tap-active-b', newMode === 'b');
 
-  // Подсветка строки адреса
+  // Подсветка строк
   const fromRow = document.getElementById('from-row');
   const toRow   = document.getElementById('to-row');
   if (fromRow) fromRow.classList.toggle('addr-row-active', newMode === 'a');
   if (toRow)   toRow.classList.toggle('addr-row-active',   newMode === 'b');
 
-  if (map) map.getCanvas().style.cursor = newMode ? 'crosshair' : '';
+  // Курсор карты
+  if (ymap) {
+    try {
+      ymap.cursors.pop('crosshair');
+      if (newMode) ymap.cursors.push('crosshair');
+    } catch (_) {}
+  }
 
   if (newMode === 'a') document.getElementById('search-from').focus();
   if (newMode === 'b') document.getElementById('search-to').focus();
 }
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // КЛИК ПО КАРТЕ
-// ══════════════════════════════════════════════════════════════
-async function handleMapClick(lat, lng) {
+// ══════════════════════════════════════════════════════
+async function handleMapClick(lat, lon) {
   const capturedMode = mode;
   showRouteBadge('loading');
 
-  const address = await reverseGeocode(lat, lng);
+  const address = await reverseGeocode(lat, lon);
 
-  if (capturedMode === 'a') {
-    placePointA(lat, lng, address);
-  } else if (capturedMode === 'b') {
-    placePointB(lat, lng, address);
-  }
+  if (capturedMode === 'a') placePointA(lat, lon, address);
+  else if (capturedMode === 'b') placePointB(lat, lon, address);
 
-  if (pointA && pointB) {
-    buildRoute();
-  } else {
-    hideRouteBadge();
-  }
+  if (pointA && pointB) buildRoute();
+  else hideRouteBadge();
 
-  // После A — автоматически переключаем в режим B
-  if (capturedMode === 'a' && !pointB) {
-    setMode('b');
-  } else if (capturedMode === 'b') {
-    setMode(null);
-  }
+  if (capturedMode === 'a' && !pointB) setMode('b');
+  else if (capturedMode === 'b') setMode(null);
 }
 
-// ══════════════════════════════════════════════════════════════
-// УСТАНОВКА ТОЧЕК
-// ══════════════════════════════════════════════════════════════
-function placePointA(lat, lng, address) {
-  if (markerA) { markerA.remove(); markerA = null; }
-  pointA = { lat, lng, address };
+// ══════════════════════════════════════════════════════
+// ТОЧКИ НА КАРТЕ
+// ══════════════════════════════════════════════════════
+function placePointA(lat, lon, address) {
+  if (placemarkA) ymap.geoObjects.remove(placemarkA);
+  pointA = { lat, lon, address };
 
-  markerA = new maplibregl.Marker({ element: makeMarkerEl('A', '#2563EB') })
-    .setLngLat([lng, lat])
-    .addTo(map);
+  placemarkA = new ymaps.Placemark([lat, lon], { hintContent: 'Откуда' }, {
+    iconLayout:      'default#image',
+    iconImageHref:   makePinSVG('A', '#4F9EFF'),
+    iconImageSize:   [32, 42],
+    iconImageOffset: [-16, -42],
+    draggable: true,
+  });
 
+  placemarkA.events.add('dragend', function () {
+    const c = placemarkA.geometry.getCoordinates();
+    reverseGeocode(c[0], c[1]).then(addr => {
+      pointA = { lat: c[0], lon: c[1], address: addr };
+      setInputVal('search-from', addr);
+      checkAddressVagueness(addr);
+      if (pointB) buildRoute();
+    });
+  });
+
+  ymap.geoObjects.add(placemarkA);
   setInputVal('search-from', address);
   show('clear-a');
   clearRouteData();
@@ -184,14 +148,29 @@ function placePointA(lat, lng, address) {
   checkAddressVagueness(address);
 }
 
-function placePointB(lat, lng, address) {
-  if (markerB) { markerB.remove(); markerB = null; }
-  pointB = { lat, lng, address };
+function placePointB(lat, lon, address) {
+  if (placemarkB) ymap.geoObjects.remove(placemarkB);
+  pointB = { lat, lon, address };
 
-  markerB = new maplibregl.Marker({ element: makeMarkerEl('B', '#F97316') })
-    .setLngLat([lng, lat])
-    .addTo(map);
+  placemarkB = new ymaps.Placemark([lat, lon], { hintContent: 'Куда' }, {
+    iconLayout:      'default#image',
+    iconImageHref:   makePinSVG('B', '#F97316'),
+    iconImageSize:   [32, 42],
+    iconImageOffset: [-16, -42],
+    draggable: true,
+  });
 
+  placemarkB.events.add('dragend', function () {
+    const c = placemarkB.geometry.getCoordinates();
+    reverseGeocode(c[0], c[1]).then(addr => {
+      pointB = { lat: c[0], lon: c[1], address: addr };
+      setInputVal('search-to', addr);
+      checkAddressVagueness(addr);
+      if (pointA) buildRoute();
+    });
+  });
+
+  ymap.geoObjects.add(placemarkB);
   setInputVal('search-to', address);
   show('clear-b');
   clearRouteData();
@@ -201,12 +180,13 @@ function placePointB(lat, lng, address) {
 
 function clearPoint(which) {
   if (which === 'a') {
-    if (markerA) { markerA.remove(); markerA = null; }
+    if (placemarkA) { ymap.geoObjects.remove(placemarkA); placemarkA = null; }
     pointA = null;
     setInputVal('search-from', '');
     hide('clear-a');
+    setMode('a');
   } else {
-    if (markerB) { markerB.remove(); markerB = null; }
+    if (placemarkB) { ymap.geoObjects.remove(placemarkB); placemarkB = null; }
     pointB = null;
     setInputVal('search-to', '');
     hide('clear-b');
@@ -216,204 +196,184 @@ function clearPoint(which) {
 }
 
 function swapPoints() {
-  const tmpA = pointA;
-  const tmpB = pointB;
-
-  // Убираем маркеры
-  if (markerA) { markerA.remove(); markerA = null; }
-  if (markerB) { markerB.remove(); markerB = null; }
-  pointA = null;
-  pointB = null;
-
-  // Расставляем в обратном порядке
-  if (tmpB) placePointA(tmpB.lat, tmpB.lng, tmpB.address);
-  if (tmpA) placePointB(tmpA.lat, tmpA.lng, tmpA.address);
-
-  clearRouteData();
+  const tmpA = pointA ? { ...pointA } : null;
+  const tmpB = pointB ? { ...pointB } : null;
+  if (placemarkA) { ymap.geoObjects.remove(placemarkA); placemarkA = null; }
+  if (placemarkB) { ymap.geoObjects.remove(placemarkB); placemarkB = null; }
+  pointA = null; pointB = null;
+  if (tmpB) placePointA(tmpB.lat, tmpB.lon, tmpB.address);
+  if (tmpA) placePointB(tmpA.lat, tmpA.lon, tmpA.address);
   if (pointA && pointB) buildRoute();
 }
 
 function resetAll() {
-  if (markerA) { markerA.remove(); markerA = null; }
-  if (markerB) { markerB.remove(); markerB = null; }
-  pointA = null;
-  pointB = null;
-
-  setInputVal('search-from', '');
-  setInputVal('search-to', '');
-  hide('clear-a');
-  hide('clear-b');
-
-  closeAllDropdowns();
-  clearRouteData();
-  updateChipStates();
-  setMode(null);
-
-  map.flyTo({ center: [CENTER_LON, CENTER_LAT], zoom: 10, duration: 600 });
+  clearPoint('a');
+  clearPoint('b');
+  hideRouteBadge();
+  hideCommentHint();
 }
 
-// ══════════════════════════════════════════════════════════════
-// МАРКЕР
-// ══════════════════════════════════════════════════════════════
-function makeMarkerEl(label, color) {
-  const el = document.createElement('div');
-  el.className = 'map-marker';
-  el.style.backgroundColor = color;
+// ══════════════════════════════════════════════════════
+// МАРШРУТ
+// ══════════════════════════════════════════════════════
+function buildRoute() {
+  if (!pointA || !pointB) return;
+  if (routeObj) { ymap.geoObjects.remove(routeObj); routeObj = null; }
+  showRouteBadge('loading');
 
-  const lbl = document.createElement('div');
-  lbl.className = 'map-marker-label';
-  lbl.textContent = label;
+  ymaps.route(
+    [[pointA.lat, pointA.lon], [pointB.lat, pointB.lon]],
+    { routingMode: 'auto', mapStateAutoApply: false }
+  ).then(function (route) {
 
-  el.appendChild(lbl);
-  return el;
+    // Золотая линия маршрута
+    route.getPaths().each(function (path) {
+      path.options.set({
+        strokeColor:   '#F5B800',
+        strokeWidth:   5,
+        strokeOpacity: 0.88,
+      });
+    });
+
+    // Прячем маркеры начала/конца маршрута (у нас свои)
+    route.getWayPoints().each(function (wp) {
+      wp.options.set({ visible: false });
+    });
+
+    routeObj = route;
+    ymap.geoObjects.add(route);
+
+    const km   = (route.getLength() / 1000).toFixed(1);
+    const mins = Math.round(route.getDuration() / 60);
+    showRouteBadge('info', `📍 ${km} км · ~${mins} мин`);
+
+    // Подогнать карту под маршрут
+    try {
+      const bounds = route.getBounds();
+      if (bounds) ymap.setBounds(bounds, { checkZoomRange: true, zoomMargin: 60 });
+    } catch (_) {}
+
+  }).catch(function () {
+    hideRouteBadge();
+  });
 }
 
-// ══════════════════════════════════════════════════════════════
+function clearRouteData() {
+  if (routeObj) { ymap.geoObjects.remove(routeObj); routeObj = null; }
+  hideRouteBadge();
+}
+
+// ══════════════════════════════════════════════════════
 // ГЕОКОДИНГ
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 async function reverseGeocode(lat, lon) {
   try {
-    const url = new URL('https://api.geoapify.com/v1/geocode/reverse');
-    url.searchParams.set('lat',    lat);
-    url.searchParams.set('lon',    lon);
-    url.searchParams.set('lang',   'ru');
-    url.searchParams.set('apiKey', GEOAPIFY_KEY);
-
-    const res  = await fetch(url.toString());
-    const data = await res.json();
-
-    if (data.features && data.features.length > 0) {
-      return data.features[0].properties.formatted
-          || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    }
-  } catch (e) { /* тихо */ }
-  return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    const res = await ymaps.geocode([lat, lon], { results: 1 });
+    const obj = res.geoObjects.get(0);
+    return obj ? obj.getAddressLine() : `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  } catch (_) {
+    return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  }
 }
 
-// Геокодинг с максимальным контекстом для конкретного запроса (чипы)
-async function geocodeExact(query) {
+async function geocodeQuery(query) {
   try {
-    const url = new URL('https://api.geoapify.com/v1/geocode/search');
-    url.searchParams.set('text',    query);
-    url.searchParams.set('lang',    'ru');
-    url.searchParams.set('limit',   '1');
-    url.searchParams.set('bias',    GEO_BIAS);
-    url.searchParams.set('apiKey',  GEOAPIFY_KEY);
-    const res  = await fetch(url.toString());
-    const data = await res.json();
-    return data.features || [];
-  } catch (e) { return []; }
+    const res = await ymaps.geocode(query, {
+      boundedBy:    BOUNDS,
+      strictBounds: false,
+      results:      1,
+    });
+    const obj = res.geoObjects.get(0);
+    if (!obj) return null;
+    const coords = obj.geometry.getCoordinates(); // [lat, lon]
+    return { lat: coords[0], lon: coords[1], address: obj.getAddressLine() };
+  } catch (_) {
+    return null;
+  }
 }
 
-// Геокодинг для текстового поиска — строгий фильтр по 4 районам
-async function searchAddress(query) {
-  if (!query || query.trim().length < 2) return [];
-  try {
-    const url = new URL('https://api.geoapify.com/v1/geocode/search');
-    url.searchParams.set('text',   query.trim());
-    url.searchParams.set('filter', GEO_FILTER);
-    url.searchParams.set('bias',   GEO_BIAS);
-    url.searchParams.set('lang',   'ru');
-    url.searchParams.set('limit',  '6');
-    url.searchParams.set('apiKey', GEOAPIFY_KEY);
-
-    const res  = await fetch(url.toString());
-    const data = await res.json();
-    return data.features || [];
-  } catch (e) { return []; }
-}
-
-// Объединяем локальные совпадения + API результаты
-// Локальные всегда показываются первыми (даже если Geoapify их не знает)
+// ══════════════════════════════════════════════════════
+// ПОИСК / ПОДСКАЗКИ
+// ══════════════════════════════════════════════════════
 function getLocalMatches(query) {
   const q = query.toLowerCase().trim();
-  return PLACES.filter(p => p.name.toLowerCase().includes(q));
+  return PLACES
+    .filter(p => p.name.toLowerCase().includes(q))
+    .map(p => ({ _isLocal: true, _localName: p.name, _localQuery: p.q, displayName: p.name }));
 }
 
-async function getSearchSuggestions(query) {
-  if (!query || query.trim().length < 2) return [];
+async function getSuggestions(query) {
+  const local = getLocalMatches(query);
 
-  const localMatches = getLocalMatches(query);
-  const [apiFeatures] = await Promise.all([searchAddress(query)]);
-
-  // Превращаем локальные совпадения в «виртуальные» фичи
-  const localFeatures = localMatches.map(p => ({
-    _isLocal: true,
-    _localName: p.name,
-    _localQuery: p.q,
-  }));
-
-  // API-результаты — убираем те, что совпадают с локальными по названию
-  const filteredApi = apiFeatures.filter(f => {
-    const addr = (f.properties.formatted || '').toLowerCase();
-    return !localMatches.some(p => addr.includes(p.name.toLowerCase()));
-  });
-
-  return [...localFeatures, ...filteredApi].slice(0, 7);
+  try {
+    const items = await ymaps.suggest(query + ', Тюменская область', {
+      boundedBy:    BOUNDS,
+      strictBounds: false,
+      results:      7,
+      highlight:    false,
+    });
+    // Убираем дубли с локальными
+    const api = items.filter(i =>
+      !local.some(l => i.displayName && i.displayName.includes(l._localName))
+    );
+    return [...local, ...api];
+  } catch (_) {
+    return local;
+  }
 }
 
-// ══════════════════════════════════════════════════════════════
-// АВТОДОПОЛНЕНИЕ
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// ИНПУТЫ АДРЕСОВ
+// ══════════════════════════════════════════════════════
 function initAddressInputs() {
-  setupInput('search-from', 'a', 'drop-from');
-  setupInput('search-to',   'b', 'drop-to');
+  setupInput('search-from', 'drop-from', 'a');
+  setupInput('search-to',   'drop-to',   'b');
 }
 
-function setupInput(inputId, pointType, dropId) {
+function setupInput(inputId, dropId, pointType) {
   const input = document.getElementById(inputId);
   const drop  = document.getElementById(dropId);
-  if (!input || !drop) return;
-
   let timer;
 
   input.addEventListener('focus', () => {
-    activeInput = pointType;
-    highlightRow(pointType, true);
+    setMode(pointType);
   });
 
   input.addEventListener('blur', () => {
-    highlightRow(pointType, false);
     setTimeout(() => hideDrop(drop), 200);
   });
 
   input.addEventListener('input', () => {
     clearTimeout(timer);
     const q = input.value.trim();
-
     if (q.length < 2) { hideDrop(drop); return; }
 
     timer = setTimeout(async () => {
-      const suggestions = await getSearchSuggestions(q);
-
+      const suggestions = await getSuggestions(q);
       renderDrop(drop, suggestions, async (item) => {
         hideDrop(drop);
 
         let lat, lon, addr;
 
         if (item._isLocal) {
-          // Локальная подсказка — геокодируем через точный запрос
-          const features = await geocodeExact(item._localQuery);
-          if (!features.length) {
-            showFormMsg('error', `Не удалось найти "${item._localName}"`);
-            return;
-          }
-          lat  = features[0].properties.lat;
-          lon  = features[0].properties.lon;
-          addr = features[0].properties.formatted || item._localName;
+          const r = await geocodeQuery(item._localQuery);
+          if (!r) { showFormMsg('error', `Не удалось найти «${item._localName}»`); return; }
+          lat = r.lat; lon = r.lon;
+          addr = item._localName + ', Казанский район';
         } else {
-          lat  = item.properties.lat;
-          lon  = item.properties.lon;
-          addr = item.properties.formatted || '';
+          const r = await geocodeQuery(item.value || item.displayName);
+          if (!r) { showFormMsg('error', 'Не удалось определить координаты адреса'); return; }
+          lat = r.lat; lon = r.lon;
+          addr = r.address || item.displayName;
         }
 
         if (pointType === 'a') {
           placePointA(lat, lon, addr);
-          map.flyTo({ center: [lon, lat], zoom: 13 });
+          ymap.setCenter([lat, lon], 13);
           if (!pointB) setMode('b');
         } else {
           placePointB(lat, lon, addr);
-          map.flyTo({ center: [lon, lat], zoom: 13 });
+          ymap.setCenter([lat, lon], 13);
           setMode(null);
         }
 
@@ -421,264 +381,140 @@ function setupInput(inputId, pointType, dropId) {
       });
     }, 280);
   });
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hideDrop(drop);
-  });
 }
 
-function renderDrop(drop, suggestions, onSelect) {
+function renderDrop(drop, items, onSelect) {
   drop.innerHTML = '';
 
-  if (!suggestions.length) {
-    drop.innerHTML = '<div class="drop-no-result">Ничего не найдено — попробуйте другой запрос</div>';
+  if (!items.length) {
+    drop.innerHTML = '<div class="drop-no-result">Не найдено — попробуйте другой запрос</div>';
     drop.style.display = 'block';
     return;
   }
 
-  suggestions.forEach((item) => {
-    const el   = document.createElement('div');
-    el.className = 'drop-item';
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'drop-item' + (item._isLocal ? ' drop-item-local' : '');
 
-    const icon  = document.createElement('span');
-    icon.className = 'drop-icon';
+    const icon = item._isLocal ? '🏘' : '📍';
+    const main = item._isLocal ? item._localName : (item.displayName || item.value || '');
+    const sub  = item._isLocal
+      ? 'Казанский район'
+      : (item.value && item.value !== main ? item.value : '');
 
-    const label = document.createElement('span');
+    div.innerHTML =
+      `<span class="drop-icon">${icon}</span>` +
+      `<span><strong>${escHtml(main)}</strong>` +
+      (sub ? `<span class="drop-sub">${escHtml(sub)}</span>` : '') +
+      `</span>`;
 
-    if (item._isLocal) {
-      // Локальная подсказка (наш населённый пункт)
-      icon.textContent  = '🏘';
-      label.innerHTML   = `<strong>${item._localName}</strong>
-        <span class="drop-sub">Казанский район, Тюменская область</span>`;
-      el.classList.add('drop-item-local');
-    } else {
-      icon.textContent = '📍';
-      label.textContent = item.properties.formatted || '';
-    }
-
-    el.appendChild(icon);
-    el.appendChild(label);
-
-    el.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      onSelect(item);
-    });
-
-    drop.appendChild(el);
+    div.addEventListener('mousedown', e => { e.preventDefault(); onSelect(item); });
+    drop.appendChild(div);
   });
 
   drop.style.display = 'block';
 }
 
-function hideDrop(drop) {
-  if (drop) { drop.style.display = 'none'; drop.innerHTML = ''; }
-}
+function hideDrop(drop) { if (drop) drop.style.display = 'none'; }
 
-function closeAllDropdowns() {
-  hideDrop(document.getElementById('drop-from'));
-  hideDrop(document.getElementById('drop-to'));
-}
-
-function highlightRow(type, on) {
-  const row = document.getElementById(type === 'a' ? 'from-row' : 'to-row');
-  if (!row) return;
-  if (on) {
-    row.style.background = type === 'a' ? '#EFF6FF' : '#FFF7ED';
-  } else {
-    row.style.background = '';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // ЧИПЫ НАСЕЛЁННЫХ ПУНКТОВ
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function renderChips() {
   const row = document.getElementById('chips-row');
   if (!row) return;
-
-  PLACES.forEach((place) => {
+  row.innerHTML = '';
+  PLACES.forEach(place => {
     const btn = document.createElement('button');
-    btn.className   = 'chip';
+    btn.type = 'button';
+    btn.className = 'chip';
     btn.textContent = place.name;
     btn.dataset.name = place.name;
-
-    btn.addEventListener('click', () => onChipClick(place, btn));
+    btn.onclick = () => selectChip(place);
     row.appendChild(btn);
   });
 }
 
-async function onChipClick(place, btn) {
-  // Определяем цель: A или B
-  const target = resolveChipTarget();
+async function selectChip(place) {
+  const chip = document.querySelector(`#chips-row .chip[data-name="${place.name}"]`);
+  if (chip) chip.classList.add('chip-loading');
 
-  btn.classList.add('chip-loading');
-  btn.disabled = true;
+  const r = await geocodeQuery(place.q);
+  if (chip) chip.classList.remove('chip-loading');
 
-  const features = await geocodeExact(place.q);
+  if (!r) { showFormMsg('error', `Не удалось найти «${place.name}»`); return; }
 
-  btn.classList.remove('chip-loading');
-  btn.disabled = false;
-
-  if (!features.length) {
-    showFormMsg('error', `Не удалось найти "${place.name}" — попробуйте ввести вручную`);
-    return;
-  }
-
-  const { lat, lon, formatted } = features[0].properties;
-  const addr = formatted || place.name;
-
-  if (target === 'a') {
-    placePointA(lat, lon, addr);
-    map.flyTo({ center: [lon, lat], zoom: 12 });
-    if (!pointB) setMode('b');
-  } else {
-    placePointB(lat, lon, addr);
-    map.flyTo({ center: [lon, lat], zoom: 12 });
+  if (mode === 'b' || (pointA && !pointB)) {
+    placePointB(r.lat, r.lon, place.name);
     setMode(null);
+  } else {
+    placePointA(r.lat, r.lon, place.name);
+    if (!pointB) setMode('b');
   }
 
+  ymap.setCenter([r.lat, r.lon], 12);
   if (pointA && pointB) buildRoute();
 }
 
-function resolveChipTarget() {
-  // Если есть активный инпут — используем его
-  if (activeInput) return activeInput;
-  // Иначе: заполняем A первым, потом B
-  if (!pointA) return 'a';
-  if (!pointB) return 'b';
-  return 'b';
-}
-
 function updateChipStates() {
-  const chips = document.querySelectorAll('#chips-row .chip');
-  chips.forEach((chip) => {
+  document.querySelectorAll('#chips-row .chip').forEach(chip => {
     chip.classList.remove('chip-selected-a', 'chip-selected-b');
     const name = chip.dataset.name;
-    if (pointA && pointA.address && pointA.address.includes(name)) {
-      chip.classList.add('chip-selected-a');
-    }
-    if (pointB && pointB.address && pointB.address.includes(name)) {
-      chip.classList.add('chip-selected-b');
-    }
+    if (pointA?.address?.includes(name)) chip.classList.add('chip-selected-a');
+    if (pointB?.address?.includes(name)) chip.classList.add('chip-selected-b');
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// МАРШРУТ
-// ══════════════════════════════════════════════════════════════
-async function buildRoute() {
-  if (!pointA || !pointB || !mapReady) return;
-
-  showRouteBadge('loading');
-
-  try {
-    const url = new URL('https://api.geoapify.com/v1/routing');
-    // Geoapify routing: lat,lon порядок (не lon,lat!)
-    url.searchParams.set('waypoints', `${pointA.lat},${pointA.lng}|${pointB.lat},${pointB.lng}`);
-    url.searchParams.set('mode',   'drive');
-    url.searchParams.set('apiKey', GEOAPIFY_KEY);
-
-    const res  = await fetch(url.toString());
-    const data = await res.json();
-
-    if (data.features && data.features.length > 0) {
-      map.getSource('route').setData(data);
-
-      const props  = data.features[0].properties;
-      const km     = (props.distance / 1000).toFixed(1);
-      const mins   = Math.round(props.time / 60);
-      showRouteBadge('info', `📍 ${km} км · ~${mins} мин`);
-
-      fitBounds(data.features[0].geometry);
-    } else {
-      showRouteBadge('info', 'Маршрут не построен');
-    }
-  } catch (e) {
-    console.error('[route]', e);
-    hideRouteBadge();
-  }
-}
-
-function fitBounds(geometry) {
-  let coords = [];
-  if (geometry.type === 'MultiLineString') {
-    geometry.coordinates.forEach((line) => coords.push(...line));
-  } else if (geometry.type === 'LineString') {
-    coords = geometry.coordinates;
-  }
-  if (!coords.length) return;
-
-  const bounds = new maplibregl.LngLatBounds();
-  coords.forEach((c) => bounds.extend(c));
-  map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 700 });
-}
-
-function clearRouteData() {
-  if (mapReady && map.getSource('route')) {
-    map.getSource('route').setData(emptyGeoJSON());
-  }
-  hideRouteBadge();
-}
-
+// ══════════════════════════════════════════════════════
+// МАРШРУТ-БЕЙДЖ
+// ══════════════════════════════════════════════════════
 function showRouteBadge(type, text) {
   const info    = document.getElementById('route-info');
   const loading = document.getElementById('route-loading');
-
   if (type === 'loading') {
     if (loading) loading.style.display = 'flex';
     if (info)    info.style.display    = 'none';
   } else {
     if (loading) loading.style.display = 'none';
-    if (info && text) {
-      info.textContent = text;
-      info.style.display = 'flex';
-    }
+    if (info && text) { info.textContent = text; info.style.display = 'flex'; }
   }
 }
 
-function hideRouteBadge() {
-  hide('route-info');
-  hide('route-loading');
+function hideRouteBadge() { hide('route-info'); hide('route-loading'); }
+
+// ══════════════════════════════════════════════════════
+// SVG-МАРКЕР (пин)
+// ══════════════════════════════════════════════════════
+function makePinSVG(label, color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
+    <path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 42 16 42S32 28 32 16C32 7.16 24.84 0 16 0Z" fill="${color}"/>
+    <circle cx="16" cy="16" r="9" fill="white" opacity="0.95"/>
+    <text x="16" y="20" text-anchor="middle" font-family="-apple-system,sans-serif"
+          font-size="11" font-weight="800" fill="${color}">${label}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // ВЫБОР ВРЕМЕНИ
-// ══════════════════════════════════════════════════════════════
-function setWhen(mode) {
-  whenMode = mode;
-
-  const tabNow   = document.getElementById('tab-now');
-  const tabLater = document.getElementById('tab-later');
-  const picker   = document.getElementById('time-picker');
-
-  tabNow.classList.toggle('active',   mode === 'now');
-  tabLater.classList.toggle('active', mode === 'later');
-  picker.style.display = mode === 'later' ? 'block' : 'none';
-}
-
-function pickDate(offset) {
-  dateOffset = offset;
-  document.querySelectorAll('#date-chips .date-chip').forEach((chip, i) => {
-    chip.classList.toggle('active', i === offset);
-  });
+// ══════════════════════════════════════════════════════
+function setWhen(w) {
+  whenMode = w;
+  document.getElementById('tab-now').classList.toggle('active',   w === 'now');
+  document.getElementById('tab-later').classList.toggle('active', w === 'later');
+  document.getElementById('time-picker').style.display = w === 'later' ? 'block' : 'none';
 }
 
 function renderDateChips() {
   const container = document.getElementById('date-chips');
   if (!container) return;
   container.innerHTML = '';
-
   const weekdays = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
   const today = new Date();
-
   for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    let label;
-    if (i === 0) label = 'Сегодня';
-    else if (i === 1) label = 'Завтра';
-    else label = weekdays[d.getDay()] + ' ' + d.getDate();
-
+    const label = i === 0 ? 'Сегодня' : i === 1 ? 'Завтра' : weekdays[d.getDay()] + ' ' + d.getDate();
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'date-chip' + (i === 0 ? ' active' : '');
@@ -689,37 +525,36 @@ function renderDateChips() {
   }
 }
 
+function pickDate(offset) {
+  dateOffset = offset;
+  document.querySelectorAll('#date-chips .date-chip').forEach((c, i) => {
+    c.classList.toggle('active', i === offset);
+  });
+}
+
 function spinHour(delta) {
   pickedHour = (pickedHour + delta + 24) % 24;
-  // Ограничиваем разумным диапазоном
-  if (pickedHour < 0)  pickedHour = 23;
-  if (pickedHour > 23) pickedHour = 0;
   document.getElementById('spin-hour').textContent = String(pickedHour).padStart(2, '0');
 }
 
 function spinMin(delta) {
   const steps = [0, 15, 30, 45];
-  const idx   = steps.indexOf(pickedMinute);
-  const next  = (idx + delta + steps.length) % steps.length;
-  pickedMinute = steps[next];
+  const idx = steps.indexOf(pickedMinute);
+  pickedMinute = steps[(idx + delta + steps.length) % steps.length];
   document.getElementById('spin-min').textContent = String(pickedMinute).padStart(2, '0');
 }
 
 function getScheduledAt() {
   if (whenMode === 'now') return null;
-
   const d = new Date();
   d.setDate(d.getDate() + dateOffset);
   d.setHours(pickedHour, pickedMinute, 0, 0);
-
   return d.toISOString();
 }
 
-// ══════════════════════════════════════════════════════════════
-// СПОСОБ ОПЛАТЫ
-// ══════════════════════════════════════════════════════════════
-let paymentMethod = 'cash';
-
+// ══════════════════════════════════════════════════════
+// ОПЛАТА
+// ══════════════════════════════════════════════════════
 function setPayment(method) {
   paymentMethod = method;
   document.getElementById('payment-method').value = method;
@@ -727,36 +562,21 @@ function setPayment(method) {
   document.getElementById('pay-transfer').classList.toggle('active', method === 'transfer');
 }
 
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // ОТПРАВКА ЗАКАЗА
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 async function submitOrder() {
-  const phone   = document.getElementById('phone').value.trim();
-  const comment = document.getElementById('order-comment').value.trim();
+  const phone       = document.getElementById('phone').value.trim();
+  const comment     = document.getElementById('order-comment').value.trim();
+  const fromAddress = pointA ? pointA.address : document.getElementById('search-from').value.trim();
+  const toAddress   = pointB ? pointB.address : document.getElementById('search-to').value.trim();
 
-  // Адрес: берём из точки на карте или из текста в поле
-  const fromAddress = pointA
-    ? pointA.address
-    : document.getElementById('search-from').value.trim();
-  const toAddress   = pointB
-    ? pointB.address
-    : document.getElementById('search-to').value.trim();
-
-  if (!phone) {
-    showFormMsg('error', 'Введите номер телефона');
-    return;
-  }
-  if (!fromAddress) {
-    showFormMsg('error', 'Укажите откуда ехать — нажмите чип, введите текст или кликните на карте');
-    return;
-  }
-  if (!toAddress) {
-    showFormMsg('error', 'Укажите куда ехать — нажмите чип, введите текст или кликните на карте');
-    return;
-  }
+  if (!phone)       { showFormMsg('error', 'Введите номер телефона'); return; }
+  if (!fromAddress) { showFormMsg('error', 'Укажите откуда ехать — чип, поиск или точка на карте'); return; }
+  if (!toAddress)   { showFormMsg('error', 'Укажите куда ехать — чип, поиск или точка на карте'); return; }
 
   const btn = document.getElementById('submit-btn');
-  btn.disabled  = true;
+  btn.disabled = true;
   btn.innerHTML = '<span class="mini-spinner"></span> Отправляем…';
 
   try {
@@ -767,10 +587,10 @@ async function submitOrder() {
         phone,
         from_address: fromAddress,
         from_lat:     pointA ? pointA.lat : null,
-        from_lon:     pointA ? pointA.lng : null,
+        from_lon:     pointA ? pointA.lon : null,
         to_address:   toAddress,
         to_lat:       pointB ? pointB.lat : null,
-        to_lon:       pointB ? pointB.lng : null,
+        to_lon:       pointB ? pointB.lon : null,
         comment:      comment || null,
         payment:      paymentMethod,
         scheduled_at: getScheduledAt(),
@@ -778,7 +598,6 @@ async function submitOrder() {
     });
 
     const data = await res.json();
-
     if (data.success) {
       showFormMsg('success', `✅ Заказ #${data.order_id} принят! Ожидайте звонка диспетчера.`);
       resetAll();
@@ -790,35 +609,55 @@ async function submitOrder() {
     } else {
       showFormMsg('error', data.error || 'Не удалось создать заказ');
     }
-  } catch (e) {
+  } catch (_) {
     showFormMsg('error', 'Ошибка сети — проверьте соединение и попробуйте снова');
   } finally {
-    btn.disabled  = false;
+    btn.disabled = false;
     btn.innerHTML = 'Заказать поездку <span class="btn-arrow">→</span>';
   }
 }
 
-function showFormMsg(type, text) {
-  const el = document.getElementById('form-message');
-  if (!el) return;
-  el.textContent   = text;
-  el.className     = `form-msg ${type}`;
-  el.style.display = 'block';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.display = 'none'; }, type === 'success' ? 9000 : 6000);
+// ══════════════════════════════════════════════════════
+// ОТЗЫВЫ
+// ══════════════════════════════════════════════════════
+async function submitReview() {
+  const name = document.getElementById('review-name').value.trim();
+  const text = document.getElementById('review-text').value.trim();
+  if (!name || !text) { showReviewMsg('error', 'Заполните имя и текст отзыва'); return; }
+
+  try {
+    const res  = await fetch('/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, text }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showReviewMsg('success', '✅ Отзыв отправлен на проверку. Спасибо!');
+      document.getElementById('review-name').value = '';
+      document.getElementById('review-text').value = '';
+    } else {
+      showReviewMsg('error', data.error || 'Ошибка отправки');
+    }
+  } catch (_) {
+    showReviewMsg('error', 'Ошибка сети');
+  }
 }
 
-// ══════════════════════════════════════════════════════════════
-// ПОДСКАЗКА "АДРЕС ПРИБЛИЗИТЕЛЬНЫЙ"
-// ══════════════════════════════════════════════════════════════
-// Если в адресе нет признаков улицы — показываем подсказку добавить комментарий
+function showReviewMsg(type, text) {
+  const el = document.getElementById('review-message');
+  if (!el) return;
+  el.textContent = text;
+  el.className = `form-msg ${type}`;
+  el.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════
+// ПОДСКАЗКА «АДРЕС ПРИБЛИЗИТЕЛЬНЫЙ»
+// ══════════════════════════════════════════════════════
 function checkAddressVagueness(address) {
   const hasStreet = /\b(ул|улица|пер|переулок|пр|проспект|шоссе|тракт|набережная|д\.|дом)\b/i.test(address);
-  if (!hasStreet) {
-    showCommentHint();
-  } else {
-    hideCommentHint();
-  }
+  if (!hasStreet) showCommentHint(); else hideCommentHint();
 }
 
 function showCommentHint() {
@@ -831,48 +670,25 @@ function hideCommentHint() {
   if (el) el.style.display = 'none';
 }
 
-// ══════════════════════════════════════════════════════════════
-// ФОРМА ОТЗЫВА
-// ══════════════════════════════════════════════════════════════
-async function submitReview() {
-  const name = document.getElementById('review-name').value.trim();
-  const text = document.getElementById('review-text').value.trim();
-
-  if (!name) { showReviewMsg('error', 'Введите имя'); return; }
-  if (!text || text.length < 5) { showReviewMsg('error', 'Напишите отзыв (минимум 5 символов)'); return; }
-
-  try {
-    const res  = await fetch('/review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, text }),
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      showReviewMsg('success', '✅ Спасибо! Отзыв отправлен на проверку.');
-      document.getElementById('review-name').value = '';
-      document.getElementById('review-text').value = '';
-    } else {
-      showReviewMsg('error', data.error || 'Ошибка');
-    }
-  } catch { showReviewMsg('error', 'Ошибка сети'); }
-}
-
-function showReviewMsg(type, text) {
-  const el = document.getElementById('review-message');
-  if (!el) return;
-  el.textContent   = text;
-  el.className     = `form-msg ${type}`;
-  el.style.display = 'block';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.display = 'none'; }, 6000);
-}
-
-// ══════════════════════════════════════════════════════════════
-// УТИЛИТЫ
-// ══════════════════════════════════════════════════════════════
-function emptyGeoJSON() { return { type: 'FeatureCollection', features: [] }; }
-function setInputVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
 function show(id) { const el = document.getElementById(id); if (el) el.style.display = ''; }
 function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function setInputVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+
+function showFormMsg(type, text) {
+  const el = document.getElementById('form-message');
+  if (!el) return;
+  el.textContent = text;
+  el.className = `form-msg ${type}`;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, type === 'success' ? 9000 : 6000);
+}
+
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}

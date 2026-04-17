@@ -26,8 +26,8 @@ elif _db_url.startswith('postgresql://'):
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
-GEOAPIFY_KEY = os.environ.get('GEOAPIFY_KEY', '39ae8aed8df9420383c9f699413a7b73')
+ADMIN_PASSWORD    = os.environ.get('ADMIN_PASSWORD', 'admin123')
+YANDEX_MAPS_KEY   = os.environ.get('YANDEX_MAPS_KEY', '')
 
 db.init_app(app)
 
@@ -80,7 +80,7 @@ def index():
         .limit(12)
         .all()
     )
-    return render_template('index.html', reviews=reviews, geoapify_key=GEOAPIFY_KEY)
+    return render_template('index.html', reviews=reviews, yandex_maps_key=YANDEX_MAPS_KEY)
 
 
 @app.route('/order', methods=['POST'])
