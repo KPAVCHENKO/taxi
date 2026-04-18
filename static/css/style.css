@@ -184,31 +184,35 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════
-   HERO
+   HERO  — split layout
+   Мобайл: фото сверху (portrait, обрезан до верхней части),
+           текст снизу.
+   Десктоп (≥700px): текст слева, фото справа.
 ═══════════════════════════════════════════════════════ */
 .hero-section {
   border-bottom: 1px solid var(--border-gold);
   color: white;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ── Мобайл: фото идёт ПЕРВЫМ (через order: -1 в .hero-photo) ── */
 .hero-photo {
   width: 100%;
   line-height: 0;
-  background-color: #1A2438;
+  background: #0D1325;
   overflow: hidden;
+  flex-shrink: 0;
+  order: -1;
 }
 
 .hero-photo img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 420px;
+  /* Фиксированная высота — показываем верх портрета: авто + аврора + знак */
+  height: 290px;
   object-fit: cover;
-  object-position: center 18%;
-}
-
-@media (max-width: 600px) {
-  .hero-photo img { max-height: none; object-fit: unset; }
+  object-position: center 12%;
 }
 
 .hero-content {
@@ -216,6 +220,54 @@ body {
   overflow: hidden;
   background: linear-gradient(160deg, #141C32 0%, #0D1628 100%);
   padding: 28px 20px 32px;
+  flex: 1;
+}
+
+/* ── Десктоп: split — текст слева, фото справа ── */
+@media (min-width: 700px) {
+  .hero-section {
+    flex-direction: row;
+    align-items: stretch;
+    min-height: 520px;
+  }
+
+  .hero-photo {
+    order: 0;            /* сбрасываем мобайл-order */
+    width: 42%;
+    max-width: 520px;
+    min-width: 280px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .hero-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  /* Плавный переход фото → контент */
+  .hero-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, #141C32 0%, transparent 28%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    display: flex;
+    align-items: center;
+    padding: 48px 40px;
+  }
+
+  .hero-inner { max-width: 520px; }
+}
+
+@media (min-width: 1000px) {
+  .hero-content { padding: 56px 56px; }
+  .hero-section { min-height: 600px; }
 }
 
 .hero-inner {
@@ -1445,6 +1497,54 @@ body {
 .review-notice { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
 
 /* ═══════════════════════════════════════════════════════
+   СЕКЦИЯ "О КАЗАНСКОМ" (фон — test-bg1.jpg)
+═══════════════════════════════════════════════════════ */
+.town-section {
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(to bottom, rgba(10,16,30,0.80) 0%, rgba(10,16,30,0.65) 60%, rgba(10,16,30,0.92) 100%),
+    url('/static/img/test-bg1.jpg');
+  background-size: cover;
+  background-position: center 30%;
+  padding: 48px 20px;
+  text-align: center;
+  border-top: 1px solid var(--border-gold);
+}
+
+.town-section-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.town-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+
+.town-section-title {
+  font-size: clamp(22px, 5vw, 34px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.7);
+}
+
+.town-section-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.70);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════
    ПОДВАЛ
 ═══════════════════════════════════════════════════════ */
 .site-footer {
@@ -1754,15 +1854,11 @@ body {
 
 .photo-card-interior {
   background-image:
-    linear-gradient(to top, rgba(13,22,40,0.92) 0%, rgba(13,22,40,0.40) 60%, rgba(13,22,40,0.15) 100%),
-    linear-gradient(135deg, #1C2B45 0%, #0D1628 100%);
-  background-color: #1C2B45;
-  min-height: 280px;
-}
-
-/* Если фото нет — красивый градиент-заглушка */
-.photo-card-interior:not([style*="background-image"]) {
-  background: linear-gradient(135deg, #0D1628 0%, #1C2B45 50%, #0D2040 100%);
+    linear-gradient(to top, rgba(8,12,24,0.96) 0%, rgba(8,12,24,0.55) 50%, rgba(8,12,24,0.18) 100%),
+    url('/static/img/interior.jpg');
+  background-size: cover;
+  background-position: center 40%;
+  min-height: 320px;
 }
 
 .photo-overlay {
