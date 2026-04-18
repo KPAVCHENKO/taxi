@@ -59,7 +59,7 @@ def notify_drivers(order):
 
     sched = ''
     if order.scheduled_at:
-        sched = f'\n🕐 <b>Время (UTC+5):</b> {order.scheduled_at.strftime("%d.%m.%Y %H:%M")}'
+        sched = f'\n🕐 <b>Время (Екб):</b> {order.scheduled_at.strftime("%d.%m.%Y %H:%M")}'
 
     _comment      = getattr(order, 'comment', None)
     comment_line  = (f'\n💬 <b>Комментарий:</b> {_comment}'
@@ -114,7 +114,7 @@ def notify_driver_assigned(order, driver):
     if order.scheduled_at:
         from datetime import timedelta
         ekb = order.scheduled_at + timedelta(hours=5)
-        sched = f'\n🕐 <b>Время (UTC+5):</b> {ekb.strftime("%d.%m.%Y %H:%M")}'
+        sched = f'\n🕐 <b>Время (Екб):</b> {ekb.strftime("%d.%m.%Y %H:%M")}'
 
     _c3 = getattr(order, 'comment', None)
     comment_line = (f'\n💬 <b>Комментарий:</b> {_c3}'
@@ -198,7 +198,7 @@ def handle_update(update):
     # Show phone number to accepting driver
     sched = ''
     if order.scheduled_at:
-        sched = f'\n🕐 <b>Время (UTC+5):</b> {order.scheduled_at.strftime("%d.%m.%Y %H:%M")}'
+        sched = f'\n🕐 <b>Время (Екб):</b> {order.scheduled_at.strftime("%d.%m.%Y %H:%M")}'
 
     _comment2     = getattr(order, 'comment', None)
     comment_line  = (f'\n💬 <b>Комментарий:</b> {_comment2}'

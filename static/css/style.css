@@ -184,7 +184,7 @@ body {
 .hero-photo {
   width: 100%;
   height: 240px;
-  background: url('/static/img/hero-bg.jpg') center 30% / cover no-repeat;
+  background: url('/static/img/hero-bg.jpg') center top / cover no-repeat;
   background-color: #1A2438;
 }
 
@@ -261,6 +261,50 @@ body {
 }
 .hero-circle-1 { width: 360px; height: 360px; top: -120px; right: -100px; z-index: 1; }
 .hero-circle-2 { width: 200px; height: 200px; bottom: -80px; right: 30px; z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════
+   БОЛЬШОЙ CTA
+═══════════════════════════════════════════════════════ */
+.big-cta-section {
+  background: linear-gradient(135deg, #0D1628 0%, #141C32 100%);
+  border-top: 2px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  text-align: center;
+  padding: 28px 20px 24px;
+}
+
+.big-cta-label {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 14px;
+  letter-spacing: 0.2px;
+}
+
+.big-cta-phone {
+  display: inline-block;
+  font-size: clamp(28px, 8vw, 42px);
+  font-weight: 900;
+  color: #1E2535;
+  background: var(--gold);
+  text-decoration: none;
+  padding: 14px 32px;
+  border-radius: 16px;
+  box-shadow: 0 6px 28px rgba(245,184,0,0.5);
+  letter-spacing: 1px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.big-cta-phone:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 36px rgba(245,184,0,0.65);
+}
+
+.big-cta-hint {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
 
 /* ═══════════════════════════════════════════════════════
    КАК ЭТО РАБОТАЕТ

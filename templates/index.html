@@ -7,6 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
   <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>.hero-photo { background-image: url('{{ hero_bg }}'); }</style>
 </head>
 <body>
 
@@ -63,6 +64,13 @@
     <div class="hero-circle hero-circle-1"></div>
     <div class="hero-circle hero-circle-2"></div>
   </div>
+</section>
+
+<!-- ═══════════ БОЛЬШОЙ CTA ═══════════ -->
+<section class="big-cta-section">
+  <p class="big-cta-label">Закажите онлайн или позвоните</p>
+  <a href="tel:+79630608419" class="big-cta-phone">📞 8-963-060-84-19</a>
+  <p class="big-cta-hint">Диспетчер ответит и назовёт цену</p>
 </section>
 
 <!-- ═══════════ КАК ЭТО РАБОТАЕТ ═══════════ -->

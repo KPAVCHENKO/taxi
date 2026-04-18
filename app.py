@@ -108,7 +108,9 @@ def index():
         .limit(12)
         .all()
     )
-    return render_template('index.html', reviews=reviews, yandex_maps_key=YANDEX_MAPS_KEY)
+    bg = request.args.get('bg', '')
+    hero_bg = f'/static/img/test-bg{bg}.jpg' if bg in ('1', '2') else '/static/img/hero-bg.jpg'
+    return render_template('index.html', reviews=reviews, yandex_maps_key=YANDEX_MAPS_KEY, hero_bg=hero_bg)
 
 
 @app.route('/order', methods=['POST'])

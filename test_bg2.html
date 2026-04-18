@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Тест фона 2 (лето) — Казанское Такси</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>"/>
+  <link rel="stylesheet" href="static/css/style.css"/>
+  <style>
+    /* Переопределяем только фоновое фото */
+    .hero-photo {
+      background: url('static/img/test-bg2.jpg') center top / cover no-repeat;
+      background-color: #1A2438;
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-logo">
+    <img src="static/img/logo.png" class="topbar-logo-img" alt="Казанское Такси"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>
+    <span class="topbar-icon" style="display:none">🚖</span>
+    <div>
+      <div class="topbar-name">Казанское Такси</div>
+      <div class="topbar-region">Казанский район · Тюменская область</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="tel:+79630608419" class="topbar-phone">📞 +7 (963) 060-84-19</a>
+  </div>
+</header>
+
+<section class="hero-section">
+  <div class="hero-photo"></div>
+  <div class="hero-content">
+    <div class="hero-inner">
+      <h1 class="hero-title">
+        Такси по<br>
+        <span class="hero-title-accent">Казанскому</span><br>
+        району и межгороду
+      </h1>
+      <p class="hero-sub">Ишим · Петропавловск · любые населённые пункты<br>Фиксированные цены. Быстрая подача. Свои водители</p>
+      <div class="hero-features">
+        <div class="hero-feat"><span class="feat-icon">🚗</span><span>Местные водители</span></div>
+        <div class="hero-feat"><span class="feat-icon">⏱</span><span>Подача от 10–20 минут</span></div>
+        <div class="hero-feat"><span class="feat-icon">💰</span><span>Цена известна заранее</span></div>
+        <div class="hero-feat"><span class="feat-icon">📞</span><span>Можно просто позвонить</span></div>
+      </div>
+    </div>
+    <div class="hero-circle hero-circle-1"></div>
+    <div class="hero-circle hero-circle-2"></div>
+  </div>
+</section>
+
+<section class="big-cta-section">
+  <p class="big-cta-label">Закажите онлайн или позвоните</p>
+  <a href="tel:+79630608419" class="big-cta-phone">📞 8-963-060-84-19</a>
+  <p class="big-cta-hint">Диспетчер ответит и назовёт цену</p>
+</section>
+
+</body>
+</html>
