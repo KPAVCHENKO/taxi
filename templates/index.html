@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Казанское Такси — Казанский район</title>
+  <meta name="description" content="Такси по Казанскому району и межгороду. Ишим, Петропавловск, любые населённые пункты. Фиксированные цены, быстрая подача, свои водители." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
   <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
@@ -32,8 +33,10 @@
 </header>
 
 <!-- ═══════════ HERO ═══════════ -->
+<!-- Мобайл: фото сверху (портрет обрезан, показывает авто + аврору), текст снизу -->
+<!-- Десктоп: split — текст слева, фото справа -->
 <section class="hero-section">
-  <div class="hero-photo"><img src="{{ hero_bg }}" alt="Казанское Такси" /></div>
+
   <div class="hero-content">
     <div class="hero-inner">
       <h1 class="hero-title">
@@ -43,27 +46,20 @@
       </h1>
       <p class="hero-sub">Ишим · Петропавловск · любые населённые пункты<br>Фиксированные цены. Быстрая подача. Свои водители</p>
       <div class="hero-features">
-        <div class="hero-feat">
-          <span class="feat-icon">🚗</span>
-          <span>Местные водители</span>
-        </div>
-        <div class="hero-feat">
-          <span class="feat-icon">⏱</span>
-          <span>Подача от 10–20 минут</span>
-        </div>
-        <div class="hero-feat">
-          <span class="feat-icon">💰</span>
-          <span>Цена известна заранее</span>
-        </div>
-        <div class="hero-feat">
-          <span class="feat-icon">📞</span>
-          <span>Можно просто позвонить</span>
-        </div>
+        <div class="hero-feat"><span class="feat-icon">🚗</span><span>Местные водители</span></div>
+        <div class="hero-feat"><span class="feat-icon">⏱</span><span>Подача от 10–20 минут</span></div>
+        <div class="hero-feat"><span class="feat-icon">💰</span><span>Цена известна заранее</span></div>
+        <div class="hero-feat"><span class="feat-icon">📞</span><span>Можно просто позвонить</span></div>
       </div>
     </div>
     <div class="hero-circle hero-circle-1"></div>
     <div class="hero-circle hero-circle-2"></div>
   </div>
+
+  <div class="hero-photo">
+    <img src="{{ hero_bg }}" alt="Казанское Такси" />
+  </div>
+
 </section>
 
 <!-- ═══════════ БОЛЬШОЙ CTA ═══════════ -->
@@ -71,6 +67,15 @@
   <p class="big-cta-label">Закажите онлайн или позвоните</p>
   <a href="tel:+79630608419" class="big-cta-phone">📞 8-963-060-84-19</a>
   <p class="big-cta-hint">Диспетчер ответит и назовёт цену</p>
+</section>
+
+<!-- ═══════════ О КАЗАНСКОМ (фон — test-bg1.jpg) ═══════════ -->
+<section class="town-section">
+  <div class="town-section-inner">
+    <div class="town-section-label">Казанский район · Тюменская область</div>
+    <h2 class="town-section-title">Знаем каждую дорогу района</h2>
+    <p class="town-section-sub">Возим жителей Казанского и соседних сёл в Ишим, Петропавловск и по всем населённым пунктам района.</p>
+  </div>
 </section>
 
 <!-- ═══════════ КАК ЭТО РАБОТАЕТ ═══════════ -->
@@ -105,8 +110,6 @@
 <!-- ═══════════ КАРТА ═══════════ -->
 <div class="map-section"{% if no_map %} style="display:none"{% endif %}>
   <div id="map-container"></div>
-
-  <!-- Кнопки режима поверх карты -->
   <div class="map-mode-bar">
     <button id="btn-mode-a" class="mode-pill" onclick="setMode('a')">
       <span class="mode-dot dot-blue"></span>Откуда
@@ -116,15 +119,13 @@
     </button>
     <button class="mode-pill mode-reset" onclick="resetAll()">✕</button>
   </div>
-
-  <!-- Инфо о маршруте -->
   <div id="route-info" class="route-badge" style="display:none"></div>
   <div id="route-loading" class="route-badge route-loading" style="display:none">
     <span class="mini-spinner"></span> Строим маршрут…
   </div>
 </div>
 
-<!-- ═══════════ ТАП-БАР (ниже карты) ═══════════ -->
+<!-- ═══════════ ТАП-БАР ═══════════ -->
 <div class="map-tap-bar">
   <button id="tap-btn-a" class="tap-btn tap-active-a" onclick="setMode('a')">
     <span class="mode-dot dot-blue"></span> Откуда
@@ -139,72 +140,44 @@
 <div class="booking-wrap" id="booking-wrap">
   <div class="booking-card">
 
-    <!-- ── Адреса ── -->
     <div class="addr-block">
-
-      <!-- Откуда -->
       <div class="addr-row addr-row-active" id="from-row">
         <span class="addr-dot dot-blue"></span>
         <div class="addr-input-wrap">
-          <input
-            id="search-from"
-            class="addr-input"
-            type="text"
-            placeholder="Откуда?"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-          />
+          <input id="search-from" class="addr-input" type="text" placeholder="Откуда?"
+                 autocomplete="off" autocorrect="off" spellcheck="false" />
           <div class="addr-dropdown" id="drop-from"></div>
         </div>
         <button class="addr-clear" id="clear-a" onclick="clearPoint('a')" style="display:none">✕</button>
       </div>
-
-      <!-- Разделитель + кнопка обмена -->
       <div class="addr-divider">
         <div class="addr-line"></div>
         <button class="swap-btn" onclick="swapPoints()" title="Поменять местами">⇅</button>
         <div class="addr-line"></div>
       </div>
-
-      <!-- Куда -->
       <div class="addr-row" id="to-row">
         <span class="addr-dot dot-orange"></span>
         <div class="addr-input-wrap">
-          <input
-            id="search-to"
-            class="addr-input"
-            type="text"
-            placeholder="Куда?"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-          />
+          <input id="search-to" class="addr-input" type="text" placeholder="Куда?"
+                 autocomplete="off" autocorrect="off" spellcheck="false" />
           <div class="addr-dropdown" id="drop-to"></div>
         </div>
         <button class="addr-clear" id="clear-b" onclick="clearPoint('b')" style="display:none">✕</button>
       </div>
     </div>
 
-    <!-- ── Быстрый выбор населённых пунктов ── -->
     <div class="chips-section">
       <div class="chips-label">Быстрый выбор:</div>
-      <div class="chips-row" id="chips-row">
-        <!-- заполняется через JS -->
-      </div>
+      <div class="chips-row" id="chips-row"></div>
     </div>
 
-    <!-- ── Когда? ── -->
     <div class="when-section">
       <div class="field-label">Когда?</div>
       <div class="when-tabs">
         <button class="when-tab active" id="tab-now" onclick="setWhen('now')">🕐 Сейчас</button>
         <button class="when-tab" id="tab-later" onclick="setWhen('later')">📅 Выбрать время</button>
       </div>
-
       <div id="time-picker" style="display:none">
-
-        <!-- ── Дата ── -->
         <div class="dp-label">Дата</div>
         <div class="dp-quick-row">
           <button type="button" class="dp-chip dp-chip-active" id="dpq-0" onclick="pickDateQuick(0)">Сегодня</button>
@@ -213,17 +186,12 @@
           <button type="button" class="dp-chip dp-chip-cal" id="dpq-custom" onclick="openCalendar()">
             📅 <span id="dp-custom-label">Другая дата</span>
           </button>
-          <!-- скрытый нативный input -->
           <input type="date" id="dp-date-input"
                  style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
                  onchange="onCalendarChange(this.value)" />
         </div>
-
-        <!-- ── Время ── -->
         <div class="dp-label" style="margin-top:14px;">Время <span class="time-tz-badge">UTC+5</span></div>
-        <div class="dp-time-presets" id="dp-time-presets">
-          <!-- заполняется JS -->
-        </div>
+        <div class="dp-time-presets" id="dp-time-presets"></div>
         <div class="dp-time-manual">
           <button class="spin-btn" onclick="spinHour(-1)">−</button>
           <span class="spin-val" id="spin-hour">12</span>
@@ -236,33 +204,21 @@
       </div>
     </div>
 
-    <!-- ── Телефон ── -->
     <div class="phone-section">
       <div class="field-label">Ваш телефон <span class="req">*</span></div>
-      <input
-        id="phone"
-        class="phone-input"
-        type="tel"
-        placeholder="+7 (000) 000-00-00"
-      />
+      <input id="phone" class="phone-input" type="tel" placeholder="+7 (000) 000-00-00" />
     </div>
 
-    <!-- ── Комментарий ── -->
     <div class="comment-section">
       <div class="field-label">Комментарий <span class="opt-label">необязательно</span></div>
-      <textarea
-        id="order-comment"
-        class="phone-input comment-input"
-        rows="2"
-        placeholder="Уточните адрес, ориентир или любые детали&#10;Например: «рядом с магазином», «второй дом от угла»"
-        maxlength="500"
-      ></textarea>
+      <textarea id="order-comment" class="phone-input comment-input" rows="2"
+                placeholder="Уточните адрес, ориентир или любые детали&#10;Например: «рядом с магазином», «второй дом от угла»"
+                maxlength="500"></textarea>
       <div id="comment-hint" class="addr-vague-hint" style="display:none">
         📌 Адрес приблизительный — добавьте ориентир в комментарии
       </div>
     </div>
 
-    <!-- ── Тип поездки ── -->
     <div class="ridetype-section">
       <div class="field-label">Тип поездки</div>
       <div class="ridetype-cards">
@@ -286,27 +242,20 @@
       <input type="hidden" id="ride-type" value="individual" />
     </div>
 
-    <!-- ── Способ оплаты ── -->
     <div class="payment-section">
       <div class="field-label">Способ оплаты</div>
       <div class="payment-tabs">
-        <button type="button" class="pay-tab active" id="pay-cash" onclick="setPayment('cash')">
-          💵 Наличные
-        </button>
-        <button type="button" class="pay-tab" id="pay-transfer" onclick="setPayment('transfer')">
-          📲 Перевод
-        </button>
+        <button type="button" class="pay-tab active" id="pay-cash" onclick="setPayment('cash')">💵 Наличные</button>
+        <button type="button" class="pay-tab" id="pay-transfer" onclick="setPayment('transfer')">📲 Перевод</button>
       </div>
       <input type="hidden" id="payment-method" value="cash" />
       <input type="hidden" id="estimated-price" value="" />
     </div>
 
-    <!-- ── Цена + кнопка ── -->
     <div class="price-row">
       <span class="price-text">💰 Цена уточняется диспетчером</span>
     </div>
 
-    <!-- ── Согласие с ПД ── -->
     <div class="consent-section">
       <label class="consent-label" id="consent-label">
         <input type="checkbox" id="consent-checkbox" onchange="updateConsentState()" />
@@ -320,14 +269,13 @@
     </div>
 
     <button id="submit-btn" class="btn-order" onclick="submitOrder()" disabled>
-      Заказать поездку
-      <span class="btn-arrow">→</span>
+      Заказать поездку <span class="btn-arrow">→</span>
     </button>
 
     <div id="form-message" class="form-msg" style="display:none"></div>
 
-  </div><!-- /booking-card -->
-</div><!-- /booking-wrap -->
+  </div>
+</div>
 
 <!-- ═══════════ ЦЕНЫ ═══════════ -->
 <section class="prices-section" id="prices-section">
@@ -383,7 +331,7 @@
   </div>
 </section>
 
-<!-- ═══════════ ФОТО-СЕКЦИЯ ═══════════ -->
+<!-- ═══════════ ФОТО-СЕКЦИЯ (interior.jpg фоном) ═══════════ -->
 <section class="photo-section">
   <div class="photo-card photo-card-interior">
     <div class="photo-overlay">
@@ -418,7 +366,6 @@
     <p class="no-reviews">Станьте первым, кто оставит отзыв!</p>
     {% endif %}
 
-    <!-- Форма отзыва -->
     <div class="review-form-card">
       <h3 class="review-form-title">Оставить отзыв</h3>
       <input id="review-name" class="rev-input" type="text" placeholder="Ваше имя" maxlength="100" />
@@ -458,7 +405,6 @@
 
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
 <script>
-// ── Согласие с ПД ──────────────────────────────────────
 function updateConsentState() {
   const checked = document.getElementById('consent-checkbox').checked;
   const btn     = document.getElementById('submit-btn');
@@ -477,7 +423,6 @@ function updateConsentState() {
   }
 })();
 
-// ── Cookie banner ───────────────────────────────────────
 (function () {
   if (!localStorage.getItem('cookie_ok')) {
     document.getElementById('cookie-banner').style.display = 'flex';
