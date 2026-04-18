@@ -5,6 +5,126 @@
 
 {% block content %}
 
+<!-- ══ КНОПКА + ФОРМА РУЧНОГО ЗАКАЗА ══════════════════════════════════ -->
+<div style="margin-bottom:16px;">
+  <button class="btn btn-primary-sm" onclick="toggleCreateForm()" id="btn-create-toggle"
+          style="font-size:14px; padding:9px 18px;">
+    ➕ Создать заказ вручную
+  </button>
+</div>
+
+<div id="create-form-wrap" style="display:none; margin-bottom:20px;">
+<div class="card" style="padding:20px;">
+  <h3 style="margin-bottom:16px; font-size:16px; color:#f5b800;">➕ Новый заказ (диспетчер)</h3>
+  <form method="POST" action="{{ url_for('admin_create_order') }}" id="admin-create-form">
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Откуда *</label>
+        <input name="from_address" id="cf-from" placeholder="Адрес или село" required
+               oninput="calcAdminPrice()"
+               style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                      border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                      color:#e2e8f0; font-size:14px;" />
+      </div>
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Куда *</label>
+        <input name="to_address" id="cf-to" placeholder="Адрес или село" required
+               oninput="calcAdminPrice()"
+               style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                      border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                      color:#e2e8f0; font-size:14px;" />
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Телефон клиента *</label>
+        <input name="phone" placeholder="+7 (xxx) xxx-xx-xx" required
+               style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                      border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                      color:#e2e8f0; font-size:14px;" />
+      </div>
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Время поездки (оставить пустым = сейчас)</label>
+        <input name="scheduled_at" type="datetime-local" id="cf-dt"
+               style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                      border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                      color:#e2e8f0; font-size:14px;" />
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Тип поездки</label>
+        <select name="ride_type"
+                style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                       border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                       color:#e2e8f0; font-size:14px;">
+          <option value="individual">🚗 Индивидуально</option>
+          <option value="shared">👥 Попутно</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Оплата</label>
+        <select name="payment"
+                style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                       border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                       color:#e2e8f0; font-size:14px;">
+          <option value="cash">💵 Наличные</option>
+          <option value="transfer">📲 Перевод</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Назначить водителя (необязательно)</label>
+        <select name="driver_id"
+                style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                       border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                       color:#e2e8f0; font-size:14px;">
+          <option value="">— разослать всем —</option>
+          {% for d in drivers %}
+            <option value="{{ d.id }}">{{ d.name }}{% if d.car_info %} · {{ d.car_info }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Комментарий</label>
+        <input name="comment" placeholder="Пожелания, особенности маршрута..."
+               style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                      border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                      color:#e2e8f0; font-size:14px;" />
+      </div>
+      <div>
+        <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Цена ₽</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input name="estimated_price" id="cf-price" type="number" placeholder="авто"
+                 style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06);
+                        border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                        color:#e2e8f0; font-size:14px;" />
+          <span id="cf-price-hint" style="font-size:12px; color:#f5b800; white-space:nowrap;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button type="submit" class="btn btn-primary-sm" style="padding:10px 24px; font-size:14px;">
+        ✅ Создать заказ
+      </button>
+      <button type="button" onclick="toggleCreateForm()"
+              style="padding:10px 18px; font-size:14px; background:transparent;
+                     border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                     color:#94a3b8; cursor:pointer;">
+        Отмена
+      </button>
+    </div>
+  </form>
+</div>
+</div>
+
+<!-- ══ ФИЛЬТР ════════════════════════════════════════════ -->
 <div class="filter-bar">
   <a href="{{ url_for('admin_orders') }}"
      class="{{ 'active' if not current_status else '' }}">Все</a>
@@ -26,10 +146,10 @@
         <th>Статус</th>
         <th>Маршрут + комментарий</th>
         <th>Оплата</th>
-        <th>Время (UTC+5)</th>
+        <th>Время</th>
         <th>Телефон</th>
         <th>Водитель</th>
-        <th>Создан (UTC+5)</th>
+        <th>Создан</th>
         <th>Действия</th>
       </tr>
     </thead>
@@ -48,7 +168,6 @@
           {% endif %}
         </td>
 
-        <!-- Маршрут + координаты + комментарий -->
         <td style="max-width:260px;">
           <div style="font-size:12px; color:#94a3b8; margin-bottom:2px;">
             📍 {{ o.from_address[:55] }}{% if o.from_address|length > 55 %}…{% endif %}
@@ -59,6 +178,9 @@
           <div style="font-size:12px; margin-bottom:4px;">
             🏁 {{ o.to_address[:55] }}{% if o.to_address|length > 55 %}…{% endif %}
           </div>
+          {% if o.estimated_price %}
+          <div style="font-size:12px; color:#f5b800;">💰 {{ '{:,}'.format(o.estimated_price).replace(',', ' ') }} ₽</div>
+          {% endif %}
           {% if o.comment %}
           <div style="font-size:12px; background:rgba(124,111,255,0.1); border-radius:6px;
                       padding:4px 8px; color:#a78bfa; border-left:2px solid #7c6fff;">
@@ -67,7 +189,6 @@
           {% endif %}
         </td>
 
-        <!-- Тип + Оплата -->
         <td style="white-space:nowrap;">
           {% if o.ride_type == 'shared' %}
             <div style="margin-bottom:4px;">
@@ -85,12 +206,11 @@
           {% endif %}
         </td>
 
-        <!-- Время поездки -->
         <td style="font-size:12px; white-space:nowrap;">
           {% if o.scheduled_at %}
             {{ o.scheduled_at | ekb }}
           {% else %}
-            <span style="color:#64748b;">Как можно скорее</span>
+            <span style="color:#64748b;">Сейчас</span>
           {% endif %}
         </td>
 
@@ -98,11 +218,9 @@
           <a href="tel:{{ o.phone }}" style="color:#7c6fff; text-decoration:none;">{{ o.phone }}</a>
         </td>
 
-        <!-- Водитель: текущий или форма назначения -->
         <td style="min-width:210px;">
           {% if o.driver_name %}
             <div style="font-size:13px; font-weight:600;">{{ o.driver_name }}</div>
-            {# Данные авто водителя — для сообщения клиенту #}
             {% for d in drivers if d.telegram_id == o.driver_telegram_id %}
               {% if d.car_info %}
                 <div style="margin-top:5px; padding:5px 8px;
@@ -185,4 +303,53 @@
   {% endif %}
 </div>
 
+<script>
+// ── Таблица цен (копия из map.js) ──
+const ADMIN_PRICE_TABLE = {
+  'казанское':150,'новоселезнево':200,'шадринка':300,'яровское':300,
+  'большие ярки':300,'малые ярки':400,'гагарье':500,'сладчанка':500,
+  'боровлянка':600,'дальнетравное':600,'ильинка':700,'кугаево':700,
+  'чирки':700,'огнево':800,'дубынка':900,'заречка':900,'смирное':900,
+  'афонькино':1000,'пешнево':1000,'копотилово':1000,'ченчерь':1000,
+  'ельцово':1000,'коротаевка':1100,'грачи':1200,'паленка':1200,
+  'новогеоргиевка':1500,'новоалександровка':1500,'челюскинцев':1500,
+  'викторовка':1800,'долматово':1800,
+};
+const ADMIN_PRICE_INTERCITY = {
+  'ишим': { one_way: 2000, round_trip: 3000 },
+  'петропавловск': { one_way: 5000, round_trip: 7500 },
+};
+
+function calcAdminPrice() {
+  const from = document.getElementById('cf-from').value.toLowerCase();
+  const to   = document.getElementById('cf-to').value.toLowerCase();
+  const hint = document.getElementById('cf-price-hint');
+  const priceInput = document.getElementById('cf-price');
+
+  let price = null;
+  for (const [name, val] of Object.entries(ADMIN_PRICE_INTERCITY)) {
+    if (from.includes(name) || to.includes(name)) { price = val.one_way; break; }
+  }
+  if (!price) {
+    for (const [name, val] of Object.entries(ADMIN_PRICE_TABLE)) {
+      if (from.includes(name) || to.includes(name)) { price = val; break; }
+    }
+  }
+  if (price) {
+    hint.textContent = '→ ' + price.toLocaleString('ru') + ' ₽';
+    if (!priceInput.value) priceInput.value = price;
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function toggleCreateForm() {
+  const wrap = document.getElementById('create-form-wrap');
+  const btn  = document.getElementById('btn-create-toggle');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ Закрыть' : '➕ Создать заказ вручную';
+  if (open) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
 {% endblock %}

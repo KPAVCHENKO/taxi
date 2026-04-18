@@ -356,6 +356,63 @@ def compute_driver_statuses(drivers):
 
 
 # ── Admin: orders ─────────────────────────────────────────────────────────────
+@app.route('/admin/orders/create', methods=['POST'])
+@admin_required
+def admin_create_order():
+    from_address  = request.form.get('from_address', '').strip()
+    to_address    = request.form.get('to_address', '').strip()
+    phone         = request.form.get('phone', '').strip()
+    comment       = request.form.get('comment', '').strip() or None
+    ride_type     = request.form.get('ride_type', 'individual')
+    payment       = request.form.get('payment', 'cash')
+    driver_id     = request.form.get('driver_id', type=int)
+    raw_dt        = request.form.get('scheduled_at', '').strip()
+    ep_raw        = request.form.get('estimated_price', '')
+
+    if not (from_address and to_address and phone):
+        return redirect(url_for('admin_orders'))
+
+    try:
+        estimated_price = int(ep_raw) if ep_raw else None
+    except (ValueError, TypeError):
+        estimated_price = None
+
+    scheduled_at = None
+    if raw_dt:
+        try:
+            # форма присылает локальное время (UTC+5) → конвертируем в UTC для хранения
+            scheduled_at = datetime.fromisoformat(raw_dt) - timedelta(hours=5)
+        except (ValueError, TypeError):
+            pass
+
+    order = Order(
+        phone=phone,
+        from_address=from_address,
+        to_address=to_address,
+        comment=comment,
+        payment=payment,
+        ride_type=ride_type,
+        estimated_price=estimated_price,
+        scheduled_at=scheduled_at,
+        status='new',
+    )
+    db.session.add(order)
+    db.session.commit()
+
+    if driver_id:
+        driver = Driver.query.get(driver_id)
+        if driver:
+            order.driver_telegram_id = driver.telegram_id
+            order.driver_name = driver.name
+            order.status = 'accepted'
+            db.session.commit()
+            telegram_bot.notify_driver_assigned(order, driver)
+    else:
+        telegram_bot.notify_drivers(order)
+
+    return redirect(url_for('admin_orders'))
+
+
 @app.route('/admin/orders')
 @admin_required
 def admin_orders():
