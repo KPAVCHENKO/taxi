@@ -195,12 +195,20 @@ body {
   width: 100%;
   line-height: 0;
   background-color: #1A2438;
+  overflow: hidden;
 }
 
 .hero-photo img {
+  display: block;
   width: 100%;
   height: auto;
-  display: block;
+  max-height: 420px;
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+@media (max-width: 600px) {
+  .hero-photo img { max-height: none; object-fit: unset; }
 }
 
 .hero-content {

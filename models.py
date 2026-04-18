@@ -33,7 +33,7 @@ class Order(db.Model):
 
     @property
     def has_coords(self):
-        return self.from_lat is not None and self.from_lon is not None
+        return bool(self.from_lat) and bool(self.from_lon)
 
 
 class Driver(db.Model):

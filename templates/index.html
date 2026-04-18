@@ -7,6 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
   <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  {% if no_map %}<script>window.NO_MAP = true;</script>{% endif %}
 </head>
 <body>
 
@@ -102,7 +103,7 @@
 </section>
 
 <!-- ═══════════ КАРТА ═══════════ -->
-<div class="map-section">
+<div class="map-section"{% if no_map %} style="display:none"{% endif %}>
   <div id="map-container"></div>
 
   <!-- Кнопки режима поверх карты -->

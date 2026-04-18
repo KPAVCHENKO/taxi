@@ -110,7 +110,9 @@ def index():
     )
     bg = request.args.get('bg', '')
     hero_bg = f'/static/img/test-bg{bg}.jpg' if bg in ('1', '2') else '/static/img/hero-bg.jpg'
-    return render_template('index.html', reviews=reviews, yandex_maps_key=YANDEX_MAPS_KEY, hero_bg=hero_bg)
+    no_map = request.args.get('nomap') == '1'
+    return render_template('index.html', reviews=reviews, yandex_maps_key=YANDEX_MAPS_KEY,
+                           hero_bg=hero_bg, no_map=no_map)
 
 
 @app.route('/order', methods=['POST'])
@@ -389,7 +391,11 @@ def admin_create_order():
         order = Order(
             phone=phone,
             from_address=from_address,
+            from_lat=0.0,
+            from_lon=0.0,
             to_address=to_address,
+            to_lat=0.0,
+            to_lon=0.0,
             comment=comment,
             payment=payment,
             ride_type=ride_type,

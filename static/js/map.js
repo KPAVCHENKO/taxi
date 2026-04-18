@@ -75,7 +75,7 @@ let paymentMethod = 'cash';
 // ИНИЦИАЛИЗАЦИЯ
 // ══════════════════════════════════════════════════════
 ymaps.ready(function () {
-  initMap();
+  if (!window.NO_MAP) initMap();
   initAddressInputs();
   renderChips();
   renderDateChips();
@@ -162,28 +162,28 @@ async function handleMapClick(lat, lon) {
 // ТОЧКИ НА КАРТЕ
 // ══════════════════════════════════════════════════════
 function placePointA(lat, lon, address) {
-  if (placemarkA) ymap.geoObjects.remove(placemarkA);
+  if (ymap && placemarkA) ymap.geoObjects.remove(placemarkA);
   pointA = { lat, lon, address };
 
-  placemarkA = new ymaps.Placemark([lat, lon], { hintContent: 'Откуда' }, {
-    iconLayout:      'default#image',
-    iconImageHref:   makePinSVG('A', '#4F9EFF'),
-    iconImageSize:   [32, 42],
-    iconImageOffset: [-16, -42],
-    draggable: true,
-  });
-
-  placemarkA.events.add('dragend', function () {
-    const c = placemarkA.geometry.getCoordinates();
-    reverseGeocode(c[0], c[1]).then(addr => {
-      pointA = { lat: c[0], lon: c[1], address: addr };
-      setInputVal('search-from', addr);
-      checkAddressVagueness(addr);
-      if (pointB) buildRoute();
+  if (ymap) {
+    placemarkA = new ymaps.Placemark([lat, lon], { hintContent: 'Откуда' }, {
+      iconLayout:      'default#image',
+      iconImageHref:   makePinSVG('A', '#4F9EFF'),
+      iconImageSize:   [32, 42],
+      iconImageOffset: [-16, -42],
+      draggable: true,
     });
-  });
-
-  ymap.geoObjects.add(placemarkA);
+    placemarkA.events.add('dragend', function () {
+      const c = placemarkA.geometry.getCoordinates();
+      reverseGeocode(c[0], c[1]).then(addr => {
+        pointA = { lat: c[0], lon: c[1], address: addr };
+        setInputVal('search-from', addr);
+        checkAddressVagueness(addr);
+        if (pointB) buildRoute();
+      });
+    });
+    ymap.geoObjects.add(placemarkA);
+  }
   setInputVal('search-from', address);
   show('clear-a');
   clearRouteData();
@@ -193,28 +193,28 @@ function placePointA(lat, lon, address) {
 }
 
 function placePointB(lat, lon, address) {
-  if (placemarkB) ymap.geoObjects.remove(placemarkB);
+  if (ymap && placemarkB) ymap.geoObjects.remove(placemarkB);
   pointB = { lat, lon, address };
 
-  placemarkB = new ymaps.Placemark([lat, lon], { hintContent: 'Куда' }, {
-    iconLayout:      'default#image',
-    iconImageHref:   makePinSVG('B', '#F97316'),
-    iconImageSize:   [32, 42],
-    iconImageOffset: [-16, -42],
-    draggable: true,
-  });
-
-  placemarkB.events.add('dragend', function () {
-    const c = placemarkB.geometry.getCoordinates();
-    reverseGeocode(c[0], c[1]).then(addr => {
-      pointB = { lat: c[0], lon: c[1], address: addr };
-      setInputVal('search-to', addr);
-      checkAddressVagueness(addr);
-      if (pointA) buildRoute();
+  if (ymap) {
+    placemarkB = new ymaps.Placemark([lat, lon], { hintContent: 'Куда' }, {
+      iconLayout:      'default#image',
+      iconImageHref:   makePinSVG('B', '#F97316'),
+      iconImageSize:   [32, 42],
+      iconImageOffset: [-16, -42],
+      draggable: true,
     });
-  });
-
-  ymap.geoObjects.add(placemarkB);
+    placemarkB.events.add('dragend', function () {
+      const c = placemarkB.geometry.getCoordinates();
+      reverseGeocode(c[0], c[1]).then(addr => {
+        pointB = { lat: c[0], lon: c[1], address: addr };
+        setInputVal('search-to', addr);
+        checkAddressVagueness(addr);
+        if (pointA) buildRoute();
+      });
+    });
+    ymap.geoObjects.add(placemarkB);
+  }
   setInputVal('search-to', address);
   show('clear-b');
   clearRouteData();
@@ -225,13 +225,15 @@ function placePointB(lat, lon, address) {
 
 function clearPoint(which) {
   if (which === 'a') {
-    if (placemarkA) { ymap.geoObjects.remove(placemarkA); placemarkA = null; }
+    if (ymap && placemarkA) ymap.geoObjects.remove(placemarkA);
+    placemarkA = null;
     pointA = null;
     setInputVal('search-from', '');
     hide('clear-a');
     setMode('a');
   } else {
-    if (placemarkB) { ymap.geoObjects.remove(placemarkB); placemarkB = null; }
+    if (ymap && placemarkB) ymap.geoObjects.remove(placemarkB);
+    placemarkB = null;
     pointB = null;
     setInputVal('search-to', '');
     hide('clear-b');
@@ -244,8 +246,9 @@ function clearPoint(which) {
 function swapPoints() {
   const tmpA = pointA ? { ...pointA } : null;
   const tmpB = pointB ? { ...pointB } : null;
-  if (placemarkA) { ymap.geoObjects.remove(placemarkA); placemarkA = null; }
-  if (placemarkB) { ymap.geoObjects.remove(placemarkB); placemarkB = null; }
+  if (ymap && placemarkA) ymap.geoObjects.remove(placemarkA);
+  if (ymap && placemarkB) ymap.geoObjects.remove(placemarkB);
+  placemarkA = null; placemarkB = null;
   pointA = null; pointB = null;
   if (tmpB) placePointA(tmpB.lat, tmpB.lon, tmpB.address);
   if (tmpA) placePointB(tmpA.lat, tmpA.lon, tmpA.address);
@@ -264,6 +267,7 @@ function resetAll() {
 // ══════════════════════════════════════════════════════
 function buildRoute() {
   if (!pointA || !pointB) return;
+  if (!ymap) return;
   if (routeObj) { ymap.geoObjects.remove(routeObj); routeObj = null; }
   showRouteBadge('loading');
 
@@ -305,7 +309,7 @@ function buildRoute() {
 }
 
 function clearRouteData() {
-  if (routeObj) { ymap.geoObjects.remove(routeObj); routeObj = null; }
+  if (ymap && routeObj) { ymap.geoObjects.remove(routeObj); routeObj = null; }
   hideRouteBadge();
 }
 
@@ -470,11 +474,11 @@ function setupInput(inputId, dropId, pointType) {
 
         if (pointType === 'a') {
           placePointA(lat, lon, addr);
-          ymap.setCenter([lat, lon], 13);
+          if (ymap) ymap.setCenter([lat, lon], 13);
           if (!pointB) setMode('b');
         } else {
           placePointB(lat, lon, addr);
-          ymap.setCenter([lat, lon], 13);
+          if (ymap) ymap.setCenter([lat, lon], 13);
           setMode(null);
         }
 
@@ -571,7 +575,7 @@ async function selectChip(place) {
     if (!pointB) setMode('b');
   }
 
-  ymap.setCenter([r.lat, r.lon], 12);
+  if (ymap) ymap.setCenter([r.lat, r.lon], 12);
   if (pointA && pointB) buildRoute();
 }
 
