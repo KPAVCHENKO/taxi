@@ -7,7 +7,6 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
   <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-  <style>.hero-photo { background-image: url('{{ hero_bg }}'); }</style>
 </head>
 <body>
 
@@ -33,7 +32,7 @@
 
 <!-- ═══════════ HERO ═══════════ -->
 <section class="hero-section">
-  <div class="hero-photo"></div>
+  <div class="hero-photo"><img src="{{ hero_bg }}" alt="Казанское Такси" /></div>
   <div class="hero-content">
     <div class="hero-inner">
       <h1 class="hero-title">

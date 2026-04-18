@@ -385,30 +385,38 @@ def admin_create_order():
         except (ValueError, TypeError):
             pass
 
-    order = Order(
-        phone=phone,
-        from_address=from_address,
-        to_address=to_address,
-        comment=comment,
-        payment=payment,
-        ride_type=ride_type,
-        estimated_price=estimated_price,
-        scheduled_at=scheduled_at,
-        status='new',
-    )
-    db.session.add(order)
-    db.session.commit()
+    try:
+        order = Order(
+            phone=phone,
+            from_address=from_address,
+            to_address=to_address,
+            comment=comment,
+            payment=payment,
+            ride_type=ride_type,
+            estimated_price=estimated_price,
+            scheduled_at=scheduled_at,
+            status='new',
+        )
+        db.session.add(order)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f'[admin_create_order] DB error: {e}')
+        return f'Ошибка базы данных: {e}', 500
 
-    if driver_id:
-        driver = Driver.query.get(driver_id)
-        if driver:
-            order.driver_telegram_id = driver.telegram_id
-            order.driver_name = driver.name
-            order.status = 'accepted'
-            db.session.commit()
-            telegram_bot.notify_driver_assigned(order, driver)
-    else:
-        telegram_bot.notify_drivers(order)
+    try:
+        if driver_id:
+            driver = Driver.query.filter_by(id=driver_id).first()
+            if driver:
+                order.driver_telegram_id = driver.telegram_id
+                order.driver_name = driver.name
+                order.status = 'accepted'
+                db.session.commit()
+                telegram_bot.notify_driver_assigned(order, driver)
+        else:
+            telegram_bot.notify_drivers(order)
+    except Exception as e:
+        print(f'[admin_create_order] notify error: {e}')
 
     return redirect(url_for('admin_orders'))
 
