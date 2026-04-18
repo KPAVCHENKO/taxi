@@ -154,14 +154,22 @@ body {
 }
 
 @media (max-width: 480px) {
-  .topbar-phone { font-size: 13px; padding: 7px 12px; }
+  .topbar-phone { font-size: 12px; padding: 6px 10px; letter-spacing: 0; }
   .topbar-link { display: none; }
-  .topbar-name { font-size: 14px; }
+  .topbar-name { font-size: 13px; }
   .topbar-region { display: none; }
+  .topbar-logo-img { height: 36px; }
+  .topbar-logo { gap: 7px; }
 }
 
-@media (max-width: 360px) {
-  .topbar-phone { font-size: 12px; padding: 6px 10px; }
+@media (max-width: 390px) {
+  .topbar-phone { font-size: 11px; padding: 5px 8px; }
+  .topbar-name { font-size: 12px; }
+  .topbar-icon { font-size: 22px; }
+}
+
+@media (max-width: 340px) {
+  .topbar-phone { font-size: 10px; padding: 5px 7px; }
 }
 
 .topbar-link {
@@ -1829,10 +1837,10 @@ body {
 
 @media (max-width: 480px) {
   .prices-intercity { grid-template-columns: 1fr; }
-  .prices-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .price-item { padding: 9px 12px; }
-  .pi-dest { font-size: 13px; }
-  .pi-price { font-size: 14px; }
+  .prices-grid { grid-template-columns: 1fr; gap: 8px; }
+  .price-item { padding: 10px 14px; }
+  .pi-dest { font-size: 14px; }
+  .pi-price { font-size: 15px; }
 }
 
 /* ═══════════════════════════════════════════════════════
