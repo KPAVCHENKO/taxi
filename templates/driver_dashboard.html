@@ -609,6 +609,57 @@
   </div>
 </div>
 
+<!-- Модальное окно инструкции по уведомлениям -->
+<div id="notif-help-overlay" style="display:none; position:fixed; inset:0; z-index:500;
+     background:rgba(0,0,0,0.8); align-items:flex-end; justify-content:center;">
+  <div style="background:#1a1d2e; border-radius:20px 20px 0 0; padding:28px 20px 40px;
+              width:100%; max-width:540px; border-top:1px solid rgba(255,255,255,0.1);">
+    <div style="font-size:22px; font-weight:800; color:#e2e8f0; margin-bottom:6px;">
+      🔕 Уведомления заблокированы
+    </div>
+    <div style="font-size:14px; color:#64748b; margin-bottom:20px;">
+      Разрешите вручную одним из способов:
+    </div>
+
+    <div style="background:rgba(245,184,0,0.08); border:1px solid rgba(245,184,0,0.2);
+                border-radius:14px; padding:16px; margin-bottom:12px;">
+      <div style="font-size:13px; font-weight:700; color:#f5b800; margin-bottom:10px;">
+        📱 Если установлено как приложение (APK):
+      </div>
+      <ol style="font-size:14px; color:#cbd5e1; line-height:2; padding-left:18px;">
+        <li>Настройки телефона</li>
+        <li>Приложения → <strong>Такси Водитель</strong></li>
+        <li>Разрешения → <strong>Уведомления</strong></li>
+        <li>Переключить в положение <strong>Вкл</strong></li>
+        <li>Вернуться в приложение и нажать «Включить» снова</li>
+      </ol>
+    </div>
+
+    <div style="background:rgba(125,211,252,0.07); border:1px solid rgba(125,211,252,0.15);
+                border-radius:14px; padding:16px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:700; color:#7dd3fc; margin-bottom:10px;">
+        🌐 Если открыто в браузере Chrome:
+      </div>
+      <ol style="font-size:14px; color:#cbd5e1; line-height:2; padding-left:18px;">
+        <li>Chrome → три точки ⋮ → Настройки</li>
+        <li>Настройки сайтов → Уведомления</li>
+        <li>Найти <strong>taxi-production-3985.up.railway.app</strong></li>
+        <li>Нажать → выбрать <strong>Разрешить</strong></li>
+        <li>Перезайти в приложение</li>
+      </ol>
+    </div>
+
+    <div style="font-size:13px; color:#475569; text-align:center; margin-bottom:16px;">
+      После разрешения заказы будут приходить даже когда приложение закрыто
+    </div>
+    <button onclick="hideNotifHelp()" style="width:100%; padding:15px;
+            background:#f5b800; color:#0f1117; border:none; border-radius:12px;
+            font-size:17px; font-weight:700; cursor:pointer;">
+      Понятно
+    </button>
+  </div>
+</div>
+
 <!-- Bottom nav -->
 <div class="bottom-nav">
   <button class="nav-item active" id="nav-new" onclick="showTab('new')">
@@ -1015,9 +1066,14 @@ function hidePushBanner() {
 
 async function enablePush() {
   try {
+    // Если уже заблокировано — показываем инструкцию
+    if (Notification.permission === 'denied') {
+      showNotifHelp();
+      return;
+    }
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') {
-      toast('⚠️ Разрешите уведомления в настройках браузера', 'error');
+      showNotifHelp();
       return;
     }
     const keyRes = await fetch('/api/push/vapid-public-key');
@@ -1046,6 +1102,14 @@ async function savePushSub(sub) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(sub.toJSON()),
   });
+}
+
+// ── Инструкция по разрешению уведомлений ─────────────────────────────────────
+function showNotifHelp() {
+  document.getElementById('notif-help-overlay').style.display = 'flex';
+}
+function hideNotifHelp() {
+  document.getElementById('notif-help-overlay').style.display = 'none';
 }
 
 // ── Тест уведомлений ──────────────────────────────────────────────────────────
