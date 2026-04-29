@@ -1659,9 +1659,9 @@ def assetlinks():
             "relation": ["delegate_permission/common.handle_all_urls"],
             "target": {
                 "namespace": "android_app",
-                "package_name": "ru.kazanskoe_taxi.twa",
+                "package_name": "app.railway.up.taxi_production_3985.twa",
                 "sha256_cert_fingerprints": [
-                    "D7:29:98:E0:4A:63:FB:12:4C:0C:EF:DB:8A:99:8F:19:E9:9A:19:57:A6:09:95:FD:B1:50:35:10:19:37:AB:3D"
+                    "D8:4E:88:24:06:9D:24:FC:43:80:9C:77:2C:63:9D:3D:06:D7:DF:65:A8:0E:7F:1B:68:C0:02:DA:F8:EE:CC:0E"
                 ]
             }
         },
@@ -1669,9 +1669,9 @@ def assetlinks():
             "relation": ["delegate_permission/common.handle_all_urls"],
             "target": {
                 "namespace": "android_app",
-                "package_name": "ru.kazanskoe_taxi.client",
+                "package_name": "app.railway.up.taxi_production_3985.twa.app",
                 "sha256_cert_fingerprints": [
-                    "4D:7E:11:CC:04:93:7C:59:FC:48:2C:A9:9A:54:AC:3E:91:FE:9C:65:82:D9:50:9E:12:25:D4:C0:49:64:66:6D"
+                    "52:AB:2E:D3:63:BD:B5:F7:A3:DA:D0:A7:C2:18:B1:FB:59:95:DB:AD:D8:4D:4F:61:F0:E3:C0:B2:A9:4A:34:1C"
                 ]
             }
         }
