@@ -1,0 +1,128 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Лог действий{% endblock %}
+{% block page_title %}Лог действий{% endblock %}
+
+{% block content %}
+
+<style>
+  .log-action-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .action-order_created   { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .action-order_assigned  { background: rgba(16,185,129,0.15); color: #34d399; }
+  .action-status_changed  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .action-driver_accepted { background: rgba(16,185,129,0.2);  color: #34d399; }
+  .action-driver_cancelled{ background: rgba(239,68,68,0.15);  color: #f87171; }
+  .action-driver_added    { background: rgba(124,111,255,0.15); color: #a78bfa; }
+  .action-driver_updated  { background: rgba(124,111,255,0.1);  color: #a78bfa; }
+  .action-driver_deleted  { background: rgba(239,68,68,0.1);   color: #f87171; }
+  .action-tariff_added    { background: rgba(245,184,0,0.1);   color: #f5b800; }
+  .action-tariff_updated  { background: rgba(245,184,0,0.1);   color: #f5b800; }
+  .action-tariff_deleted  { background: rgba(245,184,0,0.08);  color: #d97706; }
+</style>
+
+{% set ACTION_LABELS = {
+  'order_created':    '📦 Создан заказ',
+  'order_assigned':   '📋 Назначен водитель',
+  'status_changed':   '🔄 Статус изменён',
+  'driver_accepted':  '✅ Принят водителем',
+  'driver_cancelled': '❌ Отменён водителем',
+  'driver_added':     '➕ Добавлен водитель',
+  'driver_updated':   '✏️ Обновлён водитель',
+  'driver_deleted':   '🗑 Удалён водитель',
+  'tariff_added':     '💰 Добавлен тариф',
+  'tariff_updated':   '💰 Изменён тариф',
+  'tariff_deleted':   '💰 Удалён тариф',
+} %}
+
+<!-- Filter bar -->
+<div class="filter-bar" style="margin-bottom:20px;">
+  <a href="{{ url_for('admin_log') }}"
+     class="{{ 'active' if not current_action else '' }}">Все</a>
+  {% for a in actions %}
+  <a href="{{ url_for('admin_log', action=a) }}"
+     class="{{ 'active' if current_action == a else '' }}">
+    {{ ACTION_LABELS.get(a, a) }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  {% if entries %}
+  <div style="padding:10px 20px 0; font-size:13px; color:#475569;">
+    Страница {{ pagination.page }} из {{ pagination.pages }} · {{ pagination.total }} записей
+  </div>
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>Время</th>
+        <th>Действие</th>
+        <th>Кто</th>
+        <th>Заказ</th>
+        <th>Подробности</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td style="font-size:12px; color:#64748b; white-space:nowrap;">{{ e.created_at | ekb }}</td>
+        <td>
+          <span class="log-action-badge action-{{ e.action }}">
+            {{ ACTION_LABELS.get(e.action, e.action) }}
+          </span>
+        </td>
+        <td style="font-size:13px; color:#94a3b8;">{{ e.actor or '—' }}</td>
+        <td style="font-size:13px;">
+          {% if e.order_id %}
+            <a href="{{ url_for('admin_orders') }}?#order-{{ e.order_id }}"
+               style="color:#a78bfa; text-decoration:none;">#{{ e.order_id }}</a>
+          {% else %}
+            <span style="color:#475569;">—</span>
+          {% endif %}
+        </td>
+        <td style="font-size:13px; color:#94a3b8; max-width:280px;">{{ e.details or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div style="display:flex; align-items:center; justify-content:center; gap:6px; padding:16px 20px; border-top:1px solid rgba(255,255,255,0.06);">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin_log', action=current_action, page=pagination.prev_num) }}"
+         class="btn btn-ghost" style="padding:6px 14px; font-size:13px;">← Пред.</a>
+    {% endif %}
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        <a href="{{ url_for('admin_log', action=current_action, page=p) }}"
+           style="padding:6px 10px; border-radius:6px; font-size:13px; text-decoration:none;
+                  background:{{ 'rgba(124,111,255,0.25)' if p == pagination.page else 'rgba(255,255,255,0.06)' }};
+                  color:{{ '#a78bfa' if p == pagination.page else '#94a3b8' }};
+                  border:1px solid {{ 'rgba(124,111,255,0.4)' if p == pagination.page else 'rgba(255,255,255,0.1)' }};">
+          {{ p }}
+        </a>
+      {% else %}
+        <span style="color:#475569; padding:0 4px;">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin_log', action=current_action, page=pagination.next_num) }}"
+         class="btn btn-ghost" style="padding:6px 14px; font-size:13px;">След. →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📜</div>
+    <p>Записей пока нет</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

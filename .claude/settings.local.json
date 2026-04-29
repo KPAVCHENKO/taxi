@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\\\Users\\\\kravs\\\\Desktop\\\\taxi-main\\\\templates\")",
+      "Bash(findstr driver *)",
+      "Bash(dir \"c:\\\\Users\\\\kravs\\\\Desktop\\\\taxi-main\\\\static\\\\img\")",
+      "Bash(npm --version)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m 'Full project: driver app, client PWA, admin panel, push notifications, online status, intercity commission *)"
+    ]
+  }
+}

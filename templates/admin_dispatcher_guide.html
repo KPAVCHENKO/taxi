@@ -1,0 +1,446 @@
+{% extends "admin_base.html" %}
+{% block title %}Регламент диспетчера{% endblock %}
+{% block page_title %}📖 Регламент диспетчера{% endblock %}
+
+{% block content %}
+<style>
+  .guide-wrap { max-width: 860px; }
+
+  .guide-intro {
+    background: rgba(245,184,0,0.08);
+    border: 1px solid rgba(245,184,0,0.2);
+    border-radius: 14px;
+    padding: 18px 22px;
+    color: #f5b800;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  .guide-section {
+    background: #1a1d2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .guide-section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .gs-icon { font-size: 26px; flex-shrink: 0; }
+  .gs-title { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+  .gs-sub   { font-size: 13px; color: #475569; margin-top: 2px; }
+
+  .guide-rules { padding: 14px 22px 20px; }
+  .rule {
+    display: flex;
+    gap: 14px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 15px;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+  .rule:last-child { border-bottom: none; }
+  .rule-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(124,111,255,0.18);
+    color: #a78bfa;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .rule strong { color: #e2e8f0; }
+  .rule em { color: #f5b800; font-style: normal; font-weight: 600; }
+
+  .scenario {
+    margin: 8px 0;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid rgba(124,111,255,0.4);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .scenario b { color: #e2e8f0; }
+  .scenario .sc-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #7c6fff;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .warn-box {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #fca5a5;
+    line-height: 1.6;
+    margin-top: 10px;
+  }
+  .warn-box strong { color: #f87171; }
+
+  .tip-box {
+    background: rgba(52,211,153,0.07);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #6ee7b7;
+    line-height: 1.6;
+    margin-top: 10px;
+  }
+  .tip-box strong { color: #34d399; }
+
+  .quick-ref {
+    background: #1a1d2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .quick-ref h3 { font-size: 15px; font-weight: 700; color: #a78bfa; margin-bottom: 14px; }
+  .qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .qr-item {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .qr-item b { color: #e2e8f0; display: block; margin-bottom: 2px; }
+
+  @media print {
+    .sidebar, .top-bar, .topbar { display: none !important; }
+    .main-area { margin: 0 !important; }
+    .content { padding: 20px !important; }
+    .guide-section { break-inside: avoid; }
+  }
+</style>
+
+<div class="guide-wrap">
+
+<div class="guide-intro">
+  <strong>Этот документ — рабочий инструмент диспетчера.</strong> Он описывает, как действовать в стандартных и нестандартных ситуациях. Держите его открытым в рабочее время и следуйте инструкциям. При необходимости его можно распечатать (Ctrl+P).
+</div>
+
+<!-- ══ БЫСТРАЯ ШПАРГАЛКА ══ -->
+<div class="quick-ref">
+  <h3>⚡ Быстрая шпаргалка — статусы заказа</h3>
+  <div class="qr-grid">
+    <div class="qr-item"><b>🔵 Новый</b> Заказ создан, водитель ещё не назначен. Действие: выбрать водителя и назначить.</div>
+    <div class="qr-item"><b>🟢 Принят</b> Водитель назначен и едет. Действие: контролировать выполнение.</div>
+    <div class="qr-item"><b>⚫ Завершён</b> Поездка выполнена, баланс водителя пополнен. Действие: архив.</div>
+    <div class="qr-item"><b>↩ Сброс</b> Возврат в «Новый» — если водитель отказался или не смог выполнить. Действие: назначить другого.</div>
+  </div>
+</div>
+
+<!-- ══ 1. НАЧАЛО СМЕНЫ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">🌅</div>
+    <div>
+      <div class="gs-title">1. Начало смены</div>
+      <div class="gs-sub">Что сделать перед тем, как принимать заказы</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Откройте <strong>Приложение диспетчера</strong> (вкладка «Приложение» в меню) — оно показывает заказы в реальном времени.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div>Проверьте вкладку <strong>Водители</strong> — убедитесь, что активные водители отмечены как «Активен». Неактивных отключите.</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Убедитесь, что бот в Telegram <strong>работает</strong>: зайдите в «Webhook» и обновите, если нужно.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Уточните у водителей, кто выходит на смену сегодня, — и внесите это в голове при назначении заказов.</div></div>
+  </div>
+</div>
+
+<!-- ══ 2. ПРИЁМ ЗАКАЗА ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">📞</div>
+    <div>
+      <div class="gs-title">2. Приём заказа по телефону</div>
+      <div class="gs-sub">Клиент позвонил — порядок действий</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Поздоровайтесь: <em>«Казанское такси, добрый день!»</em></div></div>
+    <div class="rule"><div class="rule-num">2</div><div>Уточните <strong>откуда и куда</strong> едет клиент. Запишите точные адреса / населённые пункты.</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Назовите <strong>цену по тарифу</strong>. Если маршрут нестандартный — уточните у руководителя или рассчитайте по километражу.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Уточните <strong>время</strong>: сейчас или к определённому часу.</div></div>
+    <div class="rule"><div class="rule-num">5</div><div>Возьмите <strong>номер телефона</strong> клиента.</div></div>
+    <div class="rule"><div class="rule-num">6</div><div>Создайте заказ вручную: нажмите <strong>«➕ Создать заказ»</strong> на странице Заказы и заполните все поля.</div></div>
+    <div class="rule"><div class="rule-num">7</div><div>Сразу <strong>назначьте водителя</strong> — он получит уведомление в Telegram или приложение.</div></div>
+    <div class="rule"><div class="rule-num">8</div><div>Сообщите клиенту имя водителя и примерное время подачи: <em>«Водитель [имя] будет через X минут»</em>.</div></div>
+  </div>
+</div>
+
+<!-- ══ 3. ЗАКАЗ С САЙТА ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">🌐</div>
+    <div>
+      <div class="gs-title">3. Заказ с сайта</div>
+      <div class="gs-sub">Клиент оформил заказ онлайн</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>На странице <strong>Заказы</strong> появляется строка со статусом 🔵 <em>Новый</em>. Также приходит Push-уведомление в браузер.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div><strong>Проверьте заказ</strong>: адреса, телефон, тип оплаты, комментарий. При необходимости отредактируйте (кнопка ✏️).</div></div>
+    <div class="rule"><div class="rule-num">3</div><div><strong>Перезвоните клиенту</strong> для подтверждения, если заказ на межгород или нестандартный маршрут.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Выберите <strong>водителя</strong> из выпадающего списка и нажмите «✓ Назначить». Водитель получит уведомление.</div></div>
+    <div class="rule"><div class="rule-num">5</div><div>Если никто не принял заказ через <strong>5–10 минут</strong> — позвоните водителям напрямую.</div></div>
+  </div>
+</div>
+
+<!-- ══ 4. НАЗНАЧЕНИЕ ВОДИТЕЛЯ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">🚗</div>
+    <div>
+      <div class="gs-title">4. Выбор и назначение водителя</div>
+      <div class="gs-sub">Как правильно распределять заказы</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Смотрите на <strong>тип маршрута</strong> водителя: <em>[Р]</em> — только по району, <em>[МГ]</em> — межгород. Назначайте в соответствии.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div>Учитывайте <strong>график работы</strong> водителя (часы и дни недели указаны в карточке).</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Не назначайте водителя, у которого уже есть <strong>активный заказ</strong> (статус «Принят»).</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Если несколько подходящих водителей — выбирайте <strong>ближайшего к клиенту</strong> или того, кто давно не получал заказов.</div></div>
+    <div class="rule"><div class="rule-num">5</div><div>При <strong>плановом заказе</strong> (назначен на будущее время) — убедитесь заранее, что водитель помнит о поездке.</div></div>
+  </div>
+</div>
+
+<!-- ══ 5. НЕСТАНДАРТНЫЕ СИТУАЦИИ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">⚠️</div>
+    <div>
+      <div class="gs-title">5. Нестандартные ситуации</div>
+      <div class="gs-sub">Что делать, когда что-то пошло не так</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+
+    <div class="rule">
+      <div class="rule-num">А</div>
+      <div>
+        <strong>Водитель опаздывает</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Позвоните водителю — уточните, где он и когда будет. Сообщите клиенту: <b>«Водитель задерживается, будет через X минут. Приносим извинения»</b>. Если задержка более 20 мин — предложите другого водителя или перенос времени.
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">Б</div>
+      <div>
+        <strong>Водитель отказался от принятого заказа</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Нажмите кнопку <b>↩ (Сброс)</b> у заказа — он вернётся в статус «Новый». Назначьте другого водителя. Позвоните клиенту и предупредите о смене. При частых отказах — сообщите руководителю.
+        </div>
+        <div class="warn-box"><strong>Важно:</strong> не оставляйте заказ без водителя более 10 минут — клиент ждёт.</div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">В</div>
+      <div>
+        <strong>Нет свободных водителей</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Позвоните по очереди всем водителям — возможно кто-то освободится раньше. Сообщите клиенту: <b>«Сейчас все водители заняты, ориентировочно через X минут будет свободный — вы готовы подождать?»</b> Если не готов — предложите перенос на определённое время.
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">Г</div>
+      <div>
+        <strong>Клиент отменяет заказ</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Если водитель ещё не выехал: нажмите <b>↩ Сброс</b>, затем удалите заказ или оставьте в архиве. Предупредите водителя звонком или сообщением. Если водитель уже в дороге — сообщите руководителю, вопрос компенсации решается индивидуально.
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">Д</div>
+      <div>
+        <strong>Клиент жалуется на водителя</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Выслушайте внимательно, не перебивайте. Зафиксируйте жалобу (запишите). Скажите: <b>«Мы разберёмся и свяжемся с вами»</b>. Передайте информацию руководителю в тот же день. Не принимайте самостоятельных решений о штрафах или компенсациях.
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">Е</div>
+      <div>
+        <strong>ДТП или поломка во время поездки</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Водитель должен сообщить вам немедленно. Убедитесь, что пассажир в безопасности. Организуйте замену водителя для довоза клиента. Сообщите руководителю. Нажмите <b>↩ Сброс</b> и создайте новый заказ для замены, если нужно.
+        </div>
+        <div class="warn-box"><strong>Приоритет № 1 — безопасность пассажира.</strong> Всё остальное вторично.</div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">Ж</div>
+      <div>
+        <strong>Клиент не отвечает на телефон</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Водитель ждёт максимум <b>10 минут</b> у адреса. Если клиент не вышел и не отвечает — водитель сообщает диспетчеру. Диспетчер пробует дозвониться ещё раз. Если не удалось — заказ завершается, водитель получает компенсацию за холостой выезд (по договорённости с руководством).
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">З</div>
+      <div>
+        <strong>Спор об оплате между клиентом и водителем</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Попросите обе стороны не конфликтовать. Проверьте цену в заказе. Если цена совпадает с тарифом — поддержите водителя. Если ошибка на нашей стороне — извинитесь перед клиентом и скорректируйте. Передайте спорную ситуацию руководителю.
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-num">И</div>
+      <div>
+        <strong>Технические проблемы с системой / ботом</strong>
+        <div class="scenario">
+          <span class="sc-label">Действие</span>
+          Обновите страницу (F5). Если бот не работает — войдите в «Webhook» и обновите его. Если сайт недоступен — принимайте заказы по телефону вручную и записывайте. Свяжитесь с разработчиком.
+        </div>
+        <div class="tip-box"><strong>Совет:</strong> Держите телефонный список всех водителей распечатанным — на случай, если система недоступна.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ 6. ПЛАНОВЫЕ ЗАКАЗЫ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">🗓️</div>
+    <div>
+      <div class="gs-title">6. Плановые заказы</div>
+      <div class="gs-sub">Заказы на определённое время</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Плановый заказ создаётся с указанием даты и времени поездки. Водитель получает <strong>автоматическое напоминание за 1–2 часа</strong>.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div>За <strong>30 минут до поездки</strong> дополнительно проверьте, что водитель помнит о заказе — позвоните или напишите.</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Если водитель не подтверждает плановый заказ — немедленно назначьте <strong>другого</strong> и предупредите клиента.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Плановые заказы на <strong>аэропорт/вокзал/поезд</strong> — самые ответственные. Всегда уточняйте время отправления и добавляйте запас 30 минут.</div></div>
+  </div>
+</div>
+
+<!-- ══ 7. ЗАВЕРШЕНИЕ ЗАКАЗА ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">✅</div>
+    <div>
+      <div class="gs-title">7. Завершение заказа</div>
+      <div class="gs-sub">Как правильно закрывать заказ</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Водитель сам завершает заказ через Telegram или приложение. Вы можете завершить вручную — кнопка <strong>✓ (Завершить)</strong> с вводом фактической суммы.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div>При завершении вводите <strong>фактическую сумму</strong>, которую заплатил клиент. Она автоматически начисляется на баланс водителя.</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Если сумма отличается от тарифа (была доплата, скидка) — обязательно запишите причину в комментарий.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Завершённые заказы переходят в <strong>архив</strong>. Их можно найти через фильтр на странице Заказы.</div></div>
+  </div>
+</div>
+
+<!-- ══ 8. РАБОТА С ВОДИТЕЛЯМИ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">👨‍✈️</div>
+    <div>
+      <div class="gs-title">8. Работа с водителями</div>
+      <div class="gs-sub">Ежедневное взаимодействие</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Общайтесь <strong>вежливо и по-деловому</strong>. Водители — партнёры, а не подчинённые.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div>При добавлении нового водителя выдайте ему <strong>PIN для приложения</strong> и ознакомьте с регламентом.</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Контролируйте <strong>балансы водителей</strong>. Если водитель запрашивает выплату — передайте информацию руководителю.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Если водитель неактивен длительное время — уточните причину и при необходимости переведите в статус <strong>«Неактивен»</strong>.</div></div>
+    <div class="rule"><div class="rule-num">5</div><div>Не давайте обещаний водителям о <strong>размере заработка или количестве заказов</strong> — это вне вашей компетенции.</div></div>
+  </div>
+</div>
+
+<!-- ══ 9. КОНЕЦ СМЕНЫ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">🌙</div>
+    <div>
+      <div class="gs-title">9. Конец смены</div>
+      <div class="gs-sub">Что сделать перед тем, как закончить работу</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">1</div><div>Убедитесь, что все принятые заказы <strong>завершены или переданы</strong> следующему диспетчеру.</div></div>
+    <div class="rule"><div class="rule-num">2</div><div>Проверьте, что нет <strong>заказов в статусе «Новый»</strong> без назначенного водителя.</div></div>
+    <div class="rule"><div class="rule-num">3</div><div>Если есть <strong>плановые заказы на завтра</strong> — убедитесь, что водители назначены и предупреждены.</div></div>
+    <div class="rule"><div class="rule-num">4</div><div>Сообщите о <strong>нестандартных ситуациях</strong> за смену руководителю (жалобы, ДТП, конфликты).</div></div>
+  </div>
+</div>
+
+<!-- ══ 10. ЧЕГО НЕЛЬЗЯ ══ -->
+<div class="guide-section">
+  <div class="guide-section-header">
+    <div class="gs-icon">🚫</div>
+    <div>
+      <div class="gs-title">10. Чего категорически нельзя делать</div>
+      <div class="gs-sub">Нарушения, влекущие дисциплинарные меры</div>
+    </div>
+  </div>
+  <div class="guide-rules">
+    <div class="rule"><div class="rule-num">✕</div><div>Игнорировать входящие заказы — клиент не должен ждать ответа более <strong>3 минут</strong>.</div></div>
+    <div class="rule"><div class="rule-num">✕</div><div>Называть клиенту цену <strong>выше тарифа</strong> без согласования с руководством.</div></div>
+    <div class="rule"><div class="rule-num">✕</div><div>Грубить клиентам или водителям в любой ситуации.</div></div>
+    <div class="rule"><div class="rule-num">✕</div><div>Удалять заказы из системы без разрешения руководителя.</div></div>
+    <div class="rule"><div class="rule-num">✕</div><div>Разглашать <strong>личные данные</strong> клиентов или водителей третьим лицам.</div></div>
+    <div class="rule"><div class="rule-num">✕</div><div>Самовольно менять тарифы или давать постоянные скидки без согласования.</div></div>
+    <div class="rule"><div class="rule-num">✕</div><div>Работать в состоянии алкогольного или иного опьянения.</div></div>
+  </div>
+  <div style="padding:0 22px 20px;">
+    <div class="warn-box">
+      <strong>Помните:</strong> всё, что вы делаете и говорите от имени сервиса — это репутация компании. Действуйте профессионально в любой ситуации.
+    </div>
+  </div>
+</div>
+
+<div style="font-size:12px; color:#475569; text-align:center; margin-top:12px; padding-bottom:20px;">
+  Регламент Казанского такси · Казанский район · Актуально на {{ now().strftime('%Y год') if now is defined else '2025 год' }}
+</div>
+
+</div>
+{% endblock %}

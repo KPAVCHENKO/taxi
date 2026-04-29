@@ -1,0 +1,268 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Статистика{% endblock %}
+{% block page_title %}Статистика и аналитика{% endblock %}
+
+{% block content %}
+
+<style>
+  .period-btn {
+    padding: 7px 16px; border-radius: 20px; font-size: 13px;
+    text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8; background: rgba(255,255,255,0.05);
+    transition: all 0.15s; cursor: pointer; white-space: nowrap;
+  }
+  .period-btn:hover, .period-btn.active {
+    background: rgba(124,111,255,0.2); color: #a78bfa;
+    border-color: rgba(124,111,255,0.4);
+  }
+  .stat-card {
+    background: #1a1d2e; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 20px 22px;
+  }
+  .stat-card .val {
+    font-size: 30px; font-weight: 800; line-height: 1.1; margin: 6px 0 4px;
+  }
+  .stat-card .lbl {
+    font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .stat-card .sub { font-size: 12px; color: #475569; margin-top: 3px; }
+
+  .drv-bar-wrap { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; margin-top: 6px; }
+  .drv-bar      { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #7c6fff, #a78bfa); }
+</style>
+
+<!-- ── Фильтр периода ──────────────────────────────────────────────────────── -->
+<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; align-items:center;">
+  {% for p, label in [('today','Сегодня'),('yesterday','Вчера'),('week','7 дней'),('month','30 дней'),('year','Год'),('all','Всё время')] %}
+  <a href="{{ url_for('admin_stats', period=p) }}"
+     class="period-btn {{ 'active' if period == p else '' }}">{{ label }}</a>
+  {% endfor %}
+
+  <!-- Custom range -->
+  <form method="GET" action="{{ url_for('admin_stats') }}" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+    <input type="hidden" name="period" value="custom" />
+    <input type="date" name="date_from" value="{{ date_from }}"
+           style="padding:6px 10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                  border-radius:8px; color:#e2e8f0; font-size:13px;" />
+    <span style="color:#475569; font-size:13px;">—</span>
+    <input type="date" name="date_to" value="{{ date_to }}"
+           style="padding:6px 10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                  border-radius:8px; color:#e2e8f0; font-size:13px;" />
+    <button type="submit" class="period-btn {{ 'active' if period == 'custom' else '' }}">Применить</button>
+  </form>
+</div>
+
+<!-- ── Карточки итогов ─────────────────────────────────────────────────────── -->
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:14px; margin-bottom:24px;">
+
+  <div class="stat-card" style="border-top:2px solid #f5b800;">
+    <div class="lbl">Выручка</div>
+    <div class="val" style="color:#f5b800;">{{ '{:,}'.format(total_revenue).replace(',', ' ') }} ₽</div>
+    <div class="sub">за выбранный период</div>
+  </div>
+
+  <div class="stat-card" style="border-top:2px solid #a78bfa;">
+    <div class="lbl">Наша комиссия ({{ commission_rate }}%)</div>
+    <div class="val" style="color:#a78bfa;">{{ '{:,}'.format(commission_sum).replace(',', ' ') }} ₽</div>
+    <div class="sub">{{ commission_rate }}% от выручки</div>
+  </div>
+
+  <div class="stat-card" style="border-top:2px solid #60a5fa;">
+    <div class="lbl">Завершённых заказов</div>
+    <div class="val" style="color:#60a5fa;">{{ total_orders }}</div>
+    <div class="sub">ср. {{ '{:,}'.format(avg_order).replace(',', ' ') }} ₽ за заказ</div>
+  </div>
+
+  <div class="stat-card" style="border-top:2px solid #34d399;">
+    <div class="lbl">Наличные</div>
+    <div class="val" style="color:#34d399;">{{ '{:,}'.format(cash_rev).replace(',', ' ') }} ₽</div>
+    <div class="sub">{{ ((cash_rev / total_revenue * 100) | round | int) if total_revenue else 0 }}% от выручки</div>
+  </div>
+
+  <div class="stat-card" style="border-top:2px solid #06b6d4;">
+    <div class="lbl">Безнал (перевод)</div>
+    <div class="val" style="color:#06b6d4;">{{ '{:,}'.format(transfer_rev).replace(',', ' ') }} ₽</div>
+    <div class="sub">{{ ((transfer_rev / total_revenue * 100) | round | int) if total_revenue else 0 }}% от выручки</div>
+  </div>
+
+  <div class="stat-card" style="border-top:2px solid #64748b;">
+    <div class="lbl">За всё время</div>
+    <div class="val" style="color:#94a3b8;">{{ '{:,}'.format(all_total).replace(',', ' ') }} ₽</div>
+    <div class="sub">{{ all_count }} завершённых</div>
+  </div>
+
+</div>
+
+<!-- ── График выручки по дням ─────────────────────────────────────────────── -->
+{% if chart_labels != '[]' %}
+<div class="card" style="margin-bottom:24px; padding:20px;">
+  <div style="font-size:15px; font-weight:700; margin-bottom:16px; color:#e2e8f0;">
+    📊 Выручка по дням
+  </div>
+  <div style="position:relative; height:220px;">
+    <canvas id="revenueChart"></canvas>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Статистика по водителям ────────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header">
+    🚗 Статистика по водителям
+    <span style="font-size:12px; color:#475569;">комиссия {{ commission_rate }}%</span>
+  </div>
+
+  {% if driver_rows %}
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>Водитель</th>
+        <th>Заказов</th>
+        <th>Выручка</th>
+        <th>Наша комиссия</th>
+        <th>Доля</th>
+        <th>Водителю</th>
+        <th>Баланс</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in driver_rows %}
+      <tr>
+        <td style="font-weight:600; color:#e2e8f0;">{{ d.name }}</td>
+        <td style="color:#60a5fa; font-weight:600;">{{ d.orders }}</td>
+        <td>
+          <span style="font-weight:700; color:#f5b800; font-size:15px;">
+            {{ '{:,}'.format(d.revenue).replace(',', ' ') }} ₽
+          </span>
+        </td>
+        <td>
+          <span style="color:#a78bfa; font-weight:700;">
+            {{ '{:,}'.format(d.commission).replace(',', ' ') }} ₽
+          </span>
+        </td>
+        <td style="min-width:120px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:13px; color:#94a3b8; min-width:30px;">{{ d.pct }}%</span>
+            <div class="drv-bar-wrap" style="flex:1;">
+              <div class="drv-bar" style="width:{{ d.pct }}%;"></div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span style="font-weight:600; color:#34d399;">
+            {{ '{:,}'.format(d.revenue - d.commission).replace(',', ' ') }} ₽
+          </span>
+        </td>
+        <td>
+          <span style="font-weight:700; color:#34d399;">
+            {{ '{:,}'.format(d.balance or 0).replace(',', ' ') }} ₽
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="border-top:2px solid rgba(255,255,255,0.1);">
+        <td style="font-weight:700; color:#e2e8f0;">Итого</td>
+        <td style="font-weight:700; color:#60a5fa;">{{ total_orders }}</td>
+        <td style="font-weight:700; color:#f5b800; font-size:15px;">
+          {{ '{:,}'.format(total_revenue).replace(',', ' ') }} ₽
+        </td>
+        <td style="font-weight:700; color:#a78bfa;">
+          {{ '{:,}'.format(commission_sum).replace(',', ' ') }} ₽
+        </td>
+        <td style="color:#475569;">100%</td>
+        <td style="font-weight:700; color:#34d399;">
+          {{ '{:,}'.format(total_revenue - commission_sum).replace(',', ' ') }} ₽
+        </td>
+        <td style="color:#475569;">—</td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <p>Завершённых заказов за этот период нет</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const labels  = {{ chart_labels | safe }};
+const revenue = {{ chart_revenue | safe }};
+const orders  = {{ chart_orders | safe }};
+
+if (labels.length) {
+  const ctx = document.getElementById('revenueChart');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Выручка ₽',
+          data: revenue,
+          backgroundColor: 'rgba(245,184,0,0.7)',
+          borderColor:     '#f5b800',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Заказов',
+          data: orders,
+          type: 'line',
+          borderColor:     '#a78bfa',
+          backgroundColor: 'rgba(124,111,255,0.15)',
+          pointRadius: 4,
+          pointBackgroundColor: '#a78bfa',
+          fill: true,
+          tension: 0.3,
+          yAxisID: 'y2',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#1e2235',
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ctx.dataset.yAxisID === 'y'
+              ? ` ${ctx.parsed.y.toLocaleString('ru')} ₽`
+              : ` ${ctx.parsed.y} заказов`,
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: {
+          position: 'left',
+          ticks: { color: '#f5b800', font: { size: 11 },
+                   callback: v => v.toLocaleString('ru') + ' ₽' },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+        },
+        y2: {
+          position: 'right',
+          ticks: { color: '#a78bfa', font: { size: 11 } },
+          grid: { drawOnChartArea: false },
+        },
+      },
+    },
+  });
+}
+</script>
+
+{% endblock %}

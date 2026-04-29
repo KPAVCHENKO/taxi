@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Вход — Такси Казанское</title>
+  <link rel="manifest" href="/static/driver-manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Такси Водитель" />
+  <link rel="apple-touch-icon" href="/static/img/icon-192.png" />
+  <meta name="theme-color" content="#0f1117" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-wrap {
+      width: 100%;
+      max-width: 400px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .logo-icon { font-size: 52px; }
+    .logo-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #f5b800;
+      margin-top: 10px;
+      letter-spacing: -0.5px;
+    }
+    .logo-sub { font-size: 15px; color: #64748b; margin-top: 4px; }
+
+    .card {
+      background: #1a1d2e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 32px 28px;
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #e2e8f0;
+    }
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .field input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      color: #e2e8f0;
+      font-size: 18px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: #f5b800; background: rgba(245,184,0,0.06); }
+    .field input::placeholder { color: #475569; font-size: 16px; }
+    .field input[name="pin"] { letter-spacing: 6px; font-weight: 700; font-size: 22px; }
+
+    .btn-login {
+      width: 100%;
+      padding: 16px;
+      background: #f5b800;
+      color: #0f1117;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s;
+    }
+    .btn-login:hover { background: #e0a800; }
+    .btn-login:active { background: #c99400; }
+
+    .error {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #f87171;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 15px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    .hint {
+      font-size: 13px;
+      color: #475569;
+      text-align: center;
+      margin-top: 18px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo">
+    <div class="logo-icon">🚖</div>
+    <div class="logo-title">Казанское Такси</div>
+    <div class="logo-sub">Приложение для водителей</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Вход в систему</div>
+
+    {% if error %}
+      <div class="error">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('driver_login') }}">
+      <div class="field">
+        <label>Ваш номер телефона</label>
+        <input type="tel" name="phone"
+               placeholder="+7 (xxx) xxx-xx-xx"
+               autocomplete="tel"
+               required />
+      </div>
+      <div class="field">
+        <label>PIN-код</label>
+        <input type="password" name="pin"
+               placeholder="• • • •"
+               inputmode="numeric"
+               maxlength="10"
+               autocomplete="current-password"
+               required />
+      </div>
+      <button type="submit" class="btn-login">Войти →</button>
+    </form>
+
+    <div class="hint">
+      Номер телефона и PIN выдаёт диспетчер.<br>
+      Если не можете войти — позвоните в службу такси.
+    </div>
+  </div>
+</div>
+</body>
+</html>

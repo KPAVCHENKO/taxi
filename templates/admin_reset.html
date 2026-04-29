@@ -1,0 +1,160 @@
+{% extends "admin_base.html" %}
+{% block title %}Сброс данных{% endblock %}
+{% block page_title %}🗑 Сброс данных{% endblock %}
+
+{% block content %}
+<style>
+  .danger-card {
+    background: #1a1d2e;
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    max-width: 680px;
+  }
+  .danger-header {
+    padding: 16px 22px;
+    background: rgba(239,68,68,0.06);
+    border-bottom: 1px solid rgba(239,68,68,0.15);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .danger-header .dh-icon { font-size: 24px; }
+  .danger-header .dh-title { font-size: 16px; font-weight: 700; color: #f87171; }
+  .danger-header .dh-sub   { font-size: 13px; color: #64748b; margin-top: 2px; }
+  .danger-body { padding: 18px 22px; }
+  .danger-stat {
+    font-size: 14px; color: #94a3b8; margin-bottom: 14px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+  }
+  .danger-stat b { color: #e2e8f0; }
+  .danger-warn {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #fca5a5;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .btn-danger-big {
+    padding: 12px 24px;
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: 1.5px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-danger-big:hover { background: rgba(239,68,68,0.28); }
+  .done-box {
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.25);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #6ee7b7;
+    margin-bottom: 20px;
+    max-width: 680px;
+  }
+</style>
+
+{% if done %}
+  {% for msg in done %}
+    <div class="done-box">✅ {{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
+<div style="max-width:680px; margin-bottom:20px; padding:14px 18px;
+     background:rgba(245,184,0,0.06); border:1px solid rgba(245,184,0,0.2);
+     border-radius:12px; font-size:14px; color:#f5b800; line-height:1.6;">
+  ⚠️ <strong>Осторожно!</strong> Все действия на этой странице необратимы.
+  Используйте только для тестирования или полного перезапуска системы.
+</div>
+
+<!-- Удалить все заказы -->
+<div class="danger-card">
+  <div class="danger-header">
+    <div class="dh-icon">📋</div>
+    <div>
+      <div class="dh-title">Удалить все заказы</div>
+      <div class="dh-sub">Удаляет все заказы из базы данных</div>
+    </div>
+  </div>
+  <div class="danger-body">
+    <div class="danger-stat">
+      В базе: <b>{{ orders_count }}</b> заказов
+    </div>
+    <div class="danger-warn">
+      Балансы водителей и их данные <strong>не затрагиваются</strong>.
+      Только история заказов будет удалена.
+    </div>
+    <form method="POST" onsubmit="return confirm('Удалить ВСЕ {{ orders_count }} заказов? Это необратимо!')">
+      <input type="hidden" name="action" value="delete_orders" />
+      <button type="submit" class="btn-danger-big">🗑 Удалить все {{ orders_count }} заказов</button>
+    </form>
+  </div>
+</div>
+
+<!-- Обнулить балансы -->
+<div class="danger-card">
+  <div class="danger-header">
+    <div class="dh-icon">💰</div>
+    <div>
+      <div class="dh-title">Обнулить балансы водителей</div>
+      <div class="dh-sub">Сбросит баланс у всех водителей до 0, а также сбросит принятие регламента</div>
+    </div>
+  </div>
+  <div class="danger-body">
+    <div class="danger-stat">
+      Водителей: <b>{{ drivers_count }}</b>
+    </div>
+    <div class="danger-warn">
+      Заказы и история <strong>не удаляются</strong>.
+      Только балансы обнуляются и статус регламента сбрасывается.
+    </div>
+    <form method="POST" onsubmit="return confirm('Обнулить балансы всех {{ drivers_count }} водителей?')">
+      <input type="hidden" name="action" value="reset_balances" />
+      <button type="submit" class="btn-danger-big">💸 Обнулить все балансы</button>
+    </form>
+  </div>
+</div>
+
+<!-- Полный сброс -->
+<div class="danger-card" style="border-color:rgba(239,68,68,0.5);">
+  <div class="danger-header" style="background:rgba(239,68,68,0.12);">
+    <div class="dh-icon">☢️</div>
+    <div>
+      <div class="dh-title">ПОЛНЫЙ СБРОС</div>
+      <div class="dh-sub">Удалить заказы + лог + обнулить балансы</div>
+    </div>
+  </div>
+  <div class="danger-body">
+    <div class="danger-stat">
+      Заказов: <b>{{ orders_count }}</b> · Записей лога: <b>{{ log_count }}</b> · Водителей: <b>{{ drivers_count }}</b>
+    </div>
+    <div class="danger-warn">
+      <strong>Удаляет абсолютно всё:</strong> все заказы, весь лог диспетчера, обнуляет балансы всех водителей.
+      Данные самих водителей (имена, авто, телефоны) <strong>сохраняются</strong>.
+    </div>
+    <form method="POST" onsubmit="return doubleConfirm()">
+      <input type="hidden" name="action" value="delete_all" />
+      <button type="submit" class="btn-danger-big" style="border-color:rgba(239,68,68,0.6); color:#ff6b6b;">
+        ☢️ Полный сброс всех данных
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+function doubleConfirm() {
+  if (!confirm('Полный сброс: удалить ВСЕ заказы, лог и обнулить балансы?')) return false;
+  const input = prompt('Для подтверждения введите слово: СБРОС');
+  return input && input.trim().toUpperCase() === 'СБРОС';
+}
+</script>
+{% endblock %}

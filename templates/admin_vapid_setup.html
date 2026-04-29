@@ -1,0 +1,131 @@
+{% extends 'admin_base.html' %}
+{% block title %}Push-уведомления{% endblock %}
+{% block page_title %}Push-уведомления (VAPID){% endblock %}
+
+{% block content %}
+
+<!-- Status card -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">Статус</div>
+  <div style="padding:20px; display:flex; gap:24px; flex-wrap:wrap; align-items:center;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      {% if push_enabled %}
+      <span style="width:12px; height:12px; border-radius:50%; background:#34d399; display:inline-block; box-shadow:0 0 8px rgba(52,211,153,0.5);"></span>
+      <span style="color:#34d399; font-weight:600;">Push включён</span>
+      {% else %}
+      <span style="width:12px; height:12px; border-radius:50%; background:#f87171; display:inline-block;"></span>
+      <span style="color:#f87171; font-weight:600;">Push не настроен</span>
+      {% endif %}
+    </div>
+    <div style="color:#64748b; font-size:14px;">
+      Активных подписок: <strong style="color:#e2e8f0;">{{ sub_count }}</strong>
+    </div>
+    {% if push_enabled %}
+    <div style="font-size:13px; color:#64748b; font-family:monospace; background:rgba(255,255,255,0.04);
+                padding:4px 10px; border-radius:6px; word-break:break-all; max-width:400px;">
+      {{ vapid_public_key[:40] }}…
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Generate keys -->
+{% if not push_enabled %}
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">Шаг 1 — Сгенерировать VAPID-ключи</div>
+  <div style="padding:20px;">
+    <p style="color:#94a3b8; font-size:14px; margin-bottom:16px;">
+      Для работы Push-уведомлений нужно сгенерировать пару VAPID-ключей
+      и добавить их в переменные окружения Railway.
+    </p>
+    <a href="{{ url_for('admin_vapid_setup', generate='1') }}" class="btn btn-primary-sm">
+      ⚡ Сгенерировать ключи
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% if generated %}
+<div class="card" style="margin-bottom:24px; border-top:3px solid {% if generated.error %}#f87171{% else %}#34d399{% endif %};">
+  <div class="card-header">
+    {% if generated.error %}❌ Ошибка генерации{% else %}✅ Ключи сгенерированы{% endif %}
+  </div>
+  <div style="padding:20px;">
+    {% if generated.error %}
+    <div class="alert alert-info" style="background:rgba(239,68,68,0.12); color:#f87171; border-color:rgba(239,68,68,0.3);">
+      {{ generated.error }}
+    </div>
+    {% else %}
+    <p style="color:#94a3b8; font-size:14px; margin-bottom:16px;">
+      Скопируйте эти значения в переменные окружения Railway (Settings → Variables):
+    </p>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px; color:#64748b; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
+        VAPID_PUBLIC_KEY
+      </div>
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <code id="pub-key" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+              padding:10px 14px; border-radius:8px; font-size:12px; color:#a78bfa;
+              word-break:break-all; display:block; font-family:monospace;">{{ generated.public }}</code>
+        <button onclick="copyText('pub-key')" class="btn btn-ghost" style="flex-shrink:0; padding:8px 12px;">📋</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px; color:#64748b; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
+        VAPID_PRIVATE_KEY
+      </div>
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <code id="priv-key" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+              padding:10px 14px; border-radius:8px; font-size:11px; color:#fbbf24;
+              white-space:pre-wrap; word-break:break-all; display:block; font-family:monospace;">{{ generated.private }}</code>
+        <button onclick="copyText('priv-key')" class="btn btn-ghost" style="flex-shrink:0; padding:8px 12px;">📋</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:0;">
+      <div style="font-size:12px; color:#64748b; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
+        VAPID_EMAIL (опционально)
+      </div>
+      <code style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            padding:8px 14px; border-radius:8px; font-size:12px; color:#94a3b8;
+            display:block; font-family:monospace;">mailto:admin@example.com</code>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Instructions -->
+<div class="card">
+  <div class="card-header">Инструкция по настройке</div>
+  <div style="padding:20px;">
+    <ol style="color:#94a3b8; font-size:14px; line-height:2; padding-left:20px;">
+      <li>Нажмите <strong style="color:#e2e8f0;">«Сгенерировать ключи»</strong> выше.</li>
+      <li>Скопируйте <code style="color:#a78bfa;">VAPID_PUBLIC_KEY</code> и <code style="color:#fbbf24;">VAPID_PRIVATE_KEY</code>.</li>
+      <li>Перейдите в <strong style="color:#e2e8f0;">Railway → ваш проект → Variables</strong>.</li>
+      <li>Добавьте обе переменные и нажмите <strong style="color:#e2e8f0;">Deploy</strong>.</li>
+      <li>После деплоя откройте <a href="{{ url_for('admin_dispatcher') }}" style="color:#a78bfa;">Диспетчер</a>
+          и нажмите <strong style="color:#e2e8f0;">«Включить уведомления»</strong>.</li>
+    </ol>
+
+    <div class="alert alert-info" style="margin-top:16px;">
+      💡 Push-уведомления работают только по HTTPS и в браузерах Chrome/Edge/Firefox.
+      Safari iOS поддерживает с версии 16.4+.
+    </div>
+  </div>
+</div>
+
+<script>
+function copyText(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const btn = el.nextElementSibling;
+    const orig = btn.textContent;
+    btn.textContent = '✅';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Приложение водителя — Такси Казанское</title>
+  <meta name="theme-color" content="#0f1117" />
+  <link rel="manifest" href="/static/driver-manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Такси Водитель" />
+  <link rel="apple-touch-icon" href="/static/img/icon-192.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding-bottom: 74px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #1a1d2e;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-name {
+      font-size: 19px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .topbar-sub { font-size: 13px; color: #64748b; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-refresh {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 18px;
+      cursor: pointer;
+      color: #94a3b8;
+      transition: all 0.15s;
+    }
+    .btn-refresh:hover { background: rgba(255,255,255,0.12); }
+    .btn-refresh.spinning { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Balance strip ── */
+    .balance-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .bal-cell {
+      background: #0f1117;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .bal-val { font-size: 20px; font-weight: 800; color: #f5b800; }
+    .bal-val.green { color: #34d399; }
+    .bal-val.blue  { color: #7dd3fc; }
+    .bal-label { font-size: 11px; color: #475569; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      background: #1a1d2e;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 13px 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .tab-btn.active { color: #f5b800; border-bottom-color: #f5b800; }
+    .tab-badge {
+      position: absolute;
+      top: 6px;
+      right: 12px;
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Tab content ── */
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    /* ── Order card ── */
+    .order-card {
+      background: #1a1d2e;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 16px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .order-card.intercity {
+      border-color: rgba(248,177,51,0.25);
+    }
+    .order-card-header {
+      padding: 14px 16px 10px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .order-time {
+      font-size: 12px;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .order-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge-intercity { background: rgba(248,177,51,0.15); color: #f8b133; border: 1px solid rgba(248,177,51,0.3); }
+    .badge-local     { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+    .badge-shared    { background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+    .badge-transfer  { background: rgba(125,211,252,0.12); color: #7dd3fc; border: 1px solid rgba(125,211,252,0.25); }
+
+    .order-route {
+      padding: 0 16px 12px;
+    }
+    .route-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .route-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .dot-from { background: #34d399; }
+    .dot-to   { background: #f87171; }
+    .route-addr {
+      font-size: 17px;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.35;
+    }
+    .route-line {
+      width: 2px; height: 16px;
+      background: rgba(255,255,255,0.1);
+      margin-left: 4px; margin-bottom: 2px;
+    }
+
+    .order-meta {
+      padding: 10px 16px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 15px;
+      color: #94a3b8;
+    }
+    .meta-item .mi-icon { font-size: 16px; }
+    .meta-price { font-size: 18px; font-weight: 800; color: #f5b800; }
+    .meta-phone a { color: #7dd3fc; text-decoration: none; font-weight: 600; }
+    .meta-scheduled { color: #fbbf24; font-weight: 600; }
+
+    .order-comment {
+      margin: 0 16px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 15px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .order-actions {
+      padding: 0 14px 14px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-accept {
+      flex: 1;
+      padding: 14px;
+      background: #f5b800;
+      color: #0f1117;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-accept:hover { background: #e0a800; }
+    .btn-accept:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-complete {
+      flex: 1;
+      padding: 14px;
+      background: rgba(52,211,153,0.15);
+      color: #34d399;
+      border: 1.5px solid rgba(52,211,153,0.35);
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-complete:hover { background: rgba(52,211,153,0.28); }
+
+    .btn-cancel-order {
+      padding: 14px 16px;
+      background: rgba(239,68,68,0.1);
+      color: #f87171;
+      border: 1.5px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-cancel-order:hover { background: rgba(239,68,68,0.2); }
+
+    /* ── Complete form overlay ── */
+    .complete-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .complete-overlay.open { display: flex; }
+    .complete-sheet {
+      background: #1a1d2e;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 36px;
+      width: 100%;
+      max-width: 540px;
+    }
+    .sheet-title { font-size: 20px; font-weight: 700; margin-bottom: 18px; }
+    .sheet-label { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+    .sheet-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(52,211,153,0.3);
+      border-radius: 12px;
+      color: #34d399;
+      font-size: 24px;
+      font-weight: 700;
+      outline: none;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .sheet-btns { display: flex; gap: 10px; }
+    .sheet-btn-ok {
+      flex: 1;
+      padding: 15px;
+      background: #34d399;
+      color: #0f1117;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .sheet-btn-cancel {
+      padding: 15px 20px;
+      background: rgba(255,255,255,0.07);
+      color: #94a3b8;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── History card ── */
+    .hist-card {
+      background: #1a1d2e;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .hist-route { font-size: 15px; color: #cbd5e1; line-height: 1.4; }
+    .hist-route span { color: #64748b; }
+    .hist-price { font-size: 18px; font-weight: 800; color: #f5b800; white-space: nowrap; }
+    .hist-date { font-size: 12px; color: #475569; margin-top: 4px; }
+
+    /* ── Empty / loading ── */
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: #475569;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty p { font-size: 17px; }
+    .empty small { font-size: 14px; display: block; margin-top: 6px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #e2e8f0;
+      padding: 12px 22px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 300;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: rgba(52,211,153,0.4); color: #34d399; }
+    #toast.error   { border-color: rgba(239,68,68,0.4);  color: #f87171; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1a1d2e;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      padding: 10px 4px 8px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      transition: color 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .nav-item .ni-icon { font-size: 22px; line-height: 1; }
+    .nav-item.active { color: #f5b800; }
+
+    /* ── Profile tab ── */
+    .profile-section {
+      background: #1a1d2e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 16px;
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .pr-label { color: #64748b; }
+    .pr-val { color: #e2e8f0; font-weight: 600; }
+
+    .btn-logout {
+      width: 100%;
+      padding: 15px;
+      background: rgba(239,68,68,0.1);
+      color: #f87171;
+      border: 1.5px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-regs {
+      width: 100%;
+      padding: 15px;
+      background: rgba(124,111,255,0.1);
+      color: #a78bfa;
+      border: 1.5px solid rgba(124,111,255,0.2);
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div>
+    <div class="topbar-name">{{ driver.name }}</div>
+    <div class="topbar-sub">🚖 Казанское Такси</div>
+  </div>
+  <div class="topbar-right" style="gap:8px;">
+    <button id="btn-online-toggle" onclick="toggleOnline()"
+            style="padding:8px 14px; border-radius:20px; font-size:13px; font-weight:700;
+                   border:none; cursor:pointer; transition:all 0.2s;">
+      …
+    </button>
+    <button class="btn-refresh" id="btn-refresh" onclick="loadData()" title="Обновить">↻</button>
+  </div>
+</div>
+
+<!-- Balance strip -->
+<div class="balance-strip" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+  <div class="bal-cell">
+    <div class="bal-val" style="color:#f5b800;" id="bal-today">...</div>
+    <div class="bal-label">Сегодня</div>
+  </div>
+  <div class="bal-cell">
+    <div class="bal-val green" id="bal-balance">...</div>
+    <div class="bal-label">Баланс</div>
+  </div>
+  <div class="bal-cell">
+    <div class="bal-val blue"  id="bal-count">...</div>
+    <div class="bal-label">Выполнено</div>
+  </div>
+  <div class="bal-cell">
+    <div class="bal-val" id="bal-new">...</div>
+    <div class="bal-label">Новых</div>
+  </div>
+</div>
+
+<!-- Push notification banner -->
+<div id="push-banner" style="display:none; align-items:center; justify-content:space-between;
+     gap:12px; padding:10px 16px;
+     background:rgba(245,184,0,0.1); border-bottom:1px solid rgba(245,184,0,0.2);">
+  <div style="font-size:14px; color:#f5b800; line-height:1.4;">
+    🔔 <strong>Включите уведомления</strong> — получайте сигнал о каждом новом заказе
+  </div>
+  <button onclick="enablePush()"
+          style="flex-shrink:0; padding:8px 16px; background:#f5b800; color:#0f1117;
+                 border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer;">
+    Включить
+  </button>
+</div>
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('new')" id="tab-btn-new">
+    Новые
+    <span class="tab-badge" id="badge-new" style="display:none;">0</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('mine')" id="tab-btn-mine">
+    Мой заказ
+    <span class="tab-badge" id="badge-mine" style="display:none;">1</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('history')" id="tab-btn-history">История</button>
+  <button class="tab-btn" onclick="showTab('profile')" id="tab-btn-profile">Профиль</button>
+</div>
+
+<!-- ═══ NEW ORDERS TAB ═══ -->
+<div class="tab-content active" id="tab-new">
+  <div id="new-orders-list">
+    <div class="empty">
+      <div class="empty-icon">⏳</div>
+      <p>Загрузка...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MY ORDER TAB ═══ -->
+<div class="tab-content" id="tab-mine">
+  <div id="my-order-block">
+    <div class="empty">
+      <div class="empty-icon">⏳</div>
+      <p>Загрузка...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HISTORY TAB ═══ -->
+<div class="tab-content" id="tab-history">
+  <div id="history-list">
+    <div class="empty">
+      <div class="empty-icon">⏳</div>
+      <p>Загрузка...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE TAB ═══ -->
+<div class="tab-content" id="tab-profile">
+  <div class="profile-section">
+    <div class="profile-row">
+      <span class="pr-label">Имя</span>
+      <span class="pr-val">{{ driver.name }}</span>
+    </div>
+    {% if driver.phone %}
+    <div class="profile-row">
+      <span class="pr-label">Телефон</span>
+      <span class="pr-val">{{ driver.phone }}</span>
+    </div>
+    {% endif %}
+    {% if driver.car_info %}
+    <div class="profile-row">
+      <span class="pr-label">Автомобиль</span>
+      <span class="pr-val">{{ driver.car_info }}</span>
+    </div>
+    {% endif %}
+    <div class="profile-row">
+      <span class="pr-label">Маршруты</span>
+      <span class="pr-val">
+        {% if driver.route_type == 'local' %}По району
+        {% elif driver.route_type == 'intercity' %}Межгород
+        {% else %}Любые{% endif %}
+      </span>
+    </div>
+    <div class="profile-row">
+      <span class="pr-label">Баланс</span>
+      <span class="pr-val" id="profile-balance" style="color:#34d399;">{{ driver.balance or 0 }} ₽</span>
+    </div>
+  </div>
+
+  <!-- Уведомления -->
+  <div class="profile-section" style="margin-top:14px;">
+    <div style="font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Уведомления</div>
+    <div id="notif-status" style="font-size:15px; color:#94a3b8; margin-bottom:12px;"></div>
+    <button onclick="testAlert()"
+            style="width:100%;padding:13px;background:rgba(245,184,0,0.12);color:#f5b800;
+                   border:1.5px solid rgba(245,184,0,0.3);border-radius:12px;
+                   font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px;">
+      🔔 Тест — проверить звук и вибрацию
+    </button>
+    <button onclick="enablePush()" id="btn-enable-push"
+            style="width:100%;padding:13px;background:rgba(124,111,255,0.12);color:#a78bfa;
+                   border:1.5px solid rgba(124,111,255,0.25);border-radius:12px;
+                   font-size:16px;font-weight:700;cursor:pointer;">
+      📲 Включить фоновые уведомления
+    </button>
+  </div>
+
+  <a href="{{ url_for('driver_regulations') }}" class="btn-regs">📋 Посмотреть регламент</a>
+
+  <a href="{{ url_for('driver_logout') }}" class="btn-logout" style="display:block;text-align:center;text-decoration:none;margin-top:12px;">
+    ⬅ Выйти из приложения
+  </a>
+</div>
+
+<!-- ═══ Complete order sheet ═══ -->
+<div class="complete-overlay" id="complete-overlay" onclick="closeComplete(event)">
+  <div class="complete-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">✅ Завершить поездку</div>
+    <div class="sheet-label">Сумма за поездку (₽)</div>
+    <input type="number" class="sheet-input" id="complete-price"
+           placeholder="0" inputmode="numeric" min="0" />
+    <div class="sheet-btns">
+      <button class="sheet-btn-ok" onclick="confirmComplete()">Завершить и получить деньги</button>
+      <button class="sheet-btn-cancel" onclick="closeComplete()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button class="nav-item active" id="nav-new" onclick="showTab('new')">
+    <span class="ni-icon">📋</span>Заказы
+  </button>
+  <button class="nav-item" id="nav-mine" onclick="showTab('mine')">
+    <span class="ni-icon">🚗</span>Мой маршрут
+  </button>
+  <button class="nav-item" id="nav-history" onclick="showTab('history')">
+    <span class="ni-icon">📁</span>История
+  </button>
+  <button class="nav-item" id="nav-profile" onclick="showTab('profile')">
+    <span class="ni-icon">👤</span>Профиль
+  </button>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+let currentTab = 'new';
+let pendingCompleteId = null;
+let lastNewCount = null;
+let pollTimer = null;
+let _isOnline = false;
+
+function updateOnlineBtn(online) {
+  _isOnline = online;
+  const btn = document.getElementById('btn-online-toggle');
+  if (!btn) return;
+  if (online) {
+    btn.textContent = '🟢 В сети';
+    btn.style.background = 'rgba(52,211,153,0.2)';
+    btn.style.color = '#34d399';
+    btn.style.border = '1.5px solid rgba(52,211,153,0.4)';
+  } else {
+    btn.textContent = '⚫ Не в сети';
+    btn.style.background = 'rgba(100,116,139,0.15)';
+    btn.style.color = '#64748b';
+    btn.style.border = '1.5px solid rgba(100,116,139,0.3)';
+  }
+}
+
+async function toggleOnline() {
+  const newState = !_isOnline;
+  const res = await fetch('/driver/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ online: newState }),
+  });
+  const data = await res.json();
+  if (res.ok) {
+    updateOnlineBtn(data.online);
+    toast(data.online ? '🟢 Вы в сети — заказы будут приходить' : '⚫ Вы не в сети', data.online ? 'success' : '');
+  }
+}
+
+// ── Звук тревоги через Web Audio API (без внешних файлов) ────────────────────
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const beep = (freq, start, dur) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.05);
+    };
+    beep(880,  0,    0.25);
+    beep(1100, 0.3,  0.25);
+    beep(880,  0.6,  0.25);
+    beep(1320, 0.9,  0.4);
+    setTimeout(() => { try { ctx.close(); } catch(_){} }, 2000);
+  } catch(e) {}
+}
+
+// ── Вибрация ──────────────────────────────────────────────────────────────────
+function vibrateAlert() {
+  try {
+    if (navigator.vibrate) navigator.vibrate([400, 100, 400, 100, 600]);
+  } catch(e) {}
+}
+
+// ── Показать уведомление (работает и в фоне и в активной вкладке) ─────────────
+function showOrderNotification(title, body) {
+  // Если сервис-воркер зарегистрирован — через него (работает в фоне)
+  if (_swReg && _swReg.showNotification) {
+    _swReg.showNotification(title, {
+      body,
+      icon:              '/static/img/icon-192.png',
+      badge:             '/static/img/icon-192.png',
+      vibrate:           [400, 100, 400, 100, 600],
+      requireInteraction: true,
+      tag:               'new-order',
+      renotify:          true,
+      data:              { url: '/driver/' },
+    }).catch(() => {});
+    return;
+  }
+  // Fallback — обычный Notification API
+  if (Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body,
+        icon: '/static/img/icon-192.png',
+        requireInteraction: true,
+        tag: 'new-order',
+        renotify: true,
+      });
+    } catch(e) {}
+  }
+}
+
+// ── Главная функция оповещения о новом заказе ─────────────────────────────────
+function alertNewOrder(count) {
+  playAlertSound();
+  vibrateAlert();
+  showOrderNotification(
+    `🚖 Новый заказ! (${count})`,
+    'Откройте приложение и примите заказ'
+  );
+  toast(`🔔 Новый заказ! Их ${count}`, 'success');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tab-btn-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  currentTab = name;
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = '', 2800);
+}
+
+async function loadData() {
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('spinning');
+  try {
+    const res = await fetch('/driver/api/orders');
+    if (!res.ok) { if (res.status === 401) location.href='/driver/login'; return; }
+    const data = await res.json();
+    renderNewOrders(data.new_orders || []);
+    renderMyOrder(data.my_order);
+    renderHistory(data.history || []);
+    const bal = (data.balance || 0).toLocaleString('ru');
+    document.getElementById('bal-today').textContent   = (data.today_earnings || 0).toLocaleString('ru') + ' ₽';
+    document.getElementById('bal-balance').textContent = bal + ' ₽';
+    document.getElementById('bal-count').textContent   = data.completed_count || 0;
+    document.getElementById('bal-new').textContent     = data.new_orders.length;
+    document.getElementById('profile-balance').textContent = bal + ' ₽';
+    updateOnlineBtn(data.is_online);
+
+    const newCount = data.new_orders.length;
+    const badgeNew = document.getElementById('badge-new');
+    if (newCount > 0) { badgeNew.style.display='flex'; badgeNew.textContent=newCount; }
+    else              { badgeNew.style.display='none'; }
+
+    const hasMine = !!data.my_order;
+    document.getElementById('badge-mine').style.display = hasMine ? 'flex' : 'none';
+
+    // Уведомление о новом заказе
+    if (lastNewCount === null) {
+      lastNewCount = newCount; // первая загрузка — запомнить без уведомления
+    } else if (newCount > lastNewCount) {
+      alertNewOrder(newCount);
+      lastNewCount = newCount;
+    } else {
+      lastNewCount = newCount;
+    }
+  } catch(e) {
+    console.error(e);
+  }
+  btn.classList.remove('spinning');
+}
+
+function renderNewOrders(orders) {
+  const el = document.getElementById('new-orders-list');
+  if (!orders.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">😴</div><p>Новых заказов нет</p><small>Обновляется каждые 20 секунд</small></div>`;
+    return;
+  }
+  el.innerHTML = orders.map(o => `
+    <div class="order-card ${o.intercity ? 'intercity' : ''}">
+      <div class="order-card-header">
+        <div>
+          ${o.intercity ? '<span class="order-badge badge-intercity">🛣 Межгород</span>' : '<span class="order-badge badge-local">📍 По району</span>'}
+          ${o.ride_type === 'Попутчики' ? ' <span class="order-badge badge-shared">👥 Попутно</span>' : ''}
+          ${o.payment === 'Перевод' ? ' <span class="order-badge badge-transfer">💳 Перевод</span>' : ''}
+        </div>
+        <span class="order-time">${o.scheduled_at ? '🗓 ' + o.scheduled_at : '⏱ ' + o.created_at}</span>
+      </div>
+      <div class="order-route">
+        <div class="route-row">
+          <div class="route-dot dot-from"></div>
+          <div class="route-addr">${o.from_address}</div>
+        </div>
+        <div class="route-line" style="margin-left:4px;"></div>
+        <div class="route-row">
+          <div class="route-dot dot-to"></div>
+          <div class="route-addr">${o.to_address}</div>
+        </div>
+      </div>
+      <div class="order-meta">
+        <div class="meta-item meta-phone">📞 <a href="tel:${o.phone}">${o.phone}</a></div>
+        ${o.estimated_price ? `<div class="meta-item"><span class="meta-price">${o.estimated_price.toLocaleString('ru')} ₽</span></div>` : ''}
+        ${o.distance_km ? `<div class="meta-item"><span class="mi-icon">📏</span> ${o.distance_km.toFixed(1)} км</div>` : ''}
+        ${o.duration_min ? `<div class="meta-item"><span class="mi-icon">⏱</span> ~${o.duration_min} мин</div>` : ''}
+      </div>
+      ${o.comment ? `<div class="order-comment">💬 ${o.comment}</div>` : ''}
+      <div class="order-actions">
+        <button class="btn-accept" onclick="acceptOrder(${o.id}, this)">✓ Принять заказ</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMyOrder(o) {
+  const el = document.getElementById('my-order-block');
+  if (!o) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🟢</div><p>Нет активного заказа</p><small>Примите заказ во вкладке «Новые»</small></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="order-card" style="border-color:rgba(52,211,153,0.3);">
+      <div class="order-card-header">
+        <span style="font-size:14px;font-weight:700;color:#34d399;">🟢 Активный заказ</span>
+        ${o.scheduled_at ? `<span class="order-time meta-scheduled">🗓 ${o.scheduled_at}</span>` : ''}
+      </div>
+      <div class="order-route">
+        <div class="route-row">
+          <div class="route-dot dot-from"></div>
+          <div class="route-addr">${o.from_address}</div>
+        </div>
+        <div class="route-line" style="margin-left:4px;"></div>
+        <div class="route-row">
+          <div class="route-dot dot-to"></div>
+          <div class="route-addr">${o.to_address}</div>
+        </div>
+      </div>
+      <div class="order-meta">
+        <div class="meta-item meta-phone">📞 <a href="tel:${o.phone}">${o.phone}</a></div>
+        ${o.estimated_price ? `<div class="meta-item"><span class="meta-price">${o.estimated_price.toLocaleString('ru')} ₽</span></div>` : ''}
+        ${o.distance_km ? `<div class="meta-item"><span class="mi-icon">📏</span> ${o.distance_km.toFixed(1)} км</div>` : ''}
+        ${o.duration_min ? `<div class="meta-item"><span class="mi-icon">⏱</span> ~${o.duration_min} мин</div>` : ''}
+        <div class="meta-item">${o.payment === 'Перевод' ? '💳 Перевод' : '💵 Наличные'}</div>
+      </div>
+      ${o.comment ? `<div class="order-comment">💬 ${o.comment}</div>` : ''}
+      <div class="order-actions">
+        <button class="btn-complete" onclick="openComplete(${o.id}, ${o.estimated_price || 0})">✅ Завершить</button>
+        <button class="btn-cancel-order" onclick="cancelOrder(${o.id}, this)" title="Отменить">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistory(hist) {
+  const el = document.getElementById('history-list');
+  if (!hist.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📁</div><p>История пока пуста</p></div>`;
+    return;
+  }
+  el.innerHTML = hist.map(o => `
+    <div class="hist-card">
+      <div>
+        <div class="hist-route">${o.from_address}<br><span>→ </span>${o.to_address}</div>
+        <div class="hist-date">${o.created_at}</div>
+      </div>
+      <div class="hist-price">${o.estimated_price ? o.estimated_price.toLocaleString('ru') + ' ₽' : '—'}</div>
+    </div>
+  `).join('');
+}
+
+async function acceptOrder(id, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Принимаю...';
+  try {
+    const res = await fetch(`/driver/order/${id}/accept`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      toast('✅ Заказ принят!', 'success');
+      await loadData();
+      showTab('mine');
+    } else {
+      toast('⚠️ ' + (data.error || 'Ошибка'), 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Принять заказ';
+    }
+  } catch(e) {
+    toast('Ошибка сети', 'error');
+    btn.disabled = false;
+    btn.textContent = '✓ Принять заказ';
+  }
+}
+
+function openComplete(id, price) {
+  pendingCompleteId = id;
+  document.getElementById('complete-price').value = price || '';
+  document.getElementById('complete-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('complete-price').focus(), 100);
+}
+
+function closeComplete(e) {
+  if (!e || e.target === document.getElementById('complete-overlay')) {
+    document.getElementById('complete-overlay').classList.remove('open');
+  }
+}
+
+async function confirmComplete() {
+  const priceVal = parseInt(document.getElementById('complete-price').value) || 0;
+  const res = await fetch(`/driver/order/${pendingCompleteId}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actual_price: priceVal }),
+  });
+  const data = await res.json();
+  closeComplete();
+  if (res.ok) {
+    const earned = (data.amount || 0) - (data.commission || 0);
+    let msg = `✅ Завершено! +${earned.toLocaleString('ru')} ₽`;
+    if (data.commission) msg += ` (комиссия межгород: -${data.commission} ₽)`;
+    toast(msg, 'success');
+    await loadData();
+    showTab('history');
+  } else {
+    toast('⚠️ ' + (data.error || 'Ошибка'), 'error');
+  }
+}
+
+async function cancelOrder(id, btn) {
+  if (!confirm('Вернуть заказ в очередь?')) return;
+  btn.disabled = true;
+  const res = await fetch(`/driver/order/${id}/cancel`, { method: 'POST' });
+  if (res.ok) {
+    toast('Заказ возвращён в очередь', '');
+    await loadData();
+    showTab('new');
+  } else {
+    toast('Ошибка', 'error');
+    btn.disabled = false;
+  }
+}
+
+function startPolling() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(loadData, 8000); // каждые 8 секунд
+}
+
+// ── PWA + Push ────────────────────────────────────────────────────────────────
+let _swReg = null;
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function initPush() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    _swReg = await navigator.serviceWorker.register('/static/driver-sw.js', { scope: '/driver/' });
+    await navigator.serviceWorker.ready;
+
+    if (!('PushManager' in window)) {
+      // Нет push — баннер не показываем, polling работает
+      hidePushBanner();
+      return;
+    }
+
+    const existing = await _swReg.pushManager.getSubscription();
+    if (existing) {
+      await savePushSub(existing);
+      hidePushBanner();
+    } else if (Notification.permission === 'granted') {
+      // Уже есть разрешение — подписываемся автоматически
+      await enablePush();
+    } else {
+      showPushBanner();
+    }
+  } catch(e) {
+    console.warn('[SW]', e);
+    hidePushBanner();
+  }
+}
+
+function showPushBanner() {
+  document.getElementById('push-banner').style.display = 'flex';
+}
+function hidePushBanner() {
+  document.getElementById('push-banner').style.display = 'none';
+}
+
+async function enablePush() {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') {
+      toast('⚠️ Разрешите уведомления в настройках браузера', 'error');
+      return;
+    }
+    const keyRes = await fetch('/api/push/vapid-public-key');
+    const { key, enabled } = await keyRes.json();
+    if (!enabled) { toast('Push-ключи не настроены на сервере', 'error'); return; }
+
+    const sub = await _swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key),
+    });
+    await savePushSub(sub);
+    hidePushBanner();
+    updateNotifStatus();
+    toast('🔔 Уведомления включены!', 'success');
+  } catch(e) {
+    // Push API недоступен — polling всё равно работает
+    hidePushBanner();
+    updateNotifStatus();
+    console.warn('[Push]', e);
+  }
+}
+
+async function savePushSub(sub) {
+  await fetch('/driver/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sub.toJSON()),
+  });
+}
+
+// ── Тест уведомлений ──────────────────────────────────────────────────────────
+function testAlert() {
+  alertNewOrder(1);
+}
+
+// ── Статус уведомлений в профиле ──────────────────────────────────────────────
+function updateNotifStatus() {
+  const el = document.getElementById('notif-status');
+  if (!el) return;
+  if (!('Notification' in window)) {
+    el.innerHTML = '❌ Браузер не поддерживает уведомления';
+    return;
+  }
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    el.innerHTML = '✅ Уведомления разрешены';
+    el.style.color = '#34d399';
+    document.getElementById('btn-enable-push').textContent = '📲 Переподключить фоновые уведомления';
+  } else if (perm === 'denied') {
+    el.innerHTML = '❌ Уведомления заблокированы — разблокируйте в настройках браузера';
+    el.style.color = '#f87171';
+  } else {
+    el.innerHTML = '⚠️ Уведомления не разрешены — нажмите кнопку ниже';
+    el.style.color = '#f5b800';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+initPush();
+updateNotifStatus();
+loadData();
+startPolling();
+
+// Разблокировать звук при первом касании (требование iOS)
+document.addEventListener('touchstart', () => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  ctx.resume().then(() => ctx.close());
+}, { once: true });
+
+// Wake up polling when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) loadData();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Стань водителем — Казанское Такси</title>
+  <meta name="description" content="Работай водителем в Казанском такси. Свободный график, оплата от заказа, поддержка диспетчера. Оставь заявку онлайн." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --card:    #1a1d2e;
+      --border:  rgba(255,255,255,0.08);
+      --purple:  #a78bfa;
+      --purple2: #7c6fff;
+      --yellow:  #f5b800;
+      --green:   #34d399;
+      --blue:    #60a5fa;
+      --text:    #e2e8f0;
+      --muted:   #94a3b8;
+      --faint:   #475569;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    /* ── Header ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,17,23,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 28px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .header-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--text);
+      min-width: 0; flex: 1;
+    }
+    .header-logo-icon { font-size: 24px; flex-shrink: 0; }
+    .header-logo-texts { min-width: 0; }
+    .header-logo-name {
+      font-size: 16px; font-weight: 700; color: var(--purple);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .header-logo-sub { font-size: 11px; color: var(--faint); white-space: nowrap; }
+    .header-right {
+      display: flex; gap: 8px; align-items: center; flex-shrink: 0;
+    }
+    .header-phone {
+      color: var(--yellow); text-decoration: none;
+      font-weight: 600; font-size: 15px; white-space: nowrap;
+    }
+    .header-back {
+      color: var(--muted); text-decoration: none; font-size: 13px;
+      border: 1px solid var(--border); padding: 6px 12px;
+      border-radius: 8px; transition: all 0.15s; white-space: nowrap;
+    }
+    .header-back:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    /* На узких экранах — две строки */
+    @media (max-width: 520px) {
+      .header {
+        flex-wrap: wrap;
+        padding: 10px 14px;
+        gap: 6px;
+      }
+      /* Строка 1: лого слева, кнопка «На сайт» справа */
+      .header-logo { order: 1; flex: 1; }
+      .header-back  { order: 2; flex-shrink: 0; font-size: 12px; padding: 5px 10px; }
+      /* Строка 2: телефон на всю ширину */
+      .header-phone {
+        order: 3;
+        width: 100%;
+        font-size: 14px;
+        background: rgba(245,184,0,0.08);
+        border: 1px solid rgba(245,184,0,0.2);
+        border-radius: 8px;
+        padding: 7px 12px;
+        text-align: center;
+      }
+      .header-logo-icon { font-size: 22px; }
+      .header-logo-name { font-size: 15px; }
+      .header-logo-sub  { font-size: 10px; }
+    }
+
+    @media (max-width: 360px) {
+      .header-logo-name { font-size: 14px; }
+      .header-phone { font-size: 13px; }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 82vh; display: flex; align-items: center;
+      background: linear-gradient(135deg, #0f1117 0%, #131628 50%, #1a1030 100%);
+      position: relative; overflow: hidden;
+      padding: 80px 28px 60px;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 70% 50%, rgba(124,111,255,0.12) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at 20% 80%, rgba(245,184,0,0.07) 0%, transparent 60%);
+    }
+    .hero-inner { position: relative; max-width: 620px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(124,111,255,0.15); border: 1px solid rgba(124,111,255,0.3);
+      border-radius: 20px; padding: 5px 14px; font-size: 13px; color: var(--purple);
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: clamp(32px, 6vw, 54px); font-weight: 900; line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .hero-title span { color: var(--yellow); }
+    .hero-sub { font-size: 17px; color: var(--muted); margin-bottom: 32px; max-width: 480px; }
+    .hero-perks { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 36px; }
+    .hero-perk {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 20px; padding: 7px 14px; font-size: 13px; color: var(--muted);
+    }
+    .hero-perk .pi { font-size: 15px; }
+    .btn-apply {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--purple2), var(--purple));
+      color: white; text-decoration: none; border: none; cursor: pointer;
+      padding: 14px 28px; border-radius: 12px; font-size: 16px; font-weight: 700;
+      transition: all 0.2s; box-shadow: 0 4px 20px rgba(124,111,255,0.35);
+    }
+    .btn-apply:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,111,255,0.45); }
+
+    /* ── Section wrapper ── */
+    .section { padding: 72px 28px; max-width: 1100px; margin: 0 auto; }
+    .section-title { font-size: 30px; font-weight: 800; margin-bottom: 8px; }
+    .section-sub { font-size: 15px; color: var(--muted); margin-bottom: 40px; }
+
+    /* ── Benefits ── */
+    .benefits-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px;
+    }
+    .benefit-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 22px; transition: border-color 0.2s, transform 0.2s;
+    }
+    .benefit-card:hover { border-color: rgba(167,139,250,0.3); transform: translateY(-3px); }
+    .benefit-icon { font-size: 30px; margin-bottom: 12px; }
+    .benefit-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .benefit-desc { font-size: 13px; color: var(--muted); }
+
+    /* ── Requirements ── */
+    .req-section { background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .req-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px;
+    }
+    .req-check { color: var(--green); font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .req-text { font-size: 14px; color: var(--text); }
+    .req-hint { font-size: 12px; color: var(--faint); margin-top: 3px; }
+
+    /* ── Steps ── */
+    .steps { display: flex; gap: 0; flex-wrap: wrap; }
+    .step { flex: 1; min-width: 200px; position: relative; padding: 24px; }
+    .step:not(:last-child)::after {
+      content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      font-size: 20px; color: var(--faint);
+    }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple2), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: white; margin-bottom: 14px;
+    }
+    .step-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .step-desc { font-size: 13px; color: var(--muted); }
+
+    /* ── Form ── */
+    .form-section { background: linear-gradient(135deg, #0f1117, #131520); }
+    .form-card {
+      background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--purple);
+      border-radius: 16px; padding: 36px; max-width: 740px; margin: 0 auto;
+    }
+    .form-title { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .form-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+
+    .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .field-group.full { grid-template-columns: 1fr; }
+    .field-group.trio { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 600px) {
+      .field-group, .field-group.trio { grid-template-columns: 1fr; }
+      .steps { flex-direction: column; }
+      .step:not(:last-child)::after { display: none; }
+    }
+    .field label {
+      display: block; font-size: 11px; font-weight: 600; color: var(--faint);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .field label .req-star { color: var(--purple); }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 10px 13px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9px; color: var(--text); font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: var(--faint); }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--purple2);
+      box-shadow: 0 0 0 3px rgba(124,111,255,0.15);
+    }
+    .field select option { background: #1a1d2e; }
+    .field textarea { resize: vertical; min-height: 90px; }
+
+    .time-row { display: flex; gap: 10px; align-items: center; }
+    .time-sep { color: var(--faint); font-size: 14px; flex-shrink: 0; }
+
+    /* Days checkboxes */
+    .days-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .day-chip input { display: none; }
+    .day-chip label {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 44px; height: 36px; border-radius: 8px; cursor: pointer;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      transition: all 0.15s; text-transform: none; letter-spacing: 0;
+    }
+    .day-chip input:checked + label {
+      background: rgba(124,111,255,0.2); border-color: rgba(124,111,255,0.5);
+      color: var(--purple);
+    }
+
+    /* Route type */
+    .route-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .route-opt input { display: none; }
+    .route-opt label {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 20px; cursor: pointer;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-size: 13px; color: var(--muted); transition: all 0.15s;
+      text-transform: none; letter-spacing: 0;
+    }
+    .route-opt input:checked + label {
+      background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.4);
+      color: var(--green);
+    }
+
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+    .submit-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--purple2), var(--purple));
+      color: white; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; box-shadow: 0 4px 20px rgba(124,111,255,0.3);
+      margin-top: 6px;
+    }
+    .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,111,255,0.4); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .form-notice { font-size: 12px; color: var(--faint); text-align: center; margin-top: 12px; }
+    .form-success {
+      display: none; text-align: center; padding: 32px 20px;
+    }
+    .form-success .suc-icon { font-size: 56px; margin-bottom: 12px; }
+    .form-success .suc-title { font-size: 22px; font-weight: 800; color: var(--green); margin-bottom: 8px; }
+    .form-success .suc-sub { font-size: 15px; color: var(--muted); }
+
+    .error-msg { font-size: 13px; color: #f87171; margin-top: 10px; text-align: center; }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--card); border-top: 1px solid var(--border);
+      padding: 24px 28px; text-align: center;
+    }
+    .footer-text { font-size: 13px; color: var(--faint); }
+    .footer-links { margin-top: 8px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .footer-links a { font-size: 12px; color: var(--faint); text-decoration: none; }
+    .footer-links a:hover { color: var(--muted); }
+
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .hero { padding: 70px 16px 50px; }
+      .section { padding: 48px 16px; }
+      .form-card { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <a href="/" class="header-logo">
+    <span class="header-logo-icon">🚖</span>
+    <div class="header-logo-texts">
+      <div class="header-logo-name">Казанское Такси</div>
+      <div class="header-logo-sub">Казанский район</div>
+    </div>
+  </a>
+  <a href="/" class="header-back">← На сайт</a>
+  <a href="tel:{{ owner_phone_raw }}" class="header-phone">📞 {{ owner_phone }}</a>
+</header>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">🚗 Открытый набор водителей</div>
+    <h1 class="hero-title">
+      Стань водителем<br>
+      <span>Казанского Такси</span>
+    </h1>
+    <p class="hero-sub">Свободный график, стабильные заказы и удобная система управления заказами. Работай рядом с домом.</p>
+    <div class="hero-perks">
+      <div class="hero-perk"><span class="pi">💰</span> 80% от заказа</div>
+      <div class="hero-perk"><span class="pi">📅</span> Свой график</div>
+      <div class="hero-perk"><span class="pi">📍</span> Казанский район</div>
+      <div class="hero-perk"><span class="pi">⚡</span> Старт за 3 дня</div>
+    </div>
+    <a href="#form" class="btn-apply">Оставить заявку →</a>
+  </div>
+</section>
+
+<!-- ── Benefits ── -->
+<div style="background: #0f1117; padding: 4px 0;">
+<div class="section">
+  <h2 class="section-title">Почему работают с нами</h2>
+  <p class="section-sub">Честные условия, прозрачный расчёт, без скрытых платежей</p>
+  <div class="benefits-grid">
+    <div class="benefit-card">
+      <div class="benefit-icon">💰</div>
+      <div class="benefit-title">80% от каждого заказа</div>
+      <div class="benefit-desc">Вы получаете большую часть стоимости поездки. Никаких скрытых вычетов — только честный расчёт.</div>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">📅</div>
+      <div class="benefit-title">Полностью свободный график</div>
+      <div class="benefit-desc">Сами решаете когда работать: утром, вечером, по выходным. Нет обязательных смен.</div>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">📍</div>
+      <div class="benefit-title">Маршруты рядом с домом</div>
+      <div class="benefit-desc">Работаем по Казанскому району и в Ишим. Можете выбрать только межгород или только местные поездки.</div>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">📲</div>
+      <div class="benefit-title">Удобная система заказов</div>
+      <div class="benefit-desc">Заказы приходят прямо на телефон — принимайте и завершайте поездки в пару касаний.</div>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">⚡</div>
+      <div class="benefit-title">Быстрый старт</div>
+      <div class="benefit-desc">После одобрения заявки вы сможете принимать первые заказы уже через 3 рабочих дня.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── Requirements ── -->
+<div class="req-section">
+  <div class="section">
+    <h2 class="section-title">Требования к водителям</h2>
+    <p class="section-sub">Простые и честные условия</p>
+    <div class="req-grid">
+      <div class="req-item">
+        <span class="req-check">✓</span>
+        <div>
+          <div class="req-text">Водительское удостоверение категории B</div>
+          <div class="req-hint">Действующие права, стаж от 1 года</div>
+        </div>
+      </div>
+      <div class="req-item">
+        <span class="req-check">✓</span>
+        <div>
+          <div class="req-text">Собственный автомобиль</div>
+          <div class="req-hint">Исправный, чистый, в хорошем состоянии</div>
+        </div>
+      </div>
+      <div class="req-item">
+        <span class="req-check">✓</span>
+        <div>
+          <div class="req-text">Смартфон</div>
+        </div>
+      </div>
+      <div class="req-item">
+        <span class="req-check">✓</span>
+        <div>
+          <div class="req-text">Вежливость и пунктуальность</div>
+          <div class="req-hint">Уважительное отношение к пассажирам</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── How it works ── -->
+<div style="background: #0f1117;">
+  <div class="section">
+    <h2 class="section-title">Как начать работать</h2>
+    <p class="section-sub">Всего три простых шага</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Оставьте заявку</div>
+        <div class="step-desc">Заполните форму ниже — укажите данные о себе и автомобиле, удобный график</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Мы свяжемся с вами</div>
+        <div class="step-desc">Позвоним или напишем в Telegram и ответим на все вопросы</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Начните получать заказы</div>
+        <div class="step-desc">После подтверждения добавим в Telegram-бот и вы сразу сможете принимать поездки</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Form ── -->
+<!-- ── Скачать приложение водителя ── -->
+<section style="padding:32px 20px 0; max-width:680px; margin:0 auto;">
+  <div style="
+    background: linear-gradient(135deg, #1a1d2e 0%, #1e2035 100%);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 20px;
+    padding: 28px 24px;
+    text-align: center;
+  ">
+    <div style="font-size:48px; margin-bottom:10px;">📱</div>
+    <div style="font-size:20px; font-weight:800; color:#a78bfa; margin-bottom:6px;">
+      Приложение водителя
+    </div>
+    <div style="font-size:15px; color:#94a3b8; margin-bottom:20px; line-height:1.6;">
+      Принимайте заказы прямо на телефон. Работает без Telegram — отдельное приложение для водителей.
+    </div>
+
+    <!-- Android -->
+    <a href="/download/driver" style="
+      display:flex; align-items:center; justify-content:center; gap:12px;
+      padding:16px 24px; border-radius:14px;
+      background:#a78bfa; color:#fff;
+      font-size:17px; font-weight:700; text-decoration:none;
+      margin-bottom:12px;
+      box-shadow:0 4px 20px rgba(167,139,250,0.3);
+    ">
+      🤖 Скачать для Android
+    </a>
+
+    <!-- iPhone -->
+    <div style="
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      padding:14px 16px;
+      text-align:left;
+    ">
+      <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">
+        🍎 iPhone — как установить:
+      </div>
+      <ol style="font-size:13px; color:#94a3b8; line-height:1.8; padding-left:18px;">
+        <li>Откройте <strong style="color:#e2e8f0;">Safari</strong> (не Chrome!)</li>
+        <li>Перейдите на сайт <strong style="color:#a78bfa;">kazanskoe-taxi.xyz/driver/login</strong></li>
+        <li>Нажмите кнопку <strong style="color:#e2e8f0;">«Поделиться»</strong> (квадрат со стрелкой вверх)</li>
+        <li>Выберите <strong style="color:#e2e8f0;">«На экран "Домой"»</strong></li>
+        <li>Нажмите <strong style="color:#e2e8f0;">«Добавить»</strong> — появится иконка на рабочем столе</li>
+      </ol>
+    </div>
+
+    <div style="font-size:12px; color:#475569; margin-top:14px;">
+      Войдите по номеру телефона и PIN-коду, который выдаёт диспетчер
+    </div>
+  </div>
+</section>
+
+<section class="form-section" id="form">
+  <div class="section">
+    <div class="form-card">
+      <div id="form-body">
+        <div class="form-title">Заявка на работу водителем</div>
+        <div class="form-sub">Заполните форму — ответим в течение рабочего дня</div>
+
+        <!-- Личные данные -->
+        <div class="field-group">
+          <div class="field">
+            <label>ФИО <span class="req-star">*</span></label>
+            <input type="text" id="f-name" placeholder="Иван Иванович Иванов" maxlength="100" />
+          </div>
+          <div class="field">
+            <label>Телефон <span class="req-star">*</span></label>
+            <input type="tel" id="f-phone" placeholder="+7 (999) 000-00-00" />
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label>Населённый пункт <span class="req-star">*</span></label>
+            <input type="text" id="f-city" placeholder="Казанское, Ишим…" maxlength="100" />
+          </div>
+          <div class="field">
+            <label>Telegram (необязательно)</label>
+            <input type="text" id="f-telegram" placeholder="@username" maxlength="100" />
+          </div>
+        </div>
+
+        <hr class="section-divider" />
+
+        <!-- Автомобиль -->
+        <div style="font-size:13px; font-weight:700; color: var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px;">🚗 Автомобиль</div>
+        <div class="field-group trio">
+          <div class="field">
+            <label>Марка и модель</label>
+            <input type="text" id="f-car-model" placeholder="Hyundai Solaris" maxlength="100" />
+          </div>
+          <div class="field">
+            <label>Год выпуска</label>
+            <input type="number" id="f-car-year" placeholder="2018" min="1990" max="2025" />
+          </div>
+          <div class="field">
+            <label>Цвет</label>
+            <input type="text" id="f-car-color" placeholder="Белый" maxlength="50" />
+          </div>
+        </div>
+
+        <hr class="section-divider" />
+
+        <!-- Опыт и маршруты -->
+        <div style="font-size:13px; font-weight:700; color: var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px;">📋 Опыт и предпочтения</div>
+        <div class="field-group">
+          <div class="field">
+            <label>Стаж вождения</label>
+            <select id="f-experience">
+              <option value="">— Выберите —</option>
+              <option value="меньше 1 года">Меньше 1 года</option>
+              <option value="1–3 года">1–3 года</option>
+              <option value="3–5 лет">3–5 лет</option>
+              <option value="5–10 лет">5–10 лет</option>
+              <option value="более 10 лет">Более 10 лет</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Какие маршруты интересны</label>
+            <div class="route-group" style="margin-top:6px;">
+              <div class="route-opt">
+                <input type="radio" name="route_type" id="rt-local" value="local" />
+                <label for="rt-local">📍 По району</label>
+              </div>
+              <div class="route-opt">
+                <input type="radio" name="route_type" id="rt-intercity" value="intercity" />
+                <label for="rt-intercity">🛣 Межгород</label>
+              </div>
+              <div class="route-opt">
+                <input type="radio" name="route_type" id="rt-any" value="any" checked />
+                <label for="rt-any">✅ Любые</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="section-divider" />
+
+        <!-- График -->
+        <div style="font-size:13px; font-weight:700; color: var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px;">🕐 Удобный график</div>
+        <div class="field-group">
+          <div class="field">
+            <label>Время работы</label>
+            <div class="time-row">
+              <input type="time" id="f-work-from" value="08:00" style="flex:1;" />
+              <span class="time-sep">—</span>
+              <input type="time" id="f-work-to" value="22:00" style="flex:1;" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Дни недели</label>
+            <div class="days-group">
+              {% for short, full in [('пн','Пн'),('вт','Вт'),('ср','Ср'),('чт','Чт'),('пт','Пт'),('сб','Сб'),('вс','Вс')] %}
+              <div class="day-chip">
+                <input type="checkbox" id="day-{{ short }}" value="{{ short }}"
+                       {% if short not in ('сб','вс') %}checked{% endif %} />
+                <label for="day-{{ short }}">{{ full }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <hr class="section-divider" />
+
+        <!-- Комментарий -->
+        <div class="field-group full">
+          <div class="field">
+            <label>Комментарий (необязательно)</label>
+            <textarea id="f-message" placeholder="Расскажите о себе, задайте вопрос…" maxlength="1000"></textarea>
+          </div>
+        </div>
+
+        <div id="form-error" class="error-msg" style="display:none;"></div>
+
+        <button class="submit-btn" id="submit-btn" onclick="submitApplication()">
+          Отправить заявку →
+        </button>
+        <div class="form-notice">Нажимая кнопку, вы соглашаетесь на обработку персональных данных. Отвечаем в течение рабочего дня.</div>
+      </div>
+
+      <!-- Success state -->
+      <div id="form-success" class="form-success">
+        <div class="suc-icon">🎉</div>
+        <div class="suc-title">Заявка отправлена!</div>
+        <div class="suc-sub">Мы свяжемся с вами в ближайшее время по телефону или в Telegram.<br>Спасибо за интерес к работе с нами!</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-text">© 2025 Казанское Такси · Казанский район, Тюменская область</div>
+  <div class="footer-links">
+    <a href="/">На главную</a>
+    <a href="/privacy" target="_blank">Политика конф.</a>
+    <a href="/offer" target="_blank">Оферта</a>
+    <a href="tel:{{ owner_phone_raw }}">{{ owner_phone }}</a>
+  </div>
+</footer>
+
+<script>
+async function submitApplication() {
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('form-error');
+  errEl.style.display = 'none';
+
+  const name  = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const city  = document.getElementById('f-city').value.trim();
+
+  if (!name || !phone || !city) {
+    errEl.textContent = 'Пожалуйста, заполните обязательные поля: ФИО, Телефон, Населённый пункт';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const workDays = [...document.querySelectorAll('.day-chip input:checked')].map(el => el.value);
+  const routeType = document.querySelector('input[name="route_type"]:checked')?.value || 'any';
+
+  btn.disabled = true;
+  btn.textContent = 'Отправляем…';
+
+  try {
+    const res = await fetch('/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        phone,
+        city,
+        car_model:  document.getElementById('f-car-model').value.trim(),
+        car_year:   document.getElementById('f-car-year').value.trim(),
+        car_color:  document.getElementById('f-car-color').value.trim(),
+        experience: document.getElementById('f-experience').value,
+        telegram:   document.getElementById('f-telegram').value.trim(),
+        message:    document.getElementById('f-message').value.trim(),
+        work_from:  document.getElementById('f-work-from').value,
+        work_to:    document.getElementById('f-work-to').value,
+        work_days:  workDays,
+        route_type: routeType,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('form-body').style.display = 'none';
+      document.getElementById('form-success').style.display = 'block';
+    } else {
+      errEl.textContent = data.error || 'Ошибка. Попробуйте ещё раз.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Отправить заявку →';
+    }
+  } catch (e) {
+    errEl.textContent = 'Ошибка сети. Позвоните нам напрямую.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Отправить заявку →';
+  }
+}
+</script>
+</body>
+</html>

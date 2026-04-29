@@ -1,0 +1,38 @@
+{
+  "name": "Казанское Такси",
+  "short_name": "Казанское Такси",
+  "description": "Такси по Казанскому району. Ишим, Петропавловск, любые сёла. Фиксированные цены.",
+  "start_url": "https://taxi-production-3985.up.railway.app/",
+  "scope": "https://taxi-production-3985.up.railway.app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1E2535",
+  "theme_color": "#1E2535",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/static/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Заказать такси",
+      "url": "/#order",
+      "description": "Быстрый заказ такси"
+    },
+    {
+      "name": "Позвонить",
+      "url": "tel:+79630608419",
+      "description": "Позвонить диспетчеру"
+    }
+  ]
+}

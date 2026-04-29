@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Регламент водителя — Такси Казанское</title>
+  <link rel="manifest" href="/static/driver-manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Такси Водитель" />
+  <link rel="apple-touch-icon" href="/static/img/icon-192.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 0 0 100px 0;
+    }
+    .header {
+      background: #1a1d2e;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 20px 20px 16px;
+      text-align: center;
+    }
+    .header-icon { font-size: 36px; }
+    .header h1 { font-size: 22px; font-weight: 800; color: #f5b800; margin-top: 8px; }
+    .header p { font-size: 14px; color: #64748b; margin-top: 4px; }
+
+    .content { padding: 20px; max-width: 680px; margin: 0 auto; }
+
+    .intro {
+      background: rgba(245,184,0,0.08);
+      border: 1px solid rgba(245,184,0,0.2);
+      border-radius: 14px;
+      padding: 16px 18px;
+      font-size: 16px;
+      color: #f5b800;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .section {
+      background: #1a1d2e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .section-icon { font-size: 24px; flex-shrink: 0; }
+    .section-title { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+
+    .rules { padding: 14px 18px 18px; }
+    .rule {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 16px;
+      line-height: 1.55;
+      color: #cbd5e1;
+    }
+    .rule:last-child { border-bottom: none; }
+    .rule-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(124,111,255,0.2);
+      color: #a78bfa;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .rule-text { flex: 1; }
+    .rule-text strong { color: #e2e8f0; }
+
+    .important {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: #fca5a5;
+      line-height: 1.6;
+      margin-top: 20px;
+    }
+    .important strong { color: #f87171; }
+
+    .accept-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #1a1d2e;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 100;
+    }
+    .accept-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .accept-check input[type=checkbox] {
+      width: 22px;
+      height: 22px;
+      accent-color: #f5b800;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .btn-accept {
+      width: 100%;
+      padding: 16px;
+      background: #f5b800;
+      color: #0f1117;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-accept:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-accept:not(:disabled):hover { background: #e0a800; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">📋</div>
+  <h1>Регламент водителя</h1>
+  <p>Прочитайте внимательно перед началом работы</p>
+</div>
+
+<div class="content">
+
+  <div class="intro">
+    Дорогой водитель! Этот регламент — основа нашей совместной работы. Он короткий и понятный. Пожалуйста, прочитайте его полностью.
+  </div>
+
+  <!-- 1. Заказы -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">📲</div>
+      <div class="section-title">1. Приём заказов</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text">Новые заказы приходят в приложение или в Telegram. <strong>Принимайте заказ как можно быстрее</strong> — клиент ждёт.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Принял заказ — значит <strong>взял обязательство</strong>. Не принимайте заказ, если не уверены что можете его выполнить.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text">Одновременно можно вести <strong>только один заказ</strong>. Новый заказ принимайте только после завершения текущего.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">4</div>
+        <div class="rule-text">Если принял заказ и не можешь выполнить — <strong>немедленно сообщи диспетчеру</strong> и верни заказ в очередь через приложение.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Пунктуальность -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🕐</div>
+      <div class="section-title">2. Время и пунктуальность</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text"><strong>Опоздание — это проблема клиента.</strong> Подъезжайте вовремя. Предупреждайте, если задерживаетесь.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Для <strong>запланированных поездок</strong> (например, в аэропорт или на поезд) — будьте у клиента за 5–10 минут до назначенного времени.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text">Не можете приехать вовремя? <strong>Позвоните клиенту заранее</strong> и предупредите. Номер телефона есть в заказе.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Общение с клиентом -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🤝</div>
+      <div class="section-title">3. Общение с пассажиром</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text">Общайтесь <strong>вежливо и уважительно</strong> со всеми пассажирами независимо от ситуации.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Не обсуждайте с пассажирами <strong>политику, религию</strong> и другие конфликтные темы.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text"><strong>Не курите</strong> в салоне и непосредственно перед посадкой клиента. Не употребляйте алкоголь ни при каких обстоятельствах.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">4</div>
+        <div class="rule-text">Помогайте пассажирам с <strong>багажом, детскими сиденьями</strong> и особыми потребностями.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Автомобиль -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🚗</div>
+      <div class="section-title">4. Автомобиль</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text">Автомобиль должен быть <strong>чистым снаружи и внутри</strong> перед каждой рабочей сменой.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Выезжайте только на <strong>технически исправном</strong> автомобиле. Не выезжайте, если есть проблемы с тормозами, рулём или освещением.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text">В автомобиле должны быть <strong>все необходимые документы</strong>: права, СТС, страховка (ОСАГО).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Маршрут и безопасность -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🛣️</div>
+      <div class="section-title">5. Маршрут и безопасность</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text">Соблюдайте <strong>ПДД</strong> и скоростной режим на всём маршруте. Жизнь пассажира важнее времени.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Едете по тому маршруту, который <strong>согласован с клиентом</strong>. Не делайте лишних остановок без его согласия.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text">При <strong>ДТП или поломке</strong> — сразу сообщите диспетчеру. Позаботьтесь о безопасности пассажиров.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Оплата -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">💰</div>
+      <div class="section-title">6. Оплата и расчёты</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text">Берите оплату строго по <strong>согласованному тарифу</strong>, указанному в заказе. Не повышайте цену самостоятельно.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Способ оплаты (наличные или перевод) указан в заказе. Заранее <strong>проверьте наличие сдачи</strong>, если оплата наличными.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text">После завершения поездки <strong>нажмите «Завершить заказ»</strong> в приложении и укажите фактическую сумму.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">4</div>
+        <div class="rule-text">Ваш <strong>баланс</strong> автоматически пополняется при завершении заказа. Посмотреть его можно в приложении.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Дисциплина -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">⚠️</div>
+      <div class="section-title">7. Дисциплина</div>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-num">1</div>
+        <div class="rule-text">Частые <strong>отказы от принятых заказов</strong> без уважительной причины могут стать основанием для отстранения от работы.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">2</div>
+        <div class="rule-text">Жалобы от клиентов <strong>рассматриваются серьёзно</strong>. При систематических жалобах — отстранение.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">3</div>
+        <div class="rule-text"><strong>Категорически запрещено</strong> садиться за руль в состоянии алкогольного или наркотического опьянения. Нарушение — немедленное прекращение сотрудничества.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="important">
+    <strong>Помните:</strong> вы — лицо нашей службы такси. От вашей работы зависит репутация компании и доверие клиентов. Работайте честно, и мы будем работать честно с вами. При любых вопросах — звоните диспетчеру.
+  </div>
+
+</div>
+
+<!-- Sticky accept bar -->
+<div class="accept-bar">
+  <form method="POST" action="{{ url_for('driver_regulations') }}" id="accept-form">
+    <label class="accept-check" style="cursor:pointer;">
+      <input type="checkbox" id="agree-check" onchange="updateBtn()" />
+      <span>Я прочитал(а) регламент и обязуюсь его соблюдать</span>
+    </label>
+    <button type="submit" class="btn-accept" id="btn-accept" disabled>
+      ✓ Принять и войти в приложение
+    </button>
+  </form>
+</div>
+
+<script>
+function updateBtn() {
+  document.getElementById('btn-accept').disabled =
+    !document.getElementById('agree-check').checked;
+}
+</script>
+</body>
+</html>

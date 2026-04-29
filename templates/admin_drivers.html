@@ -1,0 +1,486 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Водители{% endblock %}
+{% block page_title %}Водители{% endblock %}
+
+{% block content %}
+
+<style>
+  .driver-card {
+    background: #1a1d2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .driver-card:hover { border-color: rgba(167,139,250,0.25); }
+
+  .driver-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    flex-wrap: wrap;
+  }
+
+  .driver-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c6fff, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+
+  .driver-info { flex: 1; min-width: 140px; }
+  .driver-name { font-size: 15px; font-weight: 700; color: #e2e8f0; }
+  .driver-tid  { font-size: 12px; color: #475569; font-family: monospace; margin-top: 2px; }
+  .driver-phone-disp { font-size: 12px; color: #7dd3fc; margin-top: 2px; }
+
+  .driver-car-display {
+    flex: 2; min-width: 200px;
+    font-size: 13px; color: #94a3b8;
+  }
+  .car-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(79,158,255,0.1); border: 1px solid rgba(79,158,255,0.2);
+    border-radius: 20px; padding: 4px 12px; font-size: 13px; color: #7dd3fc;
+  }
+  .car-no-info { color: #374151; font-style: italic; font-size: 13px; }
+
+  .driver-stats-row {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .driver-stat {
+    display: flex; flex-direction: column; align-items: center;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 6px 12px; min-width: 70px;
+  }
+  .driver-stat-val { font-size: 16px; font-weight: 700; color: #a78bfa; }
+  .driver-stat-label { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+  .driver-status { flex-shrink: 0; }
+  .driver-actions {
+    display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+  }
+
+  .driver-edit-section {
+    display: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 20px;
+    background: rgba(0,0,0,0.15);
+  }
+  .driver-edit-section.open { display: block; }
+
+  .edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+
+  @media (max-width: 900px) {
+    .edit-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .edit-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .edit-field label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: #475569; text-transform: uppercase; letter-spacing: 0.4px;
+    margin-bottom: 4px;
+  }
+  .edit-field input {
+    width: 100%; padding: 8px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; color: #e2e8f0; font-size: 13px;
+  }
+  .edit-field input:focus {
+    outline: none; border-color: #7c6fff;
+    background: rgba(124,111,255,0.08);
+  }
+  .edit-field input::placeholder { color: #374151; }
+
+  .save-hint {
+    font-size: 11px; color: #475569; margin-top: 8px;
+  }
+
+  .driver-schedule {
+    font-size: 12px; color: #64748b; margin-top: 4px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .route-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .route-local     { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+  .route-intercity { background: rgba(248,177,51,0.12);  color: #f8b133; border: 1px solid rgba(248,177,51,0.25); }
+  .route-any       { background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+  .messenger-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    background: rgba(79,158,255,0.1); color: #7dd3fc;
+    border: 1px solid rgba(79,158,255,0.2);
+  }
+
+  .edit-section-title {
+    font-size: 11px; font-weight: 700; color: #475569;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin: 14px 0 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .edit-section-title:first-child { margin-top: 0; border-top: none; padding-top: 0; }
+
+  .days-check label {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: #94a3b8; margin-right: 6px; cursor: pointer;
+  }
+  .days-check input { accent-color: #7c6fff; }
+
+  .radio-row label {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: #94a3b8; margin-right: 10px; cursor: pointer;
+  }
+  .radio-row input { accent-color: #7c6fff; }
+
+  .edit-field select {
+    width: 100%; padding: 8px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; color: #e2e8f0; font-size: 13px;
+  }
+  .edit-field select:focus {
+    outline: none; border-color: #7c6fff;
+    background: rgba(124,111,255,0.08);
+  }
+</style>
+
+<!-- Add driver form -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">➕ Добавить водителя</div>
+  <div style="padding:20px;">
+    <form method="POST" action="{{ url_for('add_driver') }}">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) auto; gap:10px; align-items:end; flex-wrap:wrap;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Telegram ID *</label>
+          <input type="text" name="telegram_id" placeholder="123456789" required
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Username</label>
+          <input type="text" name="telegram_username" placeholder="username"
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Имя *</label>
+          <input type="text" name="name" placeholder="Иван Иванов" required
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Телефон</label>
+          <input type="text" name="phone" placeholder="+7 (xxx) xxx-xx-xx"
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Марка / Модель</label>
+          <input type="text" name="car_model" placeholder="Hyundai Solaris"
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Цвет</label>
+          <input type="text" name="car_color" placeholder="Белый"
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Госномер</label>
+          <input type="text" name="car_plate" placeholder="А123БВ 72"
+                 style="width:100%;padding:9px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;" />
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary-sm" style="height:37px; margin-top:19px;">Добавить</button>
+        </div>
+      </div>
+    </form>
+    <div style="font-size:12px; color:#475569; margin-top:10px;">
+      Telegram ID: попросите водителя написать боту <b>@userinfobot</b> команду /start
+    </div>
+  </div>
+</div>
+
+<!-- Drivers list -->
+{% if drivers %}
+<div style="margin-bottom:8px; font-size:13px; color:#475569;">
+  {{ drivers | length }} водител{{ 'ь' if drivers|length == 1 else ('я' if drivers|length in [2,3,4] else 'ей') }}
+</div>
+
+{% for d in drivers %}
+{% set st = driver_stats.get(d.id, {}) %}
+<div class="driver-card">
+  <div class="driver-main">
+
+    <!-- Avatar -->
+    <div class="driver-avatar">{{ d.name[0]|upper }}</div>
+
+    <!-- Name + TID + phone -->
+    <div class="driver-info">
+      <div class="driver-name">{{ d.name }}</div>
+      <div class="driver-tid">TG: {{ d.telegram_id }}{% if d.telegram_username %} · @{{ d.telegram_username }}{% endif %}</div>
+      {% if d.phone %}
+        <div class="driver-phone-disp">📞 <a href="tel:{{ d.phone }}" style="color:#7dd3fc;text-decoration:none;">{{ d.phone }}</a></div>
+      {% endif %}
+      <div class="driver-schedule">
+        {% if d.work_from or d.work_to %}
+          <span>🕐 {{ d.work_from or '?' }}–{{ d.work_to or '?' }}</span>
+        {% endif %}
+        {% if d.work_days %}
+          <span>📅 {{ d.work_days }}</span>
+        {% endif %}
+        {% if d.route_type == 'local' %}
+          <span class="route-badge route-local">По району</span>
+        {% elif d.route_type == 'intercity' %}
+          <span class="route-badge route-intercity">Межгород</span>
+        {% elif d.route_type == 'any' %}
+          <span class="route-badge route-any">Любые</span>
+        {% endif %}
+        {% if d.messenger and d.messenger != 'telegram' %}
+          <span class="messenger-badge">{% if d.messenger == 'max' %}MAX{% else %}TG+MAX{% endif %}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Car info + stats -->
+    <div class="driver-car-display">
+      {% if d.car_info %}
+        <div><span class="car-badge">🚗 {{ d.car_info }}</span></div>
+      {% else %}
+        <span class="car-no-info">Данные авто не заполнены</span>
+      {% endif %}
+      <div class="driver-stats-row" style="margin-top:8px;">
+        <div class="driver-stat">
+          <span class="driver-stat-val">{{ st.total or 0 }}</span>
+          <span class="driver-stat-label">Всего</span>
+        </div>
+        <div class="driver-stat">
+          <span class="driver-stat-val">{{ st.completed or 0 }}</span>
+          <span class="driver-stat-label">Завершено</span>
+        </div>
+        <div class="driver-stat">
+          <span class="driver-stat-val" style="color:#f5b800;">{{ '{:,}'.format(st.revenue or 0).replace(',', ' ') }}₽</span>
+          <span class="driver-stat-label">Выручка</span>
+        </div>
+        <div class="driver-stat">
+          <span class="driver-stat-val" style="color:#fbbf24;">{{ '{:,}'.format(st.today or 0).replace(',', ' ') }}₽</span>
+          <span class="driver-stat-label">Сегодня</span>
+        </div>
+        <div class="driver-stat">
+          <span class="driver-stat-val" style="color:#34d399;">{{ '{:,}'.format(d.balance or 0).replace(',', ' ') }}₽</span>
+          <span class="driver-stat-label">Баланс</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="driver-status" style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+      {% if d.active %}
+        <span class="badge badge-accepted">✅ Активен</span>
+      {% else %}
+        <span class="badge badge-completed">⚫ Неактивен</span>
+      {% endif %}
+      <!-- Онлайн-статус -->
+      <form method="POST" action="{{ url_for('toggle_driver_online', driver_id=d.id) }}">
+        {% if d.is_online %}
+          <button type="submit" class="badge"
+                  style="background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.4);
+                         cursor:pointer;font-size:12px;padding:4px 10px;">
+            🟢 В сети
+          </button>
+        {% else %}
+          <button type="submit" class="badge"
+                  style="background:rgba(100,116,139,0.2);color:#64748b;border:1px solid rgba(100,116,139,0.3);
+                         cursor:pointer;font-size:12px;padding:4px 10px;">
+            ⚫ Не в сети
+          </button>
+        {% endif %}
+      </form>
+      {% if d.is_online and d.online_at %}
+        <span style="font-size:10px;color:#475569;">с {{ d.online_at | ekb }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="driver-actions">
+      <a href="{{ url_for('driver_stats_page', driver_id=d.id) }}"
+         class="btn btn-ghost" style="font-size:12px; padding:6px 10px;" title="Статистика">📊</a>
+      <button class="btn btn-ghost"
+              onclick="toggleEdit({{ d.id }})"
+              id="edit-btn-{{ d.id }}">✏️ Изменить</button>
+      <form method="POST" action="{{ url_for('toggle_driver', driver_id=d.id) }}">
+        {% if d.active %}
+          <button class="btn btn-warning" type="submit">⏸</button>
+        {% else %}
+          <button class="btn btn-success" type="submit">▶</button>
+        {% endif %}
+      </form>
+      <form method="POST" action="{{ url_for('delete_driver', driver_id=d.id) }}"
+            onsubmit="return confirm('Удалить водителя {{ d.name }}?')">
+        <button class="btn btn-danger" type="submit">🗑</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Inline edit form -->
+  <div class="driver-edit-section" id="edit-{{ d.id }}">
+    <form method="POST" action="{{ url_for('edit_driver', driver_id=d.id) }}">
+
+      <div class="edit-section-title">Основные данные</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; align-items:end;">
+        <div class="edit-field">
+          <label>Имя водителя</label>
+          <input type="text" name="name" value="{{ d.name }}" placeholder="Имя" required />
+        </div>
+        <div class="edit-field">
+          <label>Telegram ID</label>
+          <input type="text" name="telegram_id" value="{{ d.telegram_id }}" placeholder="123456789" />
+        </div>
+        <div class="edit-field">
+          <label>Telegram Username</label>
+          <input type="text" name="telegram_username" value="{{ d.telegram_username or '' }}" placeholder="username (без @)" />
+        </div>
+        <div class="edit-field">
+          <label>Телефон</label>
+          <input type="text" name="phone" value="{{ d.phone or '' }}" placeholder="+7 (xxx) xxx-xx-xx" />
+        </div>
+        <div class="edit-field">
+          <label>Марка / Модель</label>
+          <input type="text" name="car_model" value="{{ d.car_model or '' }}" placeholder="Hyundai Solaris" />
+        </div>
+        <div class="edit-field">
+          <label>Цвет авто</label>
+          <input type="text" name="car_color" value="{{ d.car_color or '' }}" placeholder="Белый" />
+        </div>
+        <div class="edit-field">
+          <label>Госномер</label>
+          <input type="text" name="car_plate" value="{{ d.car_plate or '' }}" placeholder="А123БВ 72" />
+        </div>
+      </div>
+
+      <div class="edit-section-title">График и маршруты</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; align-items:start;">
+        <div class="edit-field">
+          <label>Начало работы</label>
+          <input type="time" name="work_from" value="{{ d.work_from or '' }}" />
+        </div>
+        <div class="edit-field">
+          <label>Конец работы</label>
+          <input type="time" name="work_to" value="{{ d.work_to or '' }}" />
+        </div>
+        <div class="edit-field" style="grid-column:span 2;">
+          <label>Рабочие дни</label>
+          <div class="days-check" style="margin-top:6px;">
+            {% set _days = (d.work_days or '').split(',') %}
+            {% for day, label in [('пн','Пн'),('вт','Вт'),('ср','Ср'),('чт','Чт'),('пт','Пт'),('сб','Сб'),('вс','Вс')] %}
+            <label>
+              <input type="checkbox" name="work_days" value="{{ day }}" {% if day in _days %}checked{% endif %} />
+              {{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="edit-field" style="grid-column:span 2;">
+          <label>Тип маршрутов</label>
+          <div class="radio-row" style="margin-top:6px;">
+            <label><input type="radio" name="route_type" value="local"     {% if d.route_type == 'local'     %}checked{% endif %} /> По району</label>
+            <label><input type="radio" name="route_type" value="intercity" {% if d.route_type == 'intercity' %}checked{% endif %} /> Межгород</label>
+            <label><input type="radio" name="route_type" value="any"       {% if not d.route_type or d.route_type == 'any' %}checked{% endif %} /> Любые</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="edit-section-title">Приложение для водителя</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; align-items:end;">
+        <div class="edit-field">
+          <label>PIN-код для входа</label>
+          <input type="text" name="driver_pin" value="{{ d.driver_pin or '' }}"
+                 placeholder="4–6 цифр" maxlength="10"
+                 style="letter-spacing:4px; font-size:16px; font-weight:700;" />
+        </div>
+        <div style="font-size:12px; color:#475569; padding-bottom:4px;">
+          Водитель входит по телефону + PIN.<br>
+          Регламент принят:
+          {% if d.regulations_accepted %}
+            <span style="color:#34d399;">✓ {{ d.regulations_accepted_at | ekb if d.regulations_accepted_at else 'да' }}</span>
+          {% else %}
+            <span style="color:#f87171;">✗ Не принят</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="edit-section-title">Мессенджер</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; align-items:end;">
+        <div class="edit-field">
+          <label>Мессенджер для уведомлений</label>
+          <select name="messenger">
+            <option value="telegram" {% if not d.messenger or d.messenger == 'telegram' %}selected{% endif %}>Telegram</option>
+            <option value="max"      {% if d.messenger == 'max'  %}selected{% endif %}>MAX</option>
+            <option value="both"     {% if d.messenger == 'both' %}selected{% endif %}>Telegram + MAX</option>
+          </select>
+        </div>
+        <div class="edit-field">
+          <label>ID в MAX</label>
+          <input type="text" name="max_id" value="{{ d.max_id or '' }}" placeholder="Числовой ID пользователя" />
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button type="submit" class="btn btn-primary-sm">💾 Сохранить</button>
+        <button type="button" class="btn btn-ghost" onclick="toggleEdit({{ d.id }})">Отмена</button>
+      </div>
+      <div class="save-hint">Telegram ID: попросите водителя написать @userinfobot команду /start. MAX ID: попросите водителя написать вашему боту в MAX.</div>
+    </form>
+
+    <!-- Редактирование баланса -->
+    <div style="padding:12px 20px 16px; border-top:1px solid rgba(255,255,255,0.04);">
+      <form method="POST" action="{{ url_for('edit_driver_balance', driver_id=d.id) }}"
+            style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+        <div class="edit-field" style="min-width:180px;">
+          <label>Баланс водителя (₽)</label>
+          <input type="number" name="balance" value="{{ d.balance or 0 }}" min="0" step="1"
+                 style="width:100%; padding:8px 10px; background:rgba(255,255,255,0.06);
+                        border:1px solid rgba(52,211,153,0.3); border-radius:8px;
+                        color:#34d399; font-size:13px;" />
+        </div>
+        <button type="submit" class="btn btn-success" style="height:36px;">💰 Обновить баланс</button>
+        <span style="font-size:11px; color:#475569; align-self:center;">
+          Начисляется автоматически при завершении заказа. Редактировать вручную для корректировок.
+        </span>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">🚗</div>
+    <p>Водителей пока нет. Добавьте первого!</p>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function toggleEdit(id) {
+  const section = document.getElementById('edit-' + id);
+  const btn     = document.getElementById('edit-btn-' + id);
+  const isOpen  = section.classList.toggle('open');
+  btn.textContent = isOpen ? '✕ Закрыть' : '✏️ Изменить';
+}
+</script>
+
+{% endblock %}

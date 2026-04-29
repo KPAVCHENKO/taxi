@@ -1,0 +1,289 @@
+{% extends 'admin_base.html' %}
+{% block title %}Новые водители{% endblock %}
+{% block page_title %}Новые водители{% endblock %}
+
+{% block top_actions %}
+<a href="{{ url_for('join') }}" target="_blank" class="btn btn-ghost" style="font-size:13px;">
+  🔗 Страница /join
+</a>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .app-expand { display:none; background:rgba(0,0,0,0.2); border-top:1px solid rgba(255,255,255,0.05); }
+  .app-expand.open { display:table-row; }
+  .expand-inner { padding:16px 20px; }
+  .edit-grid-app { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:12px; }
+  .ef label { display:block; font-size:10px; font-weight:600; color:#475569; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+  .ef input, .ef select, .ef textarea {
+    width:100%; padding:7px 9px;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+    border-radius:7px; color:#e2e8f0; font-size:13px;
+  }
+  .ef textarea { resize:vertical; min-height:60px; }
+  .days-mini { display:flex; gap:5px; flex-wrap:wrap; }
+  .days-mini input { display:none; }
+  .days-mini label {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:28px; border-radius:6px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    font-size:11px; font-weight:600; color:#64748b; transition:all .15s;
+  }
+  .days-mini input:checked + label { background:rgba(124,111,255,0.2); border-color:rgba(124,111,255,0.4); color:#a78bfa; }
+  .route-mini { display:flex; gap:6px; flex-wrap:wrap; }
+  .route-mini input { display:none; }
+  .route-mini label {
+    display:inline-flex; align-items:center; gap:4px; padding:5px 10px;
+    border-radius:14px; cursor:pointer; font-size:12px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    color:#64748b; transition:all .15s;
+  }
+  .route-mini input:checked + label { background:rgba(52,211,153,0.15); border-color:rgba(52,211,153,0.4); color:#34d399; }
+</style>
+
+<!-- ── Filter bar ── -->
+<div class="filter-bar">
+  <a href="{{ url_for('admin_driver_applications', status='all') }}"
+     class="{{ 'active' if status_filter == 'all' else '' }}">
+    Все <span style="opacity:0.6;">({{ counts.all }})</span>
+  </a>
+  <a href="{{ url_for('admin_driver_applications', status='new') }}"
+     class="{{ 'active' if status_filter == 'new' else '' }}">
+    🆕 Новые <span style="opacity:0.6;">({{ counts.new }})</span>
+  </a>
+  <a href="{{ url_for('admin_driver_applications', status='reviewed') }}"
+     class="{{ 'active' if status_filter == 'reviewed' else '' }}">
+    👁 Просмотрено <span style="opacity:0.6;">({{ counts.reviewed }})</span>
+  </a>
+  <a href="{{ url_for('admin_driver_applications', status='approved') }}"
+     class="{{ 'active' if status_filter == 'approved' else '' }}">
+    ✅ Одобрено <span style="opacity:0.6;">({{ counts.approved }})</span>
+  </a>
+  <a href="{{ url_for('admin_driver_applications', status='rejected') }}"
+     class="{{ 'active' if status_filter == 'rejected' else '' }}">
+    ❌ Отклонено <span style="opacity:0.6;">({{ counts.rejected }})</span>
+  </a>
+</div>
+
+{% if apps %}
+<div class="card">
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Дата</th>
+        <th>ФИО / Город</th>
+        <th>Телефон</th>
+        <th>Авто</th>
+        <th>Стаж</th>
+        <th>График</th>
+        <th>Маршруты</th>
+        <th>Telegram</th>
+        <th>Статус</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in apps %}
+      <!-- Main row -->
+      <tr id="row-{{ a.id }}" style="cursor:pointer;" onclick="toggleExpand({{ a.id }})">
+        <td style="width:32px; text-align:center; color:#475569; font-size:12px;">
+          <span id="arrow-{{ a.id }}">▶</span>
+        </td>
+        <td style="color:#64748b; white-space:nowrap; font-size:12px;">{{ a.created_at | ekb }}</td>
+        <td>
+          <div style="font-weight:600; color:#e2e8f0;">{{ a.name }}</div>
+          <div style="font-size:12px; color:#64748b;">📍 {{ a.city }}</div>
+        </td>
+        <td>
+          <a href="tel:{{ a.phone }}" style="color:#7dd3fc; text-decoration:none;" onclick="event.stopPropagation()">{{ a.phone }}</a>
+        </td>
+        <td style="font-size:13px; color:#94a3b8;">
+          {% if a.car_model %}{{ a.car_model }}{% else %}<span style="color:#374151;">—</span>{% endif %}
+          {% if a.car_year %}<span style="color:#64748b; font-size:11px;"> · {{ a.car_year }}</span>{% endif %}
+          {% if a.car_color %}<br><span style="font-size:11px; color:#64748b;">{{ a.car_color }}</span>{% endif %}
+        </td>
+        <td style="font-size:13px; color:#94a3b8; white-space:nowrap;">{{ a.experience or '—' }}</td>
+        <td style="font-size:12px; color:#94a3b8; white-space:nowrap;">
+          {% if a.work_from and a.work_to %}
+            🕐 {{ a.work_from }}–{{ a.work_to }}
+          {% else %}—{% endif %}
+          {% if a.work_days %}<br><span style="color:#64748b;">{{ a.work_days }}</span>{% endif %}
+        </td>
+        <td style="font-size:12px; white-space:nowrap;">
+          {% if a.route_type == 'local' %}
+            <span style="color:#60a5fa;">📍 По району</span>
+          {% elif a.route_type == 'intercity' %}
+            <span style="color:#a78bfa;">🛣 Межгород</span>
+          {% elif a.route_type == 'any' %}
+            <span style="color:#34d399;">✅ Любые</span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-size:13px;" onclick="event.stopPropagation()">
+          {% if a.telegram %}
+          <a href="https://t.me/{{ a.telegram | replace('@','') }}" target="_blank"
+             style="color:#a78bfa; text-decoration:none;">{{ a.telegram }}</a>
+          {% else %}<span style="color:#475569;">—</span>{% endif %}
+        </td>
+        <td onclick="event.stopPropagation()">
+          {% if a.status == 'new' %}<span class="badge badge-new">Новая</span>
+          {% elif a.status == 'reviewed' %}<span class="badge badge-pending">Просмотрено</span>
+          {% elif a.status == 'approved' %}<span class="badge badge-accepted">Одобрено</span>
+          {% elif a.status == 'rejected' %}<span class="badge badge-completed">Отклонено</span>
+          {% endif %}
+        </td>
+        <td onclick="event.stopPropagation()">
+          <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+            <form method="post" action="{{ url_for('update_application_status', app_id=a.id, status=status_filter) }}" style="display:contents;">
+              {% if a.status != 'reviewed' %}
+              <button name="status" value="reviewed" class="btn btn-ghost" style="font-size:11px; padding:3px 7px;">👁</button>
+              {% endif %}
+              {% if a.status != 'approved' %}
+              <button name="status" value="approved" class="btn btn-success" style="font-size:11px; padding:3px 7px;">✅</button>
+              {% endif %}
+              {% if a.status != 'rejected' %}
+              <button name="status" value="rejected" class="btn btn-danger" style="font-size:11px; padding:3px 7px;">❌</button>
+              {% endif %}
+            </form>
+            {% if a.status == 'approved' %}
+            <form method="post" action="{{ url_for('application_to_driver', app_id=a.id) }}"
+                  onsubmit="return confirm('Создать водителя из заявки?');">
+              <button class="btn btn-primary-sm" style="font-size:11px; padding:3px 7px;" title="Создать водителя">🚗</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('delete_application', app_id=a.id) }}"
+                  onsubmit="return confirm('Удалить заявку?');">
+              <button class="btn btn-danger" style="font-size:11px; padding:3px 7px;">🗑</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Expandable edit row -->
+      <tr class="app-expand" id="expand-{{ a.id }}">
+        <td colspan="11">
+          <div class="expand-inner">
+            <div style="font-size:13px; font-weight:700; color:#a78bfa; margin-bottom:12px;">✏️ Редактировать заявку #{{ a.id }}</div>
+            <form method="post" action="{{ url_for('edit_application', app_id=a.id) }}">
+              <div class="edit-grid-app">
+                <div class="ef">
+                  <label>ФИО</label>
+                  <input type="text" name="name" value="{{ a.name }}" required />
+                </div>
+                <div class="ef">
+                  <label>Телефон</label>
+                  <input type="tel" name="phone" value="{{ a.phone }}" required />
+                </div>
+                <div class="ef">
+                  <label>Город</label>
+                  <input type="text" name="city" value="{{ a.city }}" required />
+                </div>
+                <div class="ef">
+                  <label>Telegram</label>
+                  <input type="text" name="telegram" value="{{ a.telegram or '' }}" placeholder="@username" />
+                </div>
+                <div class="ef">
+                  <label>Авто марка/модель</label>
+                  <input type="text" name="car_model" value="{{ a.car_model or '' }}" />
+                </div>
+                <div class="ef">
+                  <label>Год авто</label>
+                  <input type="text" name="car_year" value="{{ a.car_year or '' }}" placeholder="2018" />
+                </div>
+                <div class="ef">
+                  <label>Цвет авто</label>
+                  <input type="text" name="car_color" value="{{ a.car_color or '' }}" placeholder="Белый" />
+                </div>
+                <div class="ef">
+                  <label>Стаж</label>
+                  <select name="experience">
+                    <option value="">—</option>
+                    {% for v in ['меньше 1 года','1–3 года','3–5 лет','5–10 лет','более 10 лет'] %}
+                    <option value="{{ v }}" {{ 'selected' if a.experience == v else '' }}>{{ v }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:12px; flex-wrap:wrap;">
+                <!-- Work time -->
+                <div class="ef">
+                  <label>Время работы (с — до)</label>
+                  <div style="display:flex; gap:6px; align-items:center;">
+                    <input type="time" name="work_from" value="{{ a.work_from or '08:00' }}" style="flex:1;" />
+                    <span style="color:#475569;">—</span>
+                    <input type="time" name="work_to" value="{{ a.work_to or '22:00' }}" style="flex:1;" />
+                  </div>
+                </div>
+                <!-- Days -->
+                <div class="ef">
+                  <label>Дни недели</label>
+                  {% set current_days = (a.work_days or '').split(',') %}
+                  <div class="days-mini">
+                    {% for d in ['пн','вт','ср','чт','пт','сб','вс'] %}
+                    <div>
+                      <input type="checkbox" name="work_days" id="ed-{{ a.id }}-{{ d }}" value="{{ d }}"
+                             {{ 'checked' if d in current_days else '' }} />
+                      <label for="ed-{{ a.id }}-{{ d }}">{{ d }}</label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <!-- Route type -->
+                <div class="ef">
+                  <label>Тип маршрутов</label>
+                  <div class="route-mini">
+                    {% for val, lbl in [('local','📍 Район'),('intercity','🛣 Межгород'),('any','✅ Любые')] %}
+                    <div>
+                      <input type="radio" name="route_type" id="rt-{{ a.id }}-{{ val }}" value="{{ val }}"
+                             {{ 'checked' if (a.route_type or 'any') == val else '' }} />
+                      <label for="rt-{{ a.id }}-{{ val }}">{{ lbl }}</label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="ef" style="margin-bottom:12px;">
+                <label>Комментарий</label>
+                <textarea name="message">{{ a.message or '' }}</textarea>
+              </div>
+
+              <div style="display:flex; gap:8px;">
+                <button type="submit" class="btn btn-primary-sm">💾 Сохранить изменения</button>
+                <button type="button" class="btn btn-ghost" onclick="toggleExpand({{ a.id }})">Отмена</button>
+              </div>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📋</div>
+  <p>Заявок пока нет</p>
+  {% if status_filter != 'all' %}
+  <p style="margin-top:8px; font-size:13px;">
+    <a href="{{ url_for('admin_driver_applications') }}" style="color:#a78bfa;">Посмотреть все</a>
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+function toggleExpand(id) {
+  const row   = document.getElementById('expand-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const open  = row.classList.toggle('open');
+  arrow.textContent = open ? '▼' : '▶';
+}
+</script>
+
+{% endblock %}

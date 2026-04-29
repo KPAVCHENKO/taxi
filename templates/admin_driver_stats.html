@@ -1,0 +1,203 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Статистика: {{ driver.name }}{% endblock %}
+{% block page_title %}Статистика водителя{% endblock %}
+
+{% block content %}
+
+<style>
+  .stat-card {
+    background: #1a1d2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex; flex-direction: column;
+    align-items: flex-start;
+  }
+  .stat-val {
+    font-size: 28px; font-weight: 700; color: #a78bfa;
+    line-height: 1.1;
+  }
+  .stat-label {
+    font-size: 12px; color: #475569; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-top: 4px;
+  }
+  .chart-card {
+    background: #1a1d2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 600; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    margin-bottom: 16px;
+  }
+</style>
+
+<!-- Back + Driver header -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+  <a href="{{ url_for('admin_drivers') }}" class="btn btn-ghost" style="font-size:13px;">← Водители</a>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#7c6fff,#a78bfa);
+                display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;">
+      {{ driver.name[0]|upper }}
+    </div>
+    <div>
+      <div style="font-size:16px; font-weight:700; color:#e2e8f0;">{{ driver.name }}</div>
+      {% if driver.car_info %}
+        <div style="font-size:12px; color:#64748b;">{{ driver.car_info }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Summary stat cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:24px;">
+  <div class="stat-card">
+    <div class="stat-val">{{ total_orders }}</div>
+    <div class="stat-label">Заказов (90 дней)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:#34d399;">{{ total_completed }}</div>
+    <div class="stat-label">Завершено</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:#f5b800;">{{ '{:,}'.format(total_revenue).replace(',', ' ') }} ₽</div>
+    <div class="stat-label">Выручка (90 дней)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:#7dd3fc;">{{ '{:,}'.format(driver.balance or 0).replace(',', ' ') }} ₽</div>
+    <div class="stat-label">Баланс</div>
+  </div>
+  {% if total_completed > 0 %}
+  <div class="stat-card">
+    <div class="stat-val" style="color:#fb923c;">{{ (total_revenue // total_completed)|int }} ₽</div>
+    <div class="stat-label">Средний чек</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Charts -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+  <div class="chart-card" style="grid-column: span 2;">
+    <div class="chart-title">📅 Выручка по дням (последние 30 дней)</div>
+    <canvas id="chartDailyRevenue" height="100"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">📦 Заказы по дням</div>
+    <canvas id="chartDailyCount" height="140"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">📆 Выручка по месяцам</div>
+    <canvas id="chartMonthly" height="140"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+const dailyRevenue  = {{ daily_revenue  | tojson }};
+const dailyCount    = {{ daily_count    | tojson }};
+const monthlyRev    = {{ monthly_revenue| tojson }};
+const monthlyCount  = {{ monthly_count  | tojson }};
+
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+// Build last 30 days labels
+const days30 = [];
+for (let i = 29; i >= 0; i--) {
+  const d = new Date(); d.setDate(d.getDate() - i);
+  days30.push(d.toISOString().slice(0, 10));
+}
+
+new Chart(document.getElementById('chartDailyRevenue'), {
+  type: 'bar',
+  data: {
+    labels: days30.map(d => d.slice(5)),
+    datasets: [{
+      label: 'Выручка ₽',
+      data: days30.map(d => dailyRevenue[d] || 0),
+      backgroundColor: 'rgba(245,184,0,0.5)',
+      borderColor: '#f5b800',
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+      y: { beginAtZero: true }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartDailyCount'), {
+  type: 'bar',
+  data: {
+    labels: days30.map(d => d.slice(5)),
+    datasets: [{
+      label: 'Заказов',
+      data: days30.map(d => dailyCount[d] || 0),
+      backgroundColor: 'rgba(167,139,250,0.5)',
+      borderColor: '#a78bfa',
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+      y: { beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  }
+});
+
+// Monthly (sorted keys)
+const monKeys = Object.keys(monthlyRev).sort().concat(
+  Object.keys(monthlyCount).filter(k => !monthlyRev[k])
+).filter((v, i, a) => a.indexOf(v) === i).sort();
+
+new Chart(document.getElementById('chartMonthly'), {
+  type: 'bar',
+  data: {
+    labels: monKeys,
+    datasets: [
+      {
+        label: 'Выручка ₽',
+        data: monKeys.map(m => monthlyRev[m] || 0),
+        backgroundColor: 'rgba(52,211,153,0.5)',
+        borderColor: '#34d399',
+        borderWidth: 1,
+        borderRadius: 4,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Заказов',
+        data: monKeys.map(m => monthlyCount[m] || 0),
+        type: 'line',
+        borderColor: '#7dd3fc',
+        backgroundColor: 'rgba(125,211,252,0.15)',
+        borderWidth: 2,
+        pointRadius: 4,
+        tension: 0.3,
+        yAxisID: 'y2',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { font: { size: 11 } } } },
+    scales: {
+      y:  { beginAtZero: true, position: 'left' },
+      y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } }
+    }
+  }
+});
+</script>
+
+{% endblock %}
