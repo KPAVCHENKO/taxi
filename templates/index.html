@@ -571,7 +571,6 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
 </style>
 <link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
 {% if no_map %}<script>window.NO_MAP=true;</script>{% endif %}
-<script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU" async></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -1188,7 +1187,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     <h3>Заказ принят!</h3>
     <p id="popupText">Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.</p>
     <div class="popup-eta"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Диспетчер скоро свяжется с вами</div>
-    <a href="tel:+79630608419" class="btn btn-primary btn-block btn-lg">Позвонить диспетчеру</a>
+    <a href="tel:+79630608419" id="popupCall" class="btn btn-primary btn-block btn-lg">Позвонить диспетчеру</a>
     <button class="btn btn-ghost btn-block" id="popupOk" style="margin-top:10px">Хорошо</button>
   </div>
 </div>
@@ -1488,6 +1487,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   function openPopup(){
     document.querySelector('.popup-card h3').textContent='Заказ принят!';
     document.querySelector('.popup-eta').style.display='';
+    var _c=document.getElementById('popupCall');if(_c)_c.style.display='';
     var t=document.getElementById('popupText');
     if(state.from&&state.to){t.textContent='Маршрут «'+state.from+' → '+state.to+'» принят. Диспетчер перезвонит, чтобы подтвердить цену и время подачи.';}
     else{t.textContent='Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.';}
@@ -1557,6 +1557,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
           : 'Спасибо за отзыв! Он появится на сайте после проверки модератором.';
         document.querySelector('.popup-card h3').textContent='Отправлено!';
         document.querySelector('.popup-eta').style.display='none';
+        var _c=document.getElementById('popupCall');if(_c)_c.style.display='none';
         popup.classList.add('show');document.body.style.overflow='hidden';
         reviewForm.reset();rating=5;paintStars(5);
       }else{
@@ -1604,6 +1605,29 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   /* ---------- ЖИВАЯ ЯНДЕКС-КАРТА С ТОЧКАМИ (логика как раньше) ---------- */
   var kt={map:null,mA:null,mB:null,A:null,B:null,mode:'a',route:null,km:null,mins:null};
   var KT_BOUNDS=[[54.3,65.5],[57.5,72.5]], KT_CENTER=[55.73,69.23];
+  /* ленивая загрузка Яндекс.Карт — грузим скрипт только при необходимости */
+  var _ymPromise=null,_mapPromise=null;
+  function ensureYmaps(){
+    if(window.NO_MAP)return Promise.reject();
+    if(_ymPromise)return _ymPromise;
+    _ymPromise=new Promise(function(res,rej){
+      if(window.ymaps&&window.ymaps.ready){ymaps.ready(function(){res();});return;}
+      var s=document.createElement('script');
+      s.src='https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU';
+      s.async=true;
+      s.onload=function(){ymaps.ready(function(){res();});};
+      s.onerror=function(){_ymPromise=null;rej();};
+      document.head.appendChild(s);
+    });
+    return _ymPromise;
+  }
+  function ensureMap(){
+    if(window.NO_MAP)return Promise.reject();
+    if(kt.map)return Promise.resolve();
+    if(_mapPromise)return _mapPromise;
+    _mapPromise=ensureYmaps().then(function(){initKtMap();});
+    return _mapPromise;
+  }
   var PRICE_LOCAL={'казанское':150,'новоселезнево':200,'шадринка':300,'яровское':300,'большие ярки':300,'малые ярки':400,'гагарье':500,'сладчанка':500,'боровлянка':600,'дальнетравное':600,'ильинка':700,'кугаево':700,'чирки':700,'огнево':800,'дубынка':900,'заречка':900,'смирное':900,'афонькино':1000,'пешнево':1000,'копотилово':1000,'ченчерь':1000,'ельцово':1000,'коротаевка':1100,'грачи':1200,'паленка':1200,'новогеоргиевка':1500,'новоалександровка':1500,'челюскинцев':1500,'викторовка':1800,'долматово':1800};
   var PRICE_IC={'ишим':{one_way:2000,round_trip:3000},'петропавловск':{one_way:5000,round_trip:7500}};
   fetch('/api/tariffs').then(function(r){return r.json();}).then(function(d){
@@ -1633,9 +1657,10 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   var ktBadge=document.getElementById('ktBadge');
   function setKtMode(m){kt.mode=m;var a=document.getElementById('ktModeA'),b=document.getElementById('ktModeB');if(a)a.classList.toggle('on',m==='a');if(b)b.classList.toggle('on',m==='b');}
   function ktPin(label,color){var s='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 42 16 42S32 28 32 16C32 7.16 24.84 0 16 0Z" fill="'+color+'"/><circle cx="16" cy="16" r="9" fill="#fff" opacity="0.95"/><text x="16" y="20" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="800" fill="'+color+'">'+label+'</text></svg>';return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);}
-  function ktRevGeo(lat,lon){if(!window.ymaps)return Promise.resolve(lat.toFixed(5)+', '+lon.toFixed(5));return ymaps.geocode([lat,lon],{results:1}).then(function(res){var o=res.geoObjects.get(0);return o?o.getAddressLine():lat.toFixed(5)+', '+lon.toFixed(5);}).catch(function(){return lat.toFixed(5)+', '+lon.toFixed(5);});}
-  function ktGeo(q){if(!window.ymaps)return Promise.resolve(null);return ymaps.geocode(q,{boundedBy:KT_BOUNDS,strictBounds:false,results:1}).then(function(res){var o=res.geoObjects.get(0);if(!o)return null;var c=o.geometry.getCoordinates();return{lat:c[0],lon:c[1],address:o.getAddressLine()};}).catch(function(){return null;});}
+  function ktRevGeo(lat,lon){var fb=lat.toFixed(5)+', '+lon.toFixed(5);return ensureYmaps().then(function(){return ymaps.geocode([lat,lon],{results:1}).then(function(res){var o=res.geoObjects.get(0);return o?o.getAddressLine():fb;});}).catch(function(){return fb;});}
+  function ktGeo(q){return ensureYmaps().then(function(){return ymaps.geocode(q,{boundedBy:KT_BOUNDS,strictBounds:false,results:1}).then(function(res){var o=res.geoObjects.get(0);if(!o)return null;var c=o.geometry.getCoordinates();return{lat:c[0],lon:c[1],address:o.getAddressLine()};});}).catch(function(){return null;});}
   function placeA(lat,lon,addr){
+    ensureMap();
     if(kt.map&&kt.mA)kt.map.geoObjects.remove(kt.mA);
     kt.A={lat:lat,lon:lon,address:addr};
     if(kt.map){
@@ -1646,6 +1671,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     fromInput.value=addr;state.from=addr;
   }
   function placeB(lat,lon,addr){
+    ensureMap();
     if(kt.map&&kt.mB)kt.map.geoObjects.remove(kt.mB);
     kt.B={lat:lat,lon:lon,address:addr};
     if(kt.map){
@@ -1657,15 +1683,18 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   }
   function clearRoute(){if(kt.map&&kt.route){kt.map.geoObjects.remove(kt.route);kt.route=null;}kt.km=null;kt.mins=null;if(ktBadge)ktBadge.style.display='none';}
   function drawRoute(){
-    if(!(kt.A&&kt.B&&kt.map&&window.ymaps))return;
-    clearRoute();
-    ymaps.route([[kt.A.lat,kt.A.lon],[kt.B.lat,kt.B.lon]],{routingMode:'auto',mapStateAutoApply:false}).then(function(route){
-      route.getPaths().each(function(p){p.options.set({strokeColor:'#E8A317',strokeWidth:5,strokeOpacity:.9});});
-      route.getWayPoints().each(function(wp){wp.options.set({visible:false});});
-      kt.route=route;kt.map.geoObjects.add(route);
-      kt.km=Math.round(route.getLength()/100)/10;kt.mins=Math.round(route.getDuration()/60);
-      if(ktBadge){ktBadge.textContent='📍 '+kt.km+' км · ~'+kt.mins+' мин';ktBadge.style.display='';}
-      try{var b=route.getBounds();if(b)kt.map.setBounds(b,{checkZoomRange:true,zoomMargin:50});}catch(e){}
+    if(!(kt.A&&kt.B))return;
+    ensureMap().then(function(){
+      if(!kt.map||!window.ymaps)return;
+      clearRoute();
+      ymaps.route([[kt.A.lat,kt.A.lon],[kt.B.lat,kt.B.lon]],{routingMode:'auto',mapStateAutoApply:false}).then(function(route){
+        route.getPaths().each(function(p){p.options.set({strokeColor:'#E8A317',strokeWidth:5,strokeOpacity:.9});});
+        route.getWayPoints().each(function(wp){wp.options.set({visible:false});});
+        kt.route=route;kt.map.geoObjects.add(route);
+        kt.km=Math.round(route.getLength()/100)/10;kt.mins=Math.round(route.getDuration()/60);
+        if(ktBadge){ktBadge.textContent='📍 '+kt.km+' км · ~'+kt.mins+' мин';ktBadge.style.display='';}
+        try{var b=route.getBounds();if(b)kt.map.setBounds(b,{checkZoomRange:true,zoomMargin:50});}catch(e){}
+      }).catch(function(){});
     }).catch(function(){});
   }
   function resetKtMap(){if(kt.map){if(kt.mA)kt.map.geoObjects.remove(kt.mA);if(kt.mB)kt.map.geoObjects.remove(kt.mB);}kt.A=null;kt.B=null;kt.mA=null;kt.mB=null;clearRoute();setKtMode('a');}
@@ -1688,10 +1717,12 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     if(kt.A&&kt.B)drawRoute();
   }
   var ktBtnA=document.getElementById('ktModeA'),ktBtnB=document.getElementById('ktModeB');
-  if(ktBtnA)ktBtnA.addEventListener('click',function(){setKtMode('a');});
-  if(ktBtnB)ktBtnB.addEventListener('click',function(){setKtMode('b');});
-  fromInput.addEventListener('change',function(){var v=fromInput.value.trim();if(!v||!window.ymaps)return;if(kt.A&&kt.A.address===v)return;ktGeo(v).then(function(r){if(r){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});});
-  toInput.addEventListener('change',function(){var v=toInput.value.trim();if(!v||!window.ymaps)return;if(kt.B&&kt.B.address===v)return;ktGeo(v).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});});
+  if(ktBtnA)ktBtnA.addEventListener('click',function(){ensureMap();setKtMode('a');});
+  if(ktBtnB)ktBtnB.addEventListener('click',function(){ensureMap();setKtMode('b');});
+  fromInput.addEventListener('focus',function(){ensureMap();});
+  toInput.addEventListener('focus',function(){ensureMap();});
+  fromInput.addEventListener('change',function(){var v=fromInput.value.trim();if(!v)return;if(kt.A&&kt.A.address===v)return;ktGeo(v).then(function(r){if(r){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});});
+  toInput.addEventListener('change',function(){var v=toInput.value.trim();if(!v)return;if(kt.B&&kt.B.address===v)return;ktGeo(v).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});});
 
   /* автоподсказки адреса при вводе (как раньше) */
   var KT_PLACES=[
@@ -1715,18 +1746,19 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   function ktSuggest(q){
     var ql=q.toLowerCase().trim();
     var local=KT_PLACES.filter(function(p){return p.name.toLowerCase().indexOf(ql)>=0;}).map(function(p){return{local:true,name:p.name,q:p.q,main:p.name,sub:'Казанский район',icon:'🏘'};});
-    if(!window.ymaps)return Promise.resolve(local);
-    return ymaps.geocode(ktCtxQuery(q),{boundedBy:KT_BOUNDS,strictBounds:false,results:6}).then(function(res){
-      var items=[];
-      res.geoObjects.each(function(o){
-        var c=o.geometry?o.geometry.getCoordinates():null;if(!c)return;
-        var nm=o.properties.get('name')||'',ad=o.getAddressLine()||'';
-        var poi=nm&&nm!==ad&&nm.length<80;
-        var label=poi?(nm+(ad?', '+ad:'')):ad;
-        if(local.some(function(l){return label.toLowerCase().indexOf(l.name.toLowerCase())>=0;}))return;
-        items.push({coords:c,full:label,main:poi?nm:ad,sub:poi?ad:'',icon:poi?'🏪':'📍'});
+    return ensureYmaps().then(function(){
+      return ymaps.geocode(ktCtxQuery(q),{boundedBy:KT_BOUNDS,strictBounds:false,results:6}).then(function(res){
+        var items=[];
+        res.geoObjects.each(function(o){
+          var c=o.geometry?o.geometry.getCoordinates():null;if(!c)return;
+          var nm=o.properties.get('name')||'',ad=o.getAddressLine()||'';
+          var poi=nm&&nm!==ad&&nm.length<80;
+          var label=poi?(nm+(ad?', '+ad:'')):ad;
+          if(local.some(function(l){return label.toLowerCase().indexOf(l.name.toLowerCase())>=0;}))return;
+          items.push({coords:c,full:label,main:poi?nm:ad,sub:poi?ad:'',icon:poi?'🏪':'📍'});
+        });
+        return local.concat(items);
       });
-      return local.concat(items);
     }).catch(function(){return local;});
   }
   function ktRenderDrop(drop,items,onPick){
@@ -1767,7 +1799,15 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   if(ktDropTo)ktBindSuggest(toInput,ktDropTo,'b');
   function ktChipQuery(dest){var d=String(dest||'').replace(/^По\s+/i,'').replace(/^с\.\s*/i,'').replace(/^г\.\s*/i,'').trim();var dl=d.toLowerCase();if(dl.indexOf('ишим')>=0)return 'Ишим, Тюменская область';if(dl.indexOf('петропавловск')>=0)return 'Петропавловск, Северо-Казахстанская область, Казахстан';if(dl.indexOf('казанско')>=0)return 'Казанское, Казанский район, Тюменская область';return d+', Казанский район, Тюменская область';}
   function ktChipSelect(dest,toFrom){ktGeo(ktChipQuery(dest)).then(function(r){if(!r)return;if(toFrom){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);if(!kt.B)setKtMode('b');}else{placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);setKtMode('a');}recalcPrice();drawRoute();});}
-  (function ktInit(n){if(window.NO_MAP)return;if(window.ymaps&&window.ymaps.ready){ymaps.ready(initKtMap);}else if(n>0){setTimeout(function(){ktInit(n-1);},150);}})(80);
+  /* карта подгружается лениво — когда форма заказа приближается к экрану */
+  (function(){
+    if(window.NO_MAP)return;
+    var sec=document.getElementById('order');
+    if('IntersectionObserver' in window && sec){
+      var mo=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){mo.disconnect();ensureMap().catch(function(){});}});},{rootMargin:'400px'});
+      mo.observe(sec);
+    }else{ensureMap().catch(function(){});}
+  })();
 
   /* smooth-scroll offset handled by CSS scroll-margin; close mm on hash nav */
 })();
