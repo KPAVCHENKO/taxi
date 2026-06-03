@@ -1,729 +1,1547 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Такси Казанское — по району и межгороду | Ишим, Петропавловск</title>
+<meta name="description" content="Такси Казанское: поездки по Казанскому району Тюменской области и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно. Тел. +7 963 060-84-19." />
+<meta name="theme-color" content="#FBFAF7" />
+<link rel="canonical" href="{{ site_url }}/" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+<meta name="keywords" content="такси Казанское, такси Казанский район, такси Тюменская область, такси межгород, такси Ишим, такси Петропавловск, заказать такси, фиксированные цены" />
 
-  <!-- ═══════════ SEO ═══════════ -->
-  <title>Такси Казанское — по району и межгороду | Ишим, Петропавловск</title>
-  <meta name="description" content="Такси Казанское: поездки по Казанскому району Тюменской области и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно. Тел. +7 963 060-84-19." />
-  <link rel="canonical" href="{{ site_url }}/" />
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-  <meta name="keywords" content="такси Казанское, такси Казанский район, такси Тюменская область, такси межгород, такси Ишим, такси Петропавловск, заказать такси, фиксированные цены" />
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Казанское Такси" />
+<meta property="og:title" content="Такси Казанское — по району и межгороду | Ишим, Петропавловск" />
+<meta property="og:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно." />
+<meta property="og:url" content="{{ site_url }}/" />
+<meta property="og:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ru_RU" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Казанское Такси" />
-  <meta property="og:title" content="Такси Казанское — по району и межгороду | Ишим, Петропавловск" />
-  <meta property="og:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно." />
-  <meta property="og:url" content="{{ site_url }}/" />
-  <meta property="og:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:locale" content="ru_RU" />
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Такси Казанское — по району и межгороду" />
+<meta name="twitter:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск. Фиксированные цены, круглосуточно." />
+<meta name="twitter:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Такси Казанское — по району и межгороду" />
-  <meta name="twitter:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск. Фиксированные цены, круглосуточно." />
-  <meta name="twitter:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
+<!-- Гео-теги -->
+<meta name="geo.region" content="RU-TYU" />
+<meta name="geo.placename" content="Казанское, Казанский район, Тюменская область" />
+<meta name="geo.position" content="{{ geo_lat }};{{ geo_lon }}" />
+<meta name="ICBM" content="{{ geo_lat }}, {{ geo_lon }}" />
 
-  <!-- Гео-теги -->
-  <meta name="geo.region" content="RU-TYU" />
-  <meta name="geo.placename" content="Казанское, Казанский район, Тюменская область" />
-  <meta name="geo.position" content="{{ geo_lat }};{{ geo_lon }}" />
-  <meta name="ICBM" content="{{ geo_lat }}, {{ geo_lon }}" />
+<!-- Верификация поисковиков -->
+<meta name="yandex-verification" content="17acf13f31a4dc5f" />
+<meta name="google-site-verification" content="OfAn0kvMisQb8fKLLpn2kNNvwZjfCbMw1YScuQReaX4" />
 
-  <!-- Ускорение загрузки карт -->
-  <link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
-  <link rel="dns-prefetch" href="https://api-maps.yandex.ru" />
+<!-- PWA -->
+<link rel="manifest" href="/static/client-manifest.json" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Казанское Такси" />
+<link rel="apple-touch-icon" href="/static/img/icon-192.png" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
 
-  <!-- Верификация поисковиков -->
-  <meta name="yandex-verification" content="17acf13f31a4dc5f" />
-  <meta name="google-site-verification" content="OfAn0kvMisQb8fKLLpn2kNNvwZjfCbMw1YScuQReaX4" />
-
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
-  <link rel="manifest" href="/static/client-manifest.json" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Казанское Такси" />
-  <meta name="theme-color" content="#1E2535" />
-  <link rel="apple-touch-icon" href="/static/img/icon-192.png" />
-  <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ static_ver }}" />
-  {% if no_map %}<script>window.NO_MAP = true;</script>{% endif %}
-  <script>
-    // Prevent browser from restoring scroll position to map on back-navigation or reload
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    window.scrollTo(0, 0);
-  </script>
-</head>
-<body>
-
-<!-- ═══════════ БАННЕР УСПЕШНОГО ЗАКАЗА ═══════════ -->
-<div id="order-success-overlay" style="
-  display:none;
-  position:fixed; inset:0; z-index:9999;
-  background:rgba(0,0,0,0.7);
-  align-items:center; justify-content:center;
-  padding:20px;
-">
-  <div style="
-    background:#1E2535;
-    border:2px solid rgba(0,196,154,0.5);
-    border-radius:24px;
-    padding:36px 28px;
-    max-width:420px; width:100%;
-    text-align:center;
-    box-shadow:0 8px 60px rgba(0,196,154,0.25);
-    animation: popIn 0.3s ease;
-  ">
-    <div style="font-size:64px; margin-bottom:12px;">✅</div>
-    <div style="font-size:22px; font-weight:800; color:#00C49A; margin-bottom:8px;">
-      Заказ принят!
-    </div>
-    <div id="order-success-num" style="
-      font-size:15px; color:#C2CEDF; margin-bottom:20px; line-height:1.6;
-    "></div>
-    <div style="
-      display:flex; align-items:center; justify-content:center; gap:8px;
-      font-size:14px; color:#64748b; margin-bottom:20px;
-    ">
-      <div id="order-success-bar" style="
-        width:180px; height:4px; background:rgba(255,255,255,0.1);
-        border-radius:2px; overflow:hidden;
-      ">
-        <div id="order-success-progress" style="
-          height:100%; width:100%; background:#00C49A;
-          transform-origin:left; animation:countdown 5s linear forwards;
-        "></div>
-      </div>
-      <span id="order-success-sec">5</span>с
-    </div>
-    <a href="tel:+79630608419" style="
-      display:block; padding:14px; background:#F5B800; color:#1E2535;
-      border-radius:12px; font-size:17px; font-weight:700;
-      text-decoration:none; margin-bottom:10px;
-    ">📞 Позвонить диспетчеру</a>
-    <button onclick="closeOrderSuccess()" style="
-      width:100%; padding:12px; background:rgba(255,255,255,0.07);
-      color:#94a3b8; border:1px solid rgba(255,255,255,0.1);
-      border-radius:12px; font-size:15px; font-weight:600; cursor:pointer;
-    ">Закрыть</button>
-  </div>
-</div>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-@keyframes popIn {
-  from { transform:scale(0.85); opacity:0; }
-  to   { transform:scale(1);    opacity:1; }
+/* ============================================================ TOKENS */
+:root{
+  --bg:#FBFAF7;
+  --bg-tint:#F4F1E9;
+  --surface:#FFFFFF;
+  --surface-2:#F6F3EC;
+  --surface-3:#EFEBE1;
+  --text:#16140F;
+  --text-2:#4A463C;
+  --text-3:#827C6E;
+  --border:rgba(20,18,12,.09);
+  --border-2:rgba(20,18,12,.14);
+  --accent:#E8A317;
+  --accent-2:#FFC53D;
+  --accent-ink:#1A1710;
+  --accent-soft:rgba(232,163,23,.12);
+  --accent-line:rgba(232,163,23,.32);
+  --good:#1E8C5A;
+  --shadow-sm:0 1px 2px rgba(20,18,12,.06), 0 2px 6px rgba(20,18,12,.05);
+  --shadow:0 6px 16px rgba(20,18,12,.07), 0 20px 50px rgba(20,18,12,.08);
+  --shadow-lg:0 12px 28px rgba(20,18,12,.10), 0 40px 90px rgba(40,32,10,.14);
+  --glow:rgba(255,197,61,.55);
+  --glow-2:rgba(232,163,23,.30);
+  --ring:rgba(232,163,23,.45);
+  --grain-opacity:.45;
 }
-@keyframes countdown {
-  from { transform:scaleX(1); }
-  to   { transform:scaleX(0); }
+[data-theme="dark"]{
+  --bg:#0C0B08;
+  --bg-tint:#13110C;
+  --surface:#16130D;
+  --surface-2:#1C1812;
+  --surface-3:#241F17;
+  --text:#F6F1E6;
+  --text-2:#C8C0AF;
+  --text-3:#8E8675;
+  --border:rgba(255,247,228,.10);
+  --border-2:rgba(255,247,228,.16);
+  --accent:#FFC53D;
+  --accent-2:#FFD86B;
+  --accent-ink:#1A1710;
+  --accent-soft:rgba(255,197,61,.13);
+  --accent-line:rgba(255,197,61,.30);
+  --good:#3FBB80;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.35);
+  --shadow:0 8px 22px rgba(0,0,0,.45), 0 26px 60px rgba(0,0,0,.5);
+  --shadow-lg:0 16px 40px rgba(0,0,0,.55), 0 50px 110px rgba(0,0,0,.6);
+  --glow:rgba(255,197,61,.32);
+  --glow-2:rgba(255,176,40,.18);
+  --ring:rgba(255,197,61,.5);
+  --grain-opacity:.30;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  font-family:'Manrope',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.55;
+  letter-spacing:-.005em;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+  transition:background .4s ease, color .4s ease;
+}
+h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.06;letter-spacing:-.02em;margin:0}
+p{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img,svg{display:block;max-width:100%}
+ul{margin:0;padding:0;list-style:none}
+input,select,textarea{font-family:inherit;font-size:16px;color:var(--text)}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 20px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'Manrope';font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)}
+.eyebrow::before{content:"";width:18px;height:1.5px;background:var(--accent);border-radius:2px}
+.section{padding:clamp(64px,11vw,120px) 0;position:relative}
+.section-head{max-width:640px;margin-bottom:clamp(32px,5vw,56px)}
+.section-head h2{font-size:clamp(1.9rem,6.4vw,3.1rem);margin:14px 0 0}
+.section-head p{color:var(--text-2);font-size:clamp(1rem,2.4vw,1.15rem);margin-top:16px;text-wrap:pretty}
+
+/* ============================================================ BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px;border-radius:14px;padding:14px 22px;transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .25s, background .25s, color .25s, border-color .25s;white-space:nowrap}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn svg{width:18px;height:18px}
+.btn-primary{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:var(--accent-ink);box-shadow:0 6px 18px var(--glow-2), inset 0 1px 0 rgba(255,255,255,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px var(--glow)}
+.btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border-2);box-shadow:var(--shadow-sm)}
+.btn-ghost:hover{transform:translateY(-2px);border-color:var(--accent-line);box-shadow:var(--shadow)}
+.btn-block{width:100%}
+.btn-lg{padding:18px 28px;font-size:16.5px;border-radius:16px}
+
+/* ============================================================ HEADER */
+header{position:sticky;top:0;z-index:60;transition:background .3s, border-color .3s, box-shadow .3s}
+header.scrolled{background:color-mix(in srgb, var(--bg) 78%, transparent);backdrop-filter:saturate(1.4) blur(18px);-webkit-backdrop-filter:saturate(1.4) blur(18px);border-bottom:1px solid var(--border);box-shadow:0 8px 30px -22px rgba(0,0,0,.4)}
+.nav{display:flex;align-items:center;gap:14px;height:68px}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,var(--accent-2),var(--accent));display:grid;place-items:center;flex:none;box-shadow:0 4px 14px var(--glow-2), inset 0 1px 0 rgba(255,255,255,.4);position:relative;overflow:hidden}
+.logo svg{width:24px;height:24px}
+.brand-text{display:flex;flex-direction:column;line-height:1.05}
+.brand-text b{font-family:'Unbounded';font-weight:700;font-size:15.5px;letter-spacing:-.01em}
+.brand-text span{font-size:11px;color:var(--text-3);font-weight:600;letter-spacing:.01em}
+.nav-links{display:none;align-items:center;gap:4px}
+.nav-links a{font-weight:600;font-size:14.5px;color:var(--text-2);padding:9px 13px;border-radius:10px;transition:.2s}
+.nav-links a:hover{color:var(--text);background:var(--surface-2)}
+.nav-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;transition:.2s;box-shadow:var(--shadow-sm)}
+.icon-btn:hover{border-color:var(--accent-line);color:var(--accent)}
+.icon-btn svg{width:20px;height:20px}
+.theme-toggle .moon{display:none}
+[data-theme="dark"] .theme-toggle .sun{display:none}
+[data-theme="dark"] .theme-toggle .moon{display:block}
+.header-phone{display:none;align-items:center;gap:9px;font-weight:700;font-size:14.5px;padding:10px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border-2);box-shadow:var(--shadow-sm);transition:.2s}
+.header-phone:hover{border-color:var(--accent-line);color:var(--accent);transform:translateY(-1px)}
+.header-phone svg{width:16px;height:16px;color:var(--accent)}
+.burger{display:grid}
+.burger.icon-btn span{display:none}
+
+/* mobile menu */
+.mobile-menu{position:fixed;inset:0;z-index:80;background:color-mix(in srgb,var(--bg) 60%,transparent);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .3s}
+.mobile-menu.open{opacity:1;pointer-events:auto}
+.mm-panel{position:absolute;top:0;right:0;height:100%;width:min(86vw,360px);background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .38s cubic-bezier(.2,.85,.2,1);display:flex;flex-direction:column;padding:22px}
+.mobile-menu.open .mm-panel{transform:none}
+.mm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.mm-links{display:flex;flex-direction:column;gap:4px}
+.mm-links a{font-family:'Unbounded';font-weight:600;font-size:20px;padding:14px 12px;border-radius:12px;transition:.2s;display:flex;justify-content:space-between;align-items:center}
+.mm-links a:hover{background:var(--surface-2);color:var(--accent)}
+.mm-links a span{color:var(--text-3);font-family:'Manrope';font-size:18px}
+.mm-foot{margin-top:auto;padding-top:22px;display:flex;flex-direction:column;gap:12px}
+
+/* ============================================================ HERO */
+.hero{position:relative;padding:clamp(40px,8vw,86px) 0 clamp(56px,9vw,96px);overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;pointer-events:none}
+.glow{position:absolute;border-radius:50%;filter:blur(60px)}
+.glow.g1{width:560px;height:560px;top:-200px;right:-120px;background:radial-gradient(circle,var(--glow),transparent 68%)}
+.glow.g2{width:480px;height:480px;bottom:-220px;left:-160px;background:radial-gradient(circle,var(--glow-2),transparent 70%)}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:54px 54px;mask-image:radial-gradient(circle at 50% 30%,#000,transparent 72%);opacity:.5}
+.hero .wrap{position:relative;z-index:2}
+.hero-eyebrow{margin-bottom:22px}
+.hero h1{font-size:clamp(2.4rem,9.2vw,4.6rem);font-weight:700;letter-spacing:-.03em;text-wrap:balance}
+.hero h1 .hl{position:relative;color:var(--accent);white-space:nowrap}
+.hero-sub{margin-top:22px;font-size:clamp(1.05rem,2.8vw,1.3rem);color:var(--text-2);max-width:560px;text-wrap:pretty}
+.trust{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.trust li{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:9px 15px 9px 11px;font-size:13.5px;font-weight:600;color:var(--text-2);box-shadow:var(--shadow-sm)}
+.trust li .ic{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.trust li .ic svg{width:14px;height:14px}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.hero-cta .btn{flex:1 1 auto;min-width:150px}
+
+/* hero visual card */
+.hero-visual{margin-top:44px;position:relative}
+.route-card{position:relative;background:linear-gradient(165deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:26px;padding:22px;box-shadow:var(--shadow-lg);overflow:hidden}
+.route-card .rc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rc-pill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--text-2);background:var(--surface-3);padding:7px 12px;border-radius:99px}
+.rc-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
+.rc-eta{font-family:'Unbounded';font-weight:600;font-size:13px;color:var(--accent)}
+.map-mini{position:relative;height:200px;border-radius:18px;overflow:hidden;background:
+  radial-gradient(120% 120% at 80% 10%, var(--accent-soft), transparent 55%),
+  var(--surface-3);border:1px solid var(--border)}
+.map-mini .roads{position:absolute;inset:0;opacity:.55}
+.map-svg{position:absolute;inset:0;width:100%;height:100%}
+.route-dash{stroke:var(--accent);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-dasharray:9 11;filter:drop-shadow(0 2px 6px var(--glow-2))}
+.car-dot{fill:var(--accent);filter:drop-shadow(0 0 8px var(--glow))}
+@media(prefers-reduced-motion:no-preference){
+  .car-move{animation:carPath 5.5s cubic-bezier(.45,0,.55,1) infinite}
+  .route-dash.flow{animation:dashFlow 1.6s linear infinite}
+}
+@keyframes dashFlow{to{stroke-dashoffset:-40}}
+.pin{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);filter:drop-shadow(0 6px 10px rgba(0,0,0,.18))}
+.pin .pin-body{background:var(--surface);border:1px solid var(--border-2);border-radius:99px;padding:6px 11px;font-size:11.5px;font-weight:700;white-space:nowrap;box-shadow:var(--shadow-sm)}
+.pin .pin-stem{width:2px;height:9px;background:var(--text-3)}
+.pin .pin-dot{width:11px;height:11px;border-radius:50%;border:3px solid var(--accent);background:var(--surface)}
+.pin.from{top:38%;left:18%}
+.pin.to{top:74%;left:80%}
+.rc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:12px}
+.rc-price{display:flex;flex-direction:column}
+.rc-price small{font-size:11.5px;color:var(--text-3);font-weight:600}
+.rc-price b{font-family:'Unbounded';font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
+.rc-go{flex:none}
+
+/* ============================================================ MARQUEE / APP STRIP */
+.app-strip{position:relative;background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.app-strip .wrap{display:flex;flex-direction:column;gap:20px;padding-top:30px;padding-bottom:30px}
+.app-strip .as-text h3{font-family:'Unbounded';font-size:1.25rem;margin-bottom:6px}
+.app-strip .as-text p{color:var(--text-2);font-size:14.5px}
+.app-buttons{display:flex;flex-wrap:wrap;gap:12px}
+.store-btn{display:flex;align-items:center;gap:12px;background:var(--text);color:var(--bg);border-radius:15px;padding:11px 18px;transition:.2s;box-shadow:var(--shadow-sm)}
+.store-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.store-btn svg{width:26px;height:26px;flex:none}
+.store-btn .sb-text{display:flex;flex-direction:column;line-height:1.1;text-align:left}
+.store-btn .sb-text small{font-size:10.5px;opacity:.7;font-weight:600}
+.store-btn .sb-text b{font-size:15px;font-weight:700}
+.store-btn.pwa{background:var(--surface);color:var(--text);border:1px solid var(--border-2)}
+
+/* ============================================================ BIG CTA */
+.bigcta{position:relative}
+.bigcta-inner{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(150deg,#1b1810,#2a2413);color:#fff;padding:clamp(32px,6vw,60px);box-shadow:var(--shadow-lg)}
+[data-theme="dark"] .bigcta-inner{background:linear-gradient(150deg,#1d1a11,#322a17);border:1px solid var(--border)}
+.bigcta-inner .bc-glow{position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 65%);top:-160px;right:-80px;filter:blur(40px)}
+.bigcta-inner h2{position:relative;font-size:clamp(1.7rem,5.2vw,2.7rem);color:#fff}
+.bigcta-inner p{position:relative;color:rgba(255,255,255,.72);margin-top:12px;font-size:1.05rem;max-width:460px}
+.bc-phone{position:relative;display:inline-flex;align-items:center;gap:14px;margin-top:26px;font-family:'Unbounded';font-weight:700;font-size:clamp(1.4rem,5vw,2rem);color:var(--accent-2);letter-spacing:-.01em}
+.bc-phone svg{width:30px;height:30px}
+.bc-actions{position:relative;display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+
+/* ============================================================ ORDER FORM */
+#order{scroll-margin-top:80px}
+.order-grid{display:grid;gap:22px}
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:26px;padding:clamp(20px,4vw,32px);box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
+.order-card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent))}
+.field{margin-bottom:16px}
+.field-label{display:block;font-weight:700;font-size:13px;margin-bottom:7px;color:var(--text-2);letter-spacing:.005em}
+.field-label .req{color:var(--accent)}
+.input,.textarea,.select{width:100%;background:var(--surface-2);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;font-weight:500;transition:.2s;color:var(--text)}
+.input::placeholder,.textarea::placeholder{color:var(--text-3)}
+.input:focus,.textarea:focus,.select:focus,.chip:focus-visible,.tab:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--ring);background:var(--surface)}
+.textarea{resize:vertical;min-height:88px}
+.input-icon{position:relative}
+.input-icon > svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-3);pointer-events:none}
+.input-icon .input{padding-left:44px}
+.input-icon.from > svg{color:var(--good)}
+.input-icon.to > svg{color:var(--accent)}
+
+/* from/to with swap */
+.fromto{position:relative}
+.swap-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:3;width:40px;height:40px;border-radius:11px;background:var(--surface);border:1.5px solid var(--border-2);display:grid;place-items:center;box-shadow:var(--shadow-sm);transition:.25s}
+.swap-btn:hover{color:var(--accent);border-color:var(--accent-line);transform:translateY(-50%) rotate(180deg)}
+.swap-btn svg{width:18px;height:18px}
+.fromto .field{margin-bottom:10px}
+.fromto .field:last-child{margin-bottom:0}
+
+/* map placeholder */
+.map-box{position:relative;height:190px;border-radius:16px;overflow:hidden;margin:6px 0 4px;border:1px solid var(--border);background:
+  radial-gradient(100% 120% at 75% 15%,var(--accent-soft),transparent 50%),var(--surface-3)}
+.map-box .map-svg .road{stroke:var(--border-2);stroke-width:6;fill:none;stroke-linecap:round}
+.map-box .map-svg .road.big{stroke-width:9;stroke:color-mix(in srgb,var(--text-3) 40%,transparent)}
+.map-box .map-hint{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-2);background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(6px);padding:6px 11px;border-radius:99px;border:1px solid var(--border)}
+.map-hint svg{width:13px;height:13px;color:var(--accent)}
+
+/* chips */
+.chips-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:99px;padding:9px 14px;font-size:13.5px;font-weight:600;color:var(--text-2);transition:.18s}
+.chip:hover{border-color:var(--accent-line);color:var(--text)}
+.chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip .px{font-size:12px;color:var(--text-3);font-weight:700;font-variant-numeric:tabular-nums}
+.chip.active .px{color:var(--accent)}
+
+/* tabs (segmented) */
+.seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:13px;padding:4px}
+.tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border-radius:10px;font-weight:700;font-size:13.5px;color:var(--text-2);transition:.2s}
+.tab svg{width:16px;height:16px}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
+[data-theme="dark"] .tab.active{background:var(--surface-3)}
+.tab.active.accent{color:var(--accent)}
+
+/* when panel */
+.when-panel{margin-top:14px;display:none}
+.when-panel.show{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cal{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:14px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-head b{font-family:'Unbounded';font-weight:600;font-size:14.5px;text-transform:capitalize}
+.cal-nav{display:flex;gap:6px}
+.cal-nav button{width:32px;height:32px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;transition:.2s}
+.cal-nav button:hover{color:var(--accent);border-color:var(--accent-line)}
+.cal-nav svg{width:15px;height:15px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-grid .dow{text-align:center;font-size:11px;font-weight:700;color:var(--text-3);padding:4px 0;text-transform:uppercase}
+.cal-day{aspect-ratio:1;display:grid;place-items:center;border-radius:9px;font-size:13.5px;font-weight:600;transition:.15s;border:1.5px solid transparent}
+.cal-day.muted{color:var(--text-3);opacity:.4}
+.cal-day.today{border-color:var(--accent-line)}
+.cal-day:not(.empty):not(.past):hover{background:var(--surface-3)}
+.cal-day.past{opacity:.28;pointer-events:none}
+.cal-day.sel{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:var(--accent-ink);box-shadow:0 4px 12px var(--glow-2)}
+.cal-day.empty{pointer-events:none}
+.time-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.time-row .field-label{margin:0 4px 0 0}
+.time-input{width:auto;flex:1;min-width:130px}
+
+/* type / payment cards */
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{position:relative;display:flex;flex-direction:column;gap:3px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:.2s}
+.opt:hover{border-color:var(--accent-line)}
+.opt.active{border-color:var(--accent);background:var(--accent-soft)}
+.opt .opt-top{display:flex;align-items:center;justify-content:space-between}
+.opt b{font-weight:700;font-size:14.5px}
+.opt small{font-size:12px;color:var(--text-3);font-weight:600}
+.opt .radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-2);flex:none;transition:.2s;display:grid;place-items:center}
+.opt.active .radio{border-color:var(--accent);background:var(--accent)}
+.opt.active .radio::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent-ink)}
+.opt .tag{position:absolute;top:-8px;right:12px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--good);color:#fff;padding:3px 8px;border-radius:99px}
+
+/* consent */
+.consent{display:flex;gap:12px;align-items:flex-start;margin:18px 0;font-size:13px;color:var(--text-2);line-height:1.5}
+.consent a{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.check{appearance:none;-webkit-appearance:none;width:22px;height:22px;border:2px solid var(--border-2);border-radius:7px;flex:none;margin-top:1px;transition:.2s;cursor:pointer;position:relative;background:var(--surface-2)}
+.check:checked{background:var(--accent);border-color:var(--accent)}
+.check:checked::after{content:"";position:absolute;left:6.5px;top:2.5px;width:5px;height:10px;border:solid var(--accent-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.check:focus-visible{outline:none;box-shadow:0 0 0 4px var(--ring)}
+
+.field-row{display:grid;gap:16px}
+.order-aside{display:flex;flex-direction:column;gap:18px}
+.summary{background:linear-gradient(165deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:22px;padding:22px;box-shadow:var(--shadow)}
+.summary h4{font-family:'Unbounded';font-size:1.05rem;margin-bottom:14px}
+.sum-line{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.sum-line:last-of-type{border-bottom:none}
+.sum-line span{color:var(--text-3);font-weight:600}
+.sum-line b{font-weight:700;text-align:right;max-width:60%}
+.sum-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:14px;border-top:1.5px solid var(--border-2)}
+.sum-total span{font-weight:700}
+.sum-total b{font-family:'Unbounded';font-size:1.5rem;color:var(--accent);font-variant-numeric:tabular-nums}
+.mini-trust{display:flex;flex-direction:column;gap:12px}
+.mini-trust li{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;color:var(--text-2);font-weight:600}
+.mini-trust .ic{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.mini-trust .ic svg{width:18px;height:18px}
+.mini-trust b{color:var(--text);display:block;font-size:14px}
+.mini-trust p{font-size:12.5px;color:var(--text-3);font-weight:500}
+
+/* ============================================================ HOW TO */
+.steps{display:grid;gap:18px}
+.step{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:26px 24px;box-shadow:var(--shadow-sm);transition:.3s;overflow:hidden}
+.step:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--accent-line)}
+.step-n{font-family:'Unbounded';font-weight:700;font-size:48px;color:var(--accent);opacity:.18;line-height:1;position:absolute;top:14px;right:20px}
+.step .ic{width:52px;height:52px;border-radius:15px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+.step .ic svg{width:26px;height:26px}
+.step h3{font-family:'Unbounded';font-size:1.2rem;margin-bottom:8px}
+.step p{color:var(--text-2);font-size:14.5px;text-wrap:pretty}
+
+/* ============================================================ PRICES */
+.price-wrap{display:grid;gap:22px}
+.villages{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:clamp(18px,3.5vw,28px);box-shadow:var(--shadow)}
+.villages h3{font-family:'Unbounded';font-size:1.2rem;margin-bottom:4px}
+.villages .vh-sub{color:var(--text-3);font-size:13.5px;font-weight:600;margin-bottom:18px}
+.village-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.vrow .vn{min-width:0}
+.vrow .vn .vname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;background:var(--surface-2);border:1px solid var(--border);border-radius:13px;transition:.2s}
+.vrow:hover{border-color:var(--accent-line);transform:translateY(-2px)}
+.vrow .vn{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px}
+.vrow .vn .pin-ic{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.vrow .vp{font-family:'Unbounded';font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vrow.ask{background:transparent;border-style:dashed}
+.vrow.ask .vn{color:var(--text-3)}
+.vrow.ask .vp{color:var(--accent);font-size:13px}
+.intercity{display:grid;gap:16px}
+.ic-card{position:relative;overflow:hidden;background:linear-gradient(160deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:22px;padding:26px;box-shadow:var(--shadow);transition:.3s}
+.ic-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--accent-line)}
+.ic-card .ic-glow{position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,var(--glow-2),transparent 70%);top:-90px;right:-50px}
+.ic-card .ic-route{display:flex;align-items:center;gap:10px;font-weight:700;font-size:12.5px;color:var(--text-3);margin-bottom:14px;position:relative}
+.ic-card .ic-route .dash{flex:1;height:0;border-top:2px dashed var(--border-2)}
+.ic-card h3{font-family:'Unbounded';font-size:1.55rem;position:relative}
+.ic-prices{display:flex;gap:22px;margin-top:16px;position:relative}
+.ic-prices .ipp{display:flex;flex-direction:column;gap:2px}
+.ic-prices small{font-size:11.5px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.ic-prices b{font-family:'Unbounded';font-weight:700;font-size:1.6rem;font-variant-numeric:tabular-nums}
+.ic-prices b .cur{font-size:1rem;color:var(--accent)}
+.ic-card .ic-cta{margin-top:20px;position:relative}
+
+/* ============================================================ COMFORT */
+.comfort{position:relative;overflow:hidden;border-radius:30px;padding:clamp(36px,6vw,72px);background:
+  radial-gradient(120% 130% at 85% 10%,var(--accent-soft),transparent 55%),
+  linear-gradient(165deg,var(--surface),var(--surface-2));border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+.comfort .c-glow{position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 65%);bottom:-260px;left:-120px;filter:blur(50px)}
+.comfort-inner{position:relative;max-width:560px}
+.comfort h2{font-size:clamp(1.8rem,5.5vw,2.9rem)}
+.comfort p{color:var(--text-2);font-size:1.1rem;margin-top:16px;text-wrap:pretty}
+.comfort-feats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+.cfeat{display:flex;gap:13px;align-items:flex-start}
+.cfeat .ic{width:44px;height:44px;border-radius:13px;background:var(--surface);border:1px solid var(--border);color:var(--accent);display:grid;place-items:center;flex:none;box-shadow:var(--shadow-sm)}
+.cfeat .ic svg{width:22px;height:22px}
+.cfeat b{font-weight:700;font-size:15px;display:block}
+.cfeat p{font-size:13px;color:var(--text-3);margin-top:2px;font-weight:500}
+/* abstract illustration */
+.comfort-art{position:absolute;right:-40px;bottom:-40px;width:340px;height:340px;opacity:.9;pointer-events:none;display:none}
+
+/* ============================================================ REVIEWS */
+.reviews-grid{display:grid;gap:16px;margin-bottom:32px}
+.review{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:var(--shadow-sm);transition:.3s}
+.review:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.review .stars{display:flex;gap:2px;color:var(--accent);margin-bottom:12px}
+.review .stars svg{width:16px;height:16px}
+.review p{font-size:14.5px;color:var(--text);line-height:1.6;text-wrap:pretty}
+.review .who{display:flex;align-items:center;gap:11px;margin-top:16px}
+.review .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:'Unbounded';font-weight:600;font-size:15px;color:var(--accent-ink);background:linear-gradient(145deg,var(--accent-2),var(--accent));flex:none}
+.review .who b{font-size:14px;font-weight:700}
+.review .who span{font-size:12.5px;color:var(--text-3);font-weight:600}
+.review-form{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:clamp(20px,4vw,30px);box-shadow:var(--shadow)}
+.rf-rate{display:flex;gap:6px;margin:4px 0 10px}
+.rf-rate button{color:var(--border-2);transition:.15s;transform-origin:center}
+.rf-rate button svg{width:30px;height:30px}
+.rf-rate button.on,.rf-rate button.hover{color:var(--accent)}
+.rf-rate button:hover{transform:scale(1.15)}
+
+/* ============================================================ FAQ */
+.faq-list{display:grid;gap:12px;max-width:820px}
+.faq-item{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:.25s}
+.faq-item.open{border-color:var(--accent-line);box-shadow:var(--shadow-sm)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;text-align:left;font-weight:700;font-size:15.5px;transition:.2s}
+.faq-q:hover{color:var(--accent)}
+.faq-q .pm{width:28px;height:28px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;flex:none;transition:.3s}
+.faq-item.open .pm{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);transform:rotate(180deg)}
+.faq-q .pm svg{width:16px;height:16px}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
+.faq-a-inner{padding:0 22px 22px;color:var(--text-2);font-size:14.5px;line-height:1.6;text-wrap:pretty}
+
+/* ============================================================ FOOTER */
+footer{background:var(--surface);border-top:1px solid var(--border);padding:clamp(48px,7vw,72px) 0 40px}
+.foot-grid{display:grid;gap:32px;margin-bottom:38px}
+.foot-brand .brand{margin-bottom:16px}
+.foot-brand p{color:var(--text-2);font-size:14px;max-width:300px;text-wrap:pretty}
+.foot-phone{display:inline-flex;align-items:center;gap:10px;font-family:'Unbounded';font-weight:600;font-size:1.15rem;color:var(--accent);margin-top:18px}
+.foot-phone svg{width:20px;height:20px}
+.foot-col h5{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:14px}
+.foot-col a{display:block;color:var(--text-2);font-size:14.5px;font-weight:600;padding:6px 0;transition:.2s}
+.foot-col a:hover{color:var(--accent)}
+.foot-badge{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:99px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.foot-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
+.foot-bottom{display:flex;flex-direction:column;gap:14px;padding-top:28px;border-top:1px solid var(--border);font-size:13px;color:var(--text-3)}
+.foot-bottom .fb-links{display:flex;flex-wrap:wrap;gap:18px}
+.foot-bottom a:hover{color:var(--accent)}
+
+/* ============================================================ STICKY MOBILE */
+.sticky-bar{position:fixed;left:0;right:0;bottom:0;z-index:55;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;gap:10px;transform:translateY(120%);transition:transform .4s cubic-bezier(.2,.85,.2,1)}
+.sticky-bar.show{transform:none}
+.sticky-bar .btn{flex:1}
+.sticky-bar .btn-call{flex:none;width:54px;padding:0;background:var(--surface);border:1px solid var(--border-2);color:var(--accent)}
+.sticky-bar .btn-call svg{width:22px;height:22px}
+
+/* ============================================================ POPUP */
+.popup{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .3s}
+.popup.show{opacity:1;pointer-events:auto}
+.popup-veil{position:absolute;inset:0;background:rgba(10,8,4,.55);backdrop-filter:blur(6px)}
+.popup-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:26px;padding:38px 30px 30px;max-width:400px;width:100%;text-align:center;box-shadow:var(--shadow-lg);transform:scale(.9) translateY(10px);transition:transform .35s cubic-bezier(.2,.9,.2,1)}
+.popup.show .popup-card{transform:none}
+.popup-check{width:78px;height:78px;border-radius:50%;margin:0 auto 20px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent-2),var(--accent));box-shadow:0 10px 30px var(--glow);position:relative}
+.popup-check svg{width:40px;height:40px;color:var(--accent-ink)}
+.popup-check::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--accent-line);animation:ping 1.6s ease-out infinite}
+@keyframes ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.25);opacity:0}}
+.popup-card h3{font-family:'Unbounded';font-size:1.5rem;margin-bottom:10px}
+.popup-card p{color:var(--text-2);font-size:14.5px;margin-bottom:8px;text-wrap:pretty}
+.popup-eta{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13.5px;padding:9px 16px;border-radius:99px;margin:14px 0 22px}
+.popup-eta svg{width:16px;height:16px}
+.popup-close{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;color:var(--text-3);transition:.2s}
+.popup-close:hover{color:var(--text);background:var(--surface-3)}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+/* grain */
+.grain{position:fixed;inset:0;z-index:200;pointer-events:none;opacity:var(--grain-opacity);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ============================================================ RESPONSIVE */
+@media(min-width:680px){
+  .order-grid{grid-template-columns:1fr;max-width:760px}
+  .field-row.two{grid-template-columns:1fr 1fr}
+  .village-grid{grid-template-columns:1fr 1fr}
+  .steps{grid-template-columns:repeat(3,1fr)}
+  .reviews-grid{grid-template-columns:1fr 1fr}
+  .comfort-feats{gap:20px}
+  .app-strip .wrap{flex-direction:row;align-items:center;justify-content:space-between}
+}
+@media(min-width:920px){
+  .nav-links{display:flex}
+  .header-phone{display:inline-flex}
+  .burger{display:none}
+  .sticky-bar{display:none}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+  .hero-visual{margin-top:0}
+  .hero-content{max-width:none}
+  .order-grid{grid-template-columns:1.5fr .9fr;max-width:none;align-items:start}
+  .order-aside{position:sticky;top:90px}
+  .price-wrap{grid-template-columns:1.4fr 1fr;align-items:start}
+  .intercity{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:1.6fr 1fr 1fr;gap:48px}
+  .reviews-grid{grid-template-columns:repeat(3,1fr)}
+  .comfort-art{display:block}
+}
+@media(min-width:680px) and (max-width:919px){
+  .intercity{grid-template-columns:1fr 1fr}
+  .foot-grid{grid-template-columns:1.4fr 1fr 1fr}
 }
 </style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
 
-<!-- ═══════════ ШАПКА ═══════════ -->
-<header class="topbar">
-  <div class="topbar-logo">
-    <img src="{{ url_for('static', filename='img/logo.png') }}"
-         class="topbar-logo-img"
-         alt="Логотип Казанское Такси — такси по Казанскому району"
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-    <span class="topbar-icon" style="display:none">🚖</span>
-    <div>
-      <div class="topbar-name">Казанское Такси</div>
-      <div class="topbar-region">Казанский район · Тюменская область</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <a href="tel:+79630608419" class="topbar-phone">📞 +7 (963) 060-84-19</a>
-    <a href="#prices-section" class="topbar-link">Цены</a>
-    <a href="#reviews-section" class="topbar-link">Отзывы</a>
-    <a href="/download/app" class="topbar-link" id="btn-dl-app"
-       style="background:rgba(245,184,0,0.15);color:#F5B800;border:1px solid rgba(245,184,0,0.3);
-              border-radius:20px;padding:6px 14px;font-weight:600;">
-      📲 Приложение
-    </a>
-    <a href="/join" class="topbar-link topbar-link-driver">Стать водителем</a>
-    <button class="mob-menu-btn" onclick="openMobMenu()" aria-label="Меню">☰</button>
+<!-- ================= HEADER ================= -->
+<header id="top">
+  <div class="wrap">
+    <nav class="nav">
+      <a href="#top" class="brand" aria-label="Казанское Такси">
+        <span class="logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19.5v-1M16 19.5v-1M9.5 8.5h5l.6-2.2A1 1 0 0 0 14.2 5H9.8a1 1 0 0 0-.96 1.3L9.5 8.5Z" stroke="#1A1710" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.2" cy="14.2" r="1" fill="#1A1710"/><circle cx="15.8" cy="14.2" r="1" fill="#1A1710"/></svg>
+        </span>
+        <span class="brand-text">
+          <b>Казанское Такси</b>
+          <span>Казанский р-н · Тюменская обл.</span>
+        </span>
+      </a>
+      <div class="nav-links">
+        <a href="#prices">Цены</a>
+        <a href="#reviews">Отзывы</a>
+        <a href="#app">Приложение</a>
+        <a href="/join">Стать водителем</a>
+      </div>
+      <div class="nav-actions">
+        <a href="tel:+79630608419" class="header-phone">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          +7 (963) 060-84-19
+        </a>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Сменить тему">
+          <svg class="sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn burger" id="burger" aria-label="Меню">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </nav>
   </div>
 </header>
 
-<!-- Mobile slide-out menu -->
-<div class="mob-menu-overlay" id="mob-overlay" onclick="closeMobMenu()"></div>
-<div class="mob-menu-drawer" id="mob-drawer">
-  <button class="mob-menu-close" onclick="closeMobMenu()">✕</button>
-  <a href="/download/app" class="mob-menu-item" onclick="closeMobMenu()"
-     style="background:rgba(245,184,0,0.08);border-bottom:1px solid rgba(245,184,0,0.15);">
-    <span class="mob-menu-icon">📲</span><span style="color:#F5B800;font-weight:700;">Скачать приложение</span>
-  </a>
-  <a href="#prices-section" class="mob-menu-item" onclick="closeMobMenu()">
-    <span class="mob-menu-icon">💰</span>Цены
-  </a>
-  <a href="/join" class="mob-menu-item driver-item" onclick="closeMobMenu()">
-    <span class="mob-menu-icon">🚗</span>Стать водителем
-  </a>
-  <a href="#reviews-section" class="mob-menu-item" onclick="closeMobMenu(); activateWishTab()">
-    <span class="mob-menu-icon">💡</span>Написать пожелание
-  </a>
-  <a href="#reviews-section" class="mob-menu-item" onclick="closeMobMenu()">
-    <span class="mob-menu-icon">⭐</span>Отзывы
-  </a>
+<!-- ================= MOBILE MENU ================= -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-panel">
+    <div class="mm-head">
+      <span class="brand">
+        <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19.5v-1M16 19.5v-1M9.5 8.5h5l.6-2.2A1 1 0 0 0 14.2 5H9.8a1 1 0 0 0-.96 1.3L9.5 8.5Z" stroke="#1A1710" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="brand-text"><b>Казанское Такси</b><span>Круглосуточно</span></span>
+      </span>
+      <button class="icon-btn" id="mmClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="mm-links">
+      <a href="#order" data-close>Заказать <span>→</span></a>
+      <a href="#prices" data-close>Цены <span>→</span></a>
+      <a href="#reviews" data-close>Отзывы <span>→</span></a>
+      <a href="#app" data-close>Приложение <span>→</span></a>
+      <a href="/join" data-close>Стать водителем <span>→</span></a>
+    </div>
+    <div class="mm-foot">
+      <a href="tel:+79630608419" class="btn btn-primary btn-block btn-lg">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        +7 (963) 060-84-19
+      </a>
+      <p style="font-size:12.5px;color:var(--text-3);text-align:center">Работаем 24/7 · Водители — местные</p>
+    </div>
+  </div>
 </div>
-<script>
-function openMobMenu()  { document.getElementById('mob-drawer').classList.add('open'); document.getElementById('mob-overlay').classList.add('open'); }
-function closeMobMenu() { document.getElementById('mob-drawer').classList.remove('open'); document.getElementById('mob-overlay').classList.remove('open'); }
-function activateWishTab() { setTimeout(() => { if (typeof switchReviewTab === 'function') switchReviewTab('wish'); }, 200); }
-</script>
 
-<!-- ═══════════ HERO ═══════════ -->
-<!-- Мобайл: фото сверху (портрет обрезан, показывает авто + аврору), текст снизу -->
-<!-- Десктоп: split — текст слева, фото справа -->
-<section class="hero-section">
-
-  <div class="hero-content">
-    <div class="hero-inner">
-      <h1 class="hero-title">
-        Такси по<br>
-        <span class="hero-title-accent">Казанскому</span><br>
-        району и межгороду
-      </h1>
-      <p class="hero-sub">Ишим · Петропавловск · любые населённые пункты<br>Фиксированные цены. Быстрая подача. Свои водители</p>
-      <div class="hero-features">
-        <div class="hero-feat"><span class="feat-icon">🚗</span><span>Местные водители</span></div>
-        <div class="hero-feat"><span class="feat-icon">⏱</span><span>Подача от 10–20 минут</span></div>
-        <div class="hero-feat"><span class="feat-icon">💰</span><span>Цена известна заранее</span></div>
-        <div class="hero-feat"><span class="feat-icon">📞</span><span>Можно просто позвонить</span></div>
+<main>
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="grid-bg"></div>
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+  </div>
+  <div class="wrap">
+    <div class="hero-content reveal">
+      <span class="eyebrow hero-eyebrow">Казанский район · Тюменская область</span>
+      <h1>Местное такси, на&nbsp;которое можно <span class="hl">положиться</span></h1>
+      <p class="hero-sub">Поездки по району и межгороду круглосуточно. Цену знаете заранее, подача — 10–20 минут, а за рулём всегда местные водители.</p>
+      <ul class="trust">
+        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Местные водители</li>
+        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Подача 10–20 мин</li>
+        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Цена заранее</li>
+        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>Можно просто позвонить</li>
+      </ul>
+      <div class="hero-cta">
+        <a href="#order" class="btn btn-primary btn-lg">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19v-.5M16 19v-.5M9.5 8.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Заказать поездку
+        </a>
+        <a href="tel:+79630608419" class="btn btn-ghost btn-lg">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Позвонить
+        </a>
       </div>
     </div>
-    <div class="hero-circle hero-circle-1"></div>
-    <div class="hero-circle hero-circle-2"></div>
-  </div>
 
-  <div class="hero-photo">
-    <img src="{{ hero_bg }}" alt="Такси в Казанском районе Тюменской области — поездки по сёлам и межгород" loading="eager" />
+    <div class="hero-visual reveal">
+      <div class="route-card">
+        <div class="rc-top">
+          <span class="rc-pill"><span class="dot"></span>Машина свободна</span>
+          <span class="rc-eta">≈ 12 мин до подачи</span>
+        </div>
+        <div class="map-mini">
+          <svg class="map-svg" viewBox="0 0 340 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g class="roads" stroke="var(--border-2)" fill="none" stroke-linecap="round">
+              <path d="M-10 60 H350" stroke-width="7"/>
+              <path d="M-10 150 H350" stroke-width="5"/>
+              <path d="M90 -10 V210" stroke-width="6"/>
+              <path d="M250 -10 V210" stroke-width="5"/>
+              <path d="M0 110 H170 V210" stroke-width="3"/>
+            </g>
+            <path id="routePath" class="route-dash flow" d="M61 124 C 110 70, 150 150, 210 110 S 290 70, 272 48"/>
+            <circle r="6" class="car-dot car-move"><animateMotion dur="5.5s" repeatCount="indefinite" rotate="auto"><mpath href="#routePath"/></animateMotion></circle>
+          </svg>
+          <div class="pin from"><div class="pin-body">Откуда</div><div class="pin-stem"></div><div class="pin-dot" style="border-color:var(--good)"></div></div>
+          <div class="pin to"><div class="pin-body">Куда</div><div class="pin-stem"></div><div class="pin-dot"></div></div>
+        </div>
+        <div class="rc-foot">
+          <div class="rc-price">
+            <small>Стоимость поездки</small>
+            <b>от 150 ₽</b>
+          </div>
+          <a href="#order" class="btn btn-primary rc-go">Заказать</a>
+        </div>
+      </div>
+    </div>
   </div>
-
 </section>
 
-<!-- ═══════════ СКАЧАТЬ ПРИЛОЖЕНИЕ ═══════════ -->
-<section id="app-download-section" style="
-  background: linear-gradient(135deg, rgba(245,184,0,0.08) 0%, rgba(245,184,0,0.03) 100%);
-  border-top: 1px solid rgba(245,184,0,0.15);
-  border-bottom: 1px solid rgba(245,184,0,0.15);
-  padding: 28px 20px;
-  text-align: center;
-">
-  <div style="max-width:560px; margin:0 auto;">
-    <div style="font-size:36px; margin-bottom:8px;">📱</div>
-    <h2 style="font-size:20px; font-weight:800; color:#F5B800; margin-bottom:6px;">
-      Скачайте наше приложение
-    </h2>
-    <p style="font-size:15px; color:#C2CEDF; margin-bottom:18px; line-height:1.5;">
-      Заказывайте такси в один клик · Цены и маршруты · Работает без интернета
-    </p>
-    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-      <a href="/download/app" id="link-download-apk"
-         style="display:inline-flex; align-items:center; gap:10px;
-                padding:13px 24px; border-radius:14px;
-                background:#F5B800; color:#1E2535;
-                font-size:16px; font-weight:700; text-decoration:none;
-                box-shadow:0 4px 20px rgba(245,184,0,0.3);">
-        🤖 Скачать для Android
+<!-- ================= APP STRIP ================= -->
+<section class="app-strip" id="app">
+  <div class="wrap reveal">
+    <div class="as-text">
+      <h3>Приложение «Казанское Такси»</h3>
+      <p>Заказывайте в пару касаний, отслеживайте машину и платите как удобно. Установите на телефон — занимает секунды.</p>
+    </div>
+    <div class="app-buttons">
+      <a href="/download/app" id="apkBtn" class="store-btn" aria-label="Скачать приложение для Android">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.5 15 10.9l-2.2-2.2 2.6-2.7 2.2 1.3a1 1 0 0 1 0 2.2ZM4.3 3.9a1 1 0 0 0-.3.7v14.8c0 .3.1.5.3.7l8-8.1-8-8.1ZM12.1 11l2 2-8.2 4.6a1 1 0 0 1-.4.1l6.6-6.7ZM5.5 6.3a1 1 0 0 1 .4.1L14.1 11l-2 2-6.6-6.7Z"/></svg>
+        <span class="sb-text"><small>Android · APK</small><b>Скачать приложение</b></span>
       </a>
-      <button onclick="installPWA()" id="btn-install-pwa" style="display:none;
-              align-items:center; gap:10px;
-              padding:13px 24px; border-radius:14px;
-              background:rgba(245,184,0,0.15); color:#F5B800;
-              border:1.5px solid rgba(245,184,0,0.35);
-              font-size:16px; font-weight:700; cursor:pointer;">
-        ⚡ Установить на телефон
+      <button class="store-btn pwa" id="installBtn">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2.5" width="12" height="19" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v6m0 0 2.5-2.5M12 13l-2.5-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="sb-text"><small>PWA · быстро</small><b>Установить на телефон</b></span>
       </button>
     </div>
-    <p style="font-size:12px; color:#64748b; margin-top:12px;">
-      iPhone: нажмите «Поделиться» → «На экран Домой»
-    </p>
   </div>
 </section>
 
-<!-- ═══════════ БОЛЬШОЙ CTA ═══════════ -->
-<section class="big-cta-section">
-  <p class="big-cta-label">Цена уже указана на сайте — звоните или заказывайте.</p>
-  <a href="tel:+79630608419" class="big-cta-phone">📞 8-963-060-84-19</a>
-</section>
-
-<!-- ═══════════ О КАЗАНСКОМ (фон — test-bg1.jpg) ═══════════ -->
-<section class="town-section">
-  <div class="town-section-inner">
-    <div class="town-section-label">Казанский район · Тюменская область</div>
-    <h2 class="town-section-title">Знаем каждую дорогу района</h2>
-    <p class="town-section-sub">Возим жителей Казанского и соседних сёл в Ишим, Петропавловск и по всем населённым пунктам района.</p>
-  </div>
-</section>
-
-<!-- ═══════════ КАК ЭТО РАБОТАЕТ ═══════════ -->
-<section class="steps-section">
-  <div class="steps-inner">
-    <h2 class="steps-title">Как заказать поездку?</h2>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <div class="step-icon">📍</div>
-        <div class="step-name">Выберите маршрут</div>
-        <div class="step-desc">Нажмите на чип с населённым пунктом или кликните на карте</div>
-      </div>
-      <div class="step-arrow">›</div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <div class="step-icon">📞</div>
-        <div class="step-name">Введите телефон</div>
-        <div class="step-desc">Укажите номер для связи с диспетчером</div>
-      </div>
-      <div class="step-arrow">›</div>
-      <div class="step-card">
-        <div class="step-num">3</div>
-        <div class="step-icon">🚖</div>
-        <div class="step-name">Ждите водителя</div>
-        <div class="step-desc">Диспетчер назначит водителя и сообщит время и цену</div>
+<!-- ================= BIG CTA ================= -->
+<section class="section" style="padding-bottom:0">
+  <div class="wrap">
+    <div class="bigcta-inner reveal">
+      <div class="bc-glow"></div>
+      <span class="eyebrow" style="color:rgba(255,255,255,.6)">Круглосуточно · без выходных</span>
+      <h2 style="margin-top:14px">Нужна машина прямо сейчас?</h2>
+      <p>Позвоните диспетчеру — назовём цену сразу и подадим машину за 10–20 минут. Без приложения и регистрации.</p>
+      <a href="tel:+79630608419" class="bc-phone">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        +7 (963) 060-84-19
+      </a>
+      <div class="bc-actions">
+        <a href="tel:+79630608419" class="btn btn-primary btn-lg">Позвонить сейчас</a>
+        <a href="#order" class="btn btn-ghost btn-lg" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.18)">Оформить онлайн</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ КАРТА ═══════════ -->
-<div class="map-section"{% if no_map %} style="display:none"{% endif %}>
-  <div id="map-container" tabindex="-1"></div>
-  <div class="map-mode-bar">
-    <button id="btn-mode-a" class="mode-pill" onclick="setMode('a')">
-      <span class="mode-dot dot-blue"></span>Откуда
-    </button>
-    <button id="btn-mode-b" class="mode-pill" onclick="setMode('b')">
-      <span class="mode-dot dot-orange"></span>Куда
-    </button>
-    <button class="mode-pill mode-reset" onclick="resetAll()">✕</button>
-  </div>
-  <div id="route-info" class="route-badge" style="display:none"></div>
-  <div id="route-loading" class="route-badge route-loading" style="display:none">
-    <span class="mini-spinner"></span> Строим маршрут…
-  </div>
-</div>
-
-<!-- ═══════════ ТАП-БАР ═══════════ -->
-<div class="map-tap-bar">
-  <button id="tap-btn-a" class="tap-btn tap-active-a" onclick="setMode('a')">
-    <span class="mode-dot dot-blue"></span> Откуда
-  </button>
-  <span class="tap-hint-text">нажмите на карту</span>
-  <button id="tap-btn-b" class="tap-btn" onclick="setMode('b')">
-    <span class="mode-dot dot-orange"></span> Куда
-  </button>
-</div>
-
-<!-- ═══════════ ФОРМА ЗАКАЗА ═══════════ -->
-<div class="booking-wrap" id="booking-wrap">
-  <div class="booking-card">
-
-    <div class="addr-block">
-      <div class="addr-row addr-row-active" id="from-row">
-        <span class="addr-dot dot-blue"></span>
-        <div class="addr-input-wrap">
-          <input id="search-from" class="addr-input" type="text" placeholder="Откуда?"
-                 autocomplete="off" autocorrect="off" spellcheck="false" />
-          <div class="addr-dropdown" id="drop-from"></div>
-        </div>
-        <button class="addr-clear" id="clear-a" onclick="clearPoint('a')" style="display:none">✕</button>
-      </div>
-      <div class="addr-divider">
-        <div class="addr-line"></div>
-        <button class="swap-btn" onclick="swapPoints()" title="Поменять местами">⇅</button>
-        <div class="addr-line"></div>
-      </div>
-      <div class="addr-row" id="to-row">
-        <span class="addr-dot dot-orange"></span>
-        <div class="addr-input-wrap">
-          <input id="search-to" class="addr-input" type="text" placeholder="Куда?"
-                 autocomplete="off" autocorrect="off" spellcheck="false" />
-          <div class="addr-dropdown" id="drop-to"></div>
-        </div>
-        <button class="addr-clear" id="clear-b" onclick="clearPoint('b')" style="display:none">✕</button>
-      </div>
+<!-- ================= ORDER FORM ================= -->
+<section class="section" id="order">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Онлайн-заказ</span>
+      <h2>Оформите поездку за минуту</h2>
+      <p>Заполните маршрут — мы перезвоним, подтвердим цену и подадим машину. Всё прозрачно, без скрытых доплат.</p>
     </div>
 
-    <div class="chips-section">
-      <div class="chips-label">Быстрый выбор:</div>
-      <div class="chips-row" id="chips-row"></div>
-    </div>
-
-    <div class="when-section">
-      <div class="field-label">Когда?</div>
-      <div class="when-tabs">
-        <button class="when-tab active" id="tab-now" onclick="setWhen('now')">🕐 Сейчас</button>
-        <button class="when-tab" id="tab-later" onclick="setWhen('later')">📅 Выбрать время</button>
-      </div>
-      <div id="time-picker" style="display:none">
-        <div class="dp-label">Дата</div>
-        <div class="dp-quick-row">
-          <button type="button" class="dp-chip dp-chip-active" id="dpq-0" onclick="pickDateQuick(0)">Сегодня</button>
-          <button type="button" class="dp-chip" id="dpq-1" onclick="pickDateQuick(1)">Завтра</button>
-          <button type="button" class="dp-chip" id="dpq-2" onclick="pickDateQuick(2)">Послезавтра</button>
-          <button type="button" class="dp-chip dp-chip-cal" id="dpq-custom" onclick="openCalendar()">
-            📅 <span id="dp-custom-label">Другая дата</span>
+    <form class="order-grid reveal" id="orderForm" novalidate>
+      <div class="order-card">
+        <!-- FROM / TO -->
+        <div class="fromto">
+          <button type="button" class="swap-btn" id="swapBtn" aria-label="Поменять местами">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M7 4 4 7m0 0 3 3M4 7h13M17 20l3-3m0 0-3-3m3 3H7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <input type="date" id="dp-date-input"
-                 style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
-                 onchange="onCalendarChange(this.value)" />
-        </div>
-        <div class="dp-label" style="margin-top:14px;">Время <span class="time-tz-badge">UTC+5</span></div>
-        <div class="dp-time-presets" id="dp-time-presets"></div>
-        <div class="dp-time-manual">
-          <button class="spin-btn" onclick="spinHour(-1)">−</button>
-          <span class="spin-val" id="spin-hour">12</span>
-          <span class="spin-sep">:</span>
-          <span class="spin-val" id="spin-min">00</span>
-          <button class="spin-btn" onclick="spinMin(1)">+</button>
-          <button class="spin-btn" onclick="spinMin(-1)">−</button>
-          <span class="dp-manual-hint">мин ±15</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="phone-section">
-      <div class="field-label">Ваш телефон <span class="req">*</span></div>
-      <input id="phone" class="phone-input" type="tel" placeholder="+7 (000) 000-00-00" />
-    </div>
-
-    <div class="comment-section">
-      <div class="field-label">Комментарий <span class="opt-label">необязательно</span></div>
-      <textarea id="order-comment" class="phone-input comment-input" rows="2"
-                placeholder="Уточните адрес, ориентир или любые детали&#10;Например: «рядом с магазином», «второй дом от угла»"
-                maxlength="500"></textarea>
-      <div id="comment-hint" class="addr-vague-hint" style="display:none">
-        📌 Адрес приблизительный — добавьте ориентир в комментарии
-      </div>
-    </div>
-
-    <div class="ridetype-section">
-      <div class="field-label">Тип поездки</div>
-      <div class="ridetype-cards">
-        <button type="button" class="ridetype-card rt-active" id="rt-individual" onclick="setRideType('individual')">
-          <span class="rt-icon">🚗</span>
-          <div class="rt-body">
-            <div class="rt-name">Индивидуально</div>
-            <div class="rt-desc">Только вы · Едете сразу</div>
+          <div class="field">
+            <label class="field-label" for="fromInput">Откуда <span class="req">*</span></label>
+            <div class="input-icon from">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.4" opacity=".4"/></svg>
+              <input class="input" id="fromInput" name="from" placeholder="с. Казанское, ул. Ленина 1" autocomplete="off" />
+            </div>
           </div>
-          <span class="rt-badge rt-badge-normal">Обычная цена</span>
-        </button>
-        <button type="button" class="ridetype-card" id="rt-shared" onclick="setRideType('shared')">
-          <span class="rt-icon">👥</span>
-          <div class="rt-body">
-            <div class="rt-name">Попутно</div>
-            <div class="rt-desc">Если не спешите — подберём попутчиков и цена будет ниже</div>
+          <div class="field">
+            <label class="field-label" for="toInput">Куда <span class="req">*</span></label>
+            <div class="input-icon to">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
+              <input class="input" id="toInput" name="to" placeholder="Куда едем?" autocomplete="off" />
+            </div>
           </div>
-          <span class="rt-badge rt-badge-cheap">Дешевле</span>
+        </div>
+
+        <!-- MAP -->
+        <div class="map-box" aria-hidden="true">
+          <svg class="map-svg" viewBox="0 0 600 190" preserveAspectRatio="xMidYMid slice">
+            <g fill="none" stroke-linecap="round">
+              <path class="road big" d="M-20 70 H620"/>
+              <path class="road" d="M-20 140 H620"/>
+              <path class="road big" d="M160 -20 V210"/>
+              <path class="road" d="M430 -20 V210"/>
+              <path class="road" d="M40 100 H300 V210"/>
+            </g>
+            <path d="M120 130 C 200 80, 280 150, 360 105 S 470 60, 470 60" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 10" opacity=".95"/>
+            <circle cx="120" cy="130" r="7" fill="var(--good)" stroke="var(--surface)" stroke-width="3"/>
+            <circle cx="470" cy="60" r="7" fill="var(--accent)" stroke="var(--surface)" stroke-width="3"/>
+          </svg>
+          <span class="map-hint"><svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6-2 6 2v14l-6-2-6 2-6-2V4l6 2Zm0 0v14m6-12v14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Маршрут на карте · ориентировочно</span>
+        </div>
+
+        <!-- QUICK CHIPS -->
+        <div class="field" style="margin-top:14px">
+          <label class="field-label">Быстрый выбор направления</label>
+          <div class="chips-row" id="chipsRow">
+            <button type="button" class="chip" data-dest="По с. Казанское" data-price="150">По Казанскому <span class="px">150 ₽</span></button>
+            <button type="button" class="chip" data-dest="с. Новоселезнёво" data-price="200">Новоселезнёво <span class="px">200 ₽</span></button>
+            <button type="button" class="chip" data-dest="с. Шадринка" data-price="300">Шадринка <span class="px">300 ₽</span></button>
+            <button type="button" class="chip" data-dest="с. Гагарье" data-price="500">Гагарье <span class="px">500 ₽</span></button>
+            <button type="button" class="chip" data-dest="с. Ильинка" data-price="700">Ильинка <span class="px">700 ₽</span></button>
+            <button type="button" class="chip" data-dest="с. Афонькино" data-price="1000">Афонькино <span class="px">1000 ₽</span></button>
+            <button type="button" class="chip" data-dest="г. Ишим" data-price="2000">Ишим <span class="px">2000 ₽</span></button>
+            <button type="button" class="chip" data-dest="г. Петропавловск" data-price="5000">Петропавловск <span class="px">5000 ₽</span></button>
+          </div>
+        </div>
+
+        <!-- WHEN -->
+        <div class="field" style="margin-top:18px">
+          <label class="field-label">Когда подать машину?</label>
+          <div class="seg" id="whenSeg">
+            <button type="button" class="tab active" data-when="now">
+              <svg viewBox="0 0 24 24" fill="none"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+              Сейчас
+            </button>
+            <button type="button" class="tab" data-when="later">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M4 9h16M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              Выбрать время
+            </button>
+          </div>
+          <div class="when-panel" id="whenPanel">
+            <div class="cal">
+              <div class="cal-head">
+                <b id="calTitle">Месяц</b>
+                <div class="cal-nav">
+                  <button type="button" id="calPrev" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button type="button" id="calNext" aria-label="Вперёд"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+            </div>
+            <div class="time-row">
+              <label class="field-label" for="timeInput">Время:</label>
+              <input type="time" class="input time-input" id="timeInput" value="12:00" />
+            </div>
+          </div>
+        </div>
+
+        <!-- PHONE + COMMENT -->
+        <div class="field-row two" style="margin-top:18px">
+          <div class="field">
+            <label class="field-label" for="phoneInput">Телефон <span class="req">*</span></label>
+            <div class="input-icon">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+              <input class="input" id="phoneInput" name="phone" type="tel" inputmode="tel" placeholder="+7 (___) ___-__-__" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="commentInput">Комментарий</label>
+            <input class="input" id="commentInput" name="comment" placeholder="Подъезд, детское кресло, багаж…" />
+          </div>
+        </div>
+
+        <!-- TRIP TYPE -->
+        <div class="field">
+          <label class="field-label">Тип поездки</label>
+          <div class="opt-grid" id="tripType">
+            <button type="button" class="opt active" data-type="Индивидуально">
+              <div class="opt-top"><b>Индивидуально</b><span class="radio"></span></div>
+              <small>Только вы — едем напрямую</small>
+            </button>
+            <button type="button" class="opt" data-type="Попутно">
+              <span class="tag">дешевле</span>
+              <div class="opt-top"><b>Попутно</b><span class="radio"></span></div>
+              <small>С попутчиками по пути</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- PAYMENT -->
+        <div class="field">
+          <label class="field-label">Оплата</label>
+          <div class="opt-grid" id="payType">
+            <button type="button" class="opt active" data-pay="Наличные">
+              <div class="opt-top"><b>Наличные</b><span class="radio"></span></div>
+              <small>Водителю в машине</small>
+            </button>
+            <button type="button" class="opt" data-pay="Перевод">
+              <div class="opt-top"><b>Перевод</b><span class="radio"></span></div>
+              <small>На карту по номеру</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- CONSENT -->
+        <label class="consent">
+          <input type="checkbox" class="check" id="consent" />
+          <span>Соглашаюсь на обработку персональных данных и принимаю условия <a href="/offer" target="_blank" rel="noopener">публичной оферты</a> и <a href="/privacy" target="_blank" rel="noopener">политики данных</a>.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:4px">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19v-.5M16 19v-.5M9.5 8.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Заказать поездку
         </button>
+        <p id="formError" style="display:none;color:#d23b3b;font-size:13px;font-weight:600;margin-top:12px;text-align:center"></p>
       </div>
-      <input type="hidden" id="ride-type" value="individual" />
 
-    </div>
-
-    <div class="payment-section">
-      <div class="field-label">Способ оплаты</div>
-      <div class="payment-tabs">
-        <button type="button" class="pay-tab active" id="pay-cash" onclick="setPayment('cash')">💵 Наличные</button>
-        <button type="button" class="pay-tab" id="pay-transfer" onclick="setPayment('transfer')">📲 Перевод</button>
-      </div>
-      <input type="hidden" id="payment-method" value="cash" />
-      <input type="hidden" id="estimated-price" value="" />
-    </div>
-
-    <div class="price-row">
-      <span class="price-text">💰 Цена уточняется диспетчером</span>
-    </div>
-
-    <div class="consent-section">
-      <label class="consent-label" id="consent-label">
-        <input type="checkbox" id="consent-checkbox" onchange="updateConsentState()" />
-        <span class="consent-text">
-          Нажимая «Заказать», я соглашаюсь с
-          <a href="/privacy" target="_blank" rel="noopener">обработкой персональных данных</a>
-          и принимаю условия
-          <a href="/offer" target="_blank" rel="noopener">публичной оферты</a>
-        </span>
-      </label>
-    </div>
-
-    <button id="submit-btn" class="btn-order" onclick="submitOrder()" disabled>
-      Заказать поездку <span class="btn-arrow">→</span>
-    </button>
-
-    <div id="form-message" class="form-msg" style="display:none"></div>
-
+      <!-- ASIDE -->
+      <aside class="order-aside">
+        <div class="summary">
+          <h4>Ваша поездка</h4>
+          <div class="sum-line"><span>Маршрут</span><b id="sumRoute">—</b></div>
+          <div class="sum-line"><span>Когда</span><b id="sumWhen">Сейчас</b></div>
+          <div class="sum-line"><span>Тип</span><b id="sumType">Индивидуально</b></div>
+          <div class="sum-line"><span>Оплата</span><b id="sumPay">Наличные</b></div>
+          <div class="sum-total"><span>Ориентир. цена</span><b id="sumPrice">—</b></div>
+        </div>
+        <ul class="mini-trust">
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Подача 10–20 минут</b><p>Машина рядом — в районе всегда есть свободные</p></span></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span><b>Цена известна заранее</b><p>Назовём стоимость до поездки — без сюрпризов</p></span></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span><b>Местные водители</b><p>Знают каждое село и дорогу в районе</p></span></li>
+        </ul>
+      </aside>
+    </form>
   </div>
-</div>
+</section>
 
-<!-- ═══════════ ЦЕНЫ ═══════════ -->
-<section class="prices-section" id="prices-section">
-  <div class="prices-inner">
-    <h2 class="section-title">Цены из Казанского</h2>
-    <p class="prices-note">Стоимость в одну сторону · заказ попутно — дешевле</p>
-    <div class="prices-grid">
-      <div class="price-item"><span class="pi-dest">По Казанскому</span><span class="pi-price">150 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Новоселезнево</span><span class="pi-price">200 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Шадринка</span><span class="pi-price">300 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Яровское</span><span class="pi-price">300 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Большие Ярки</span><span class="pi-price">300 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Малые Ярки</span><span class="pi-price">400 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Гагарье</span><span class="pi-price">500 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Сладчанка</span><span class="pi-price">500 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Боровлянка</span><span class="pi-price">600 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Дальнетравное</span><span class="pi-price">600 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Ильинка</span><span class="pi-price">700 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Кугаево</span><span class="pi-price">700 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Чирки</span><span class="pi-price">700 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Огнево</span><span class="pi-price">800 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Дубынка, Заречка</span><span class="pi-price">900 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Смирное</span><span class="pi-price">900 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Афонькино</span><span class="pi-price">1 000 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Пешнево, Копотилово</span><span class="pi-price">1 000 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Ченчерь</span><span class="pi-price">1 000 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Ельцово</span><span class="pi-price">1 000 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Коротаевка</span><span class="pi-price">1 100 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Грачи</span><span class="pi-price">1 200 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Паленка</span><span class="pi-price">1 200 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Новогеоргиевка</span><span class="pi-price">1 500 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Новоалександровка</span><span class="pi-price">1 500 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Челюскинцев</span><span class="pi-price">1 500 ₽</span></div>
-      <div class="price-item"><span class="pi-dest">Викторовка, Долматово</span><span class="pi-price">1 800 ₽</span></div>
+<!-- ================= HOW TO ================= -->
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Это просто</span>
+      <h2>Как заказать такси</h2>
     </div>
-    <div class="ic-section-label">Межгород</div>
-    <div class="prices-intercity">
-      <div class="intercity-card">
-        <div class="ic-city">Казанское → Ишим</div>
-        <div class="ic-prices">
-          <div class="ic-row"><span>В одну сторону</span><strong>2 000 ₽</strong></div>
-          <div class="ic-row"><span>Туда-обратно (с ожиданием)</span><strong>3 000 ₽</strong></div>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="step-n">01</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+        <h3>Свяжитесь с нами</h3>
+        <p>Позвоните диспетчеру или заполните форму онлайн — как вам удобнее.</p>
+      </div>
+      <div class="step reveal">
+        <span class="step-n">02</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+        <h3>Узнайте цену</h3>
+        <p>Скажем точную стоимость заранее. Никаких счётчиков и доплат в пути.</p>
+      </div>
+      <div class="step reveal">
+        <span class="step-n">03</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19v-.5M16 19v-.5M9.5 8.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Садитесь и едьте</h3>
+        <p>Машина у подъезда за 10–20 минут. Местный водитель довезёт с комфортом.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRICES ================= -->
+<section class="section" id="prices" style="background:var(--bg-tint)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Прозрачные тарифы</span>
+      <h2>Цены на поездки</h2>
+      <p>Стоимость по сёлам района и межгороду — фиксированная и известна до поездки. Точную цену по вашему адресу всегда уточнит диспетчер.</p>
+    </div>
+    <div class="price-wrap">
+      <div class="villages reveal">
+        <h3>По Казанскому району</h3>
+        <p class="vh-sub">Примеры направлений · цена за поездку</p>
+        <div class="village-grid">
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>По Казанскому</span><span class="vp">150 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Новоселезнёво</span><span class="vp">200 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Шадринка</span><span class="vp">300 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Гагарье</span><span class="vp">500 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Ильинка</span><span class="vp">700 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Афонькино</span><span class="vp">1000 ₽</span></div>
+          <a href="tel:+79630608419" class="vrow ask"><span class="vn"><span class="pin-ic"></span>Другое село?</span><span class="vp">Спросить цену →</span></a>
         </div>
       </div>
-      <div class="intercity-card">
-        <div class="ic-city">Казанское → Петропавловск</div>
-        <div class="ic-prices">
-          <div class="ic-row"><span>В одну сторону</span><strong>5 000 ₽</strong></div>
-          <div class="ic-row"><span>Туда-обратно (с ожиданием)</span><strong>7 500 ₽</strong></div>
+      <div class="intercity">
+        <div class="ic-card reveal">
+          <div class="ic-glow"></div>
+          <div class="ic-route">КАЗАНСКОЕ <span class="dash"></span> ИШИМ</div>
+          <h3>Ишим</h3>
+          <div class="ic-prices">
+            <div class="ipp"><small>В одну сторону</small><b>2000<span class="cur"> ₽</span></b></div>
+            <div class="ipp"><small>Туда-обратно</small><b>3000<span class="cur"> ₽</span></b></div>
+          </div>
+          <a href="#order" class="btn btn-ghost ic-cta" data-dest="г. Ишим" data-price="2000">Заказать в Ишим</a>
+        </div>
+        <div class="ic-card reveal">
+          <div class="ic-glow"></div>
+          <div class="ic-route">КАЗАНСКОЕ <span class="dash"></span> ПЕТРОПАВЛОВСК</div>
+          <h3>Петропавловск</h3>
+          <div class="ic-prices">
+            <div class="ipp"><small>В одну сторону</small><b>5000<span class="cur"> ₽</span></b></div>
+            <div class="ipp"><small>Туда-обратно</small><b>7500<span class="cur"> ₽</span></b></div>
+          </div>
+          <a href="#order" class="btn btn-ghost ic-cta" data-dest="г. Петропавловск" data-price="5000">Заказать в Петропавловск</a>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ ФОТО-СЕКЦИЯ (interior.jpg фоном) ═══════════ -->
-<section class="photo-section">
-  <div class="photo-card photo-card-interior">
-    <div class="photo-overlay">
-      <div class="photo-badge">🚗 Комфортные поездки</div>
-      <h3 class="photo-title">Каждый маршрут —<br>с удобством и заботой</h3>
-      <p class="photo-sub">Опытные водители, знающие каждую дорогу района</p>
+<!-- ================= COMFORT ================= -->
+<section class="section">
+  <div class="wrap">
+    <div class="comfort reveal">
+      <div class="c-glow"></div>
+      <svg class="comfort-art" viewBox="0 0 340 340" fill="none" aria-hidden="true">
+        <circle cx="170" cy="170" r="150" stroke="var(--accent-line)" stroke-width="1.5" stroke-dasharray="3 9"/>
+        <circle cx="170" cy="170" r="110" stroke="var(--border-2)" stroke-width="1.5"/>
+        <g transform="translate(95 120)">
+          <rect x="0" y="40" width="150" height="58" rx="20" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M22 40 32 14a14 14 0 0 1 13-9h60a14 14 0 0 1 13 9l10 26" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M75 5v35" stroke="var(--accent)" stroke-width="2"/>
+          <circle cx="30" cy="98" r="16" fill="var(--surface)" stroke="var(--text)" stroke-width="3"/>
+          <circle cx="120" cy="98" r="16" fill="var(--surface)" stroke="var(--text)" stroke-width="3"/>
+          <rect x="120" y="54" width="22" height="14" rx="5" fill="var(--accent)"/>
+        </g>
+      </svg>
+      <div class="comfort-inner">
+        <span class="eyebrow">О поездках</span>
+        <h2 style="margin-top:14px">Комфортные поездки по&nbsp;домашним ценам</h2>
+        <p>Чистый салон, аккуратное вождение и водители, которые знают район как свои пять пальцев. Едете на работу, в больницу или на вокзал — довезём вовремя и без нервов.</p>
+        <div class="comfort-feats">
+          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg></span><div><b>Знаем каждый адрес</b><p>Любое село района</p></div></div>
+          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M7 6V4h10v2M3 12h18" stroke="currentColor" stroke-width="1.7"/></svg></span><div><b>Багаж и кресло</b><p>Перевезём вещи и детей</p></div></div>
+          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Точно вовремя</b><p>К поезду и автобусу</p></div></div>
+          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Безопасно</b><p>Опытные водители</p></div></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ ОТЗЫВЫ ═══════════ -->
-<section class="reviews-section" id="reviews-section">
-  <div class="reviews-inner">
-    <h2 class="section-title">Отзывы клиентов</h2>
-
+<!-- ================= REVIEWS ================= -->
+<section class="section" id="reviews" style="background:var(--bg-tint)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Отзывы</span>
+      <h2>Что говорят пассажиры</h2>
+      <p>Нам доверяют жители Казанского района — от поездок по селу до межгорода.</p>
+    </div>
     {% if reviews %}
     <div class="reviews-grid">
       {% for r in reviews %}
-      <div class="review-card">
-        <div class="review-head">
-          <div class="review-ava">{{ r.name[0]|upper }}</div>
-          <div>
-            <div class="review-name">{{ r.name }}</div>
-            <div class="review-date">{{ r.created_at.strftime('%d.%m.%Y') }}</div>
-          </div>
-        </div>
-        <p class="review-text">{{ r.text }}</p>
+      <div class="review reveal">
+        <div class="stars">★★★★★</div>
+        <p>{{ r.text }}</p>
+        <div class="who"><span class="av">{{ r.name[0]|upper }}</span><div><b>{{ r.name }}</b><span>{{ r.created_at.strftime('%d.%m.%Y') }}</span></div></div>
       </div>
       {% endfor %}
     </div>
-    {% else %}
-    <p class="no-reviews">Станьте первым, кто оставит отзыв!</p>
     {% endif %}
 
-    <div class="review-form-card">
-      <!-- Tabs -->
-      <div style="display:flex; gap:0; margin-bottom:18px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.1);">
-        <button id="tab-review" onclick="switchReviewTab('review')"
-          style="flex:1; padding:10px; background:rgba(124,111,255,0.2); color:#a78bfa;
-                 border:none; cursor:pointer; font-size:14px; font-weight:600; transition:all .15s;">
-          ⭐ Оставить отзыв
-        </button>
-        <button id="tab-wish" onclick="switchReviewTab('wish')"
-          style="flex:1; padding:10px; background:rgba(255,255,255,0.04); color:#64748b;
-                 border:none; cursor:pointer; font-size:14px; font-weight:600; transition:all .15s;">
-          💡 Написать пожелание
-        </button>
+    <div class="review-form reveal" id="reviewBlock">
+      <div class="seg" id="reviewSeg" style="max-width:380px;margin-bottom:20px">
+        <button type="button" class="tab active accent" data-rev="review">Оставить отзыв</button>
+        <button type="button" class="tab" data-rev="wish">Написать пожелание</button>
       </div>
-
-      <div id="panel-review">
-        <h3 class="review-form-title">Оставить отзыв</h3>
-        <input id="review-name" class="rev-input" type="text" placeholder="Ваше имя" maxlength="100" />
-        <textarea id="review-text" class="rev-input rev-textarea" rows="3" placeholder="Расскажите о поездке…" maxlength="1000"></textarea>
-      </div>
-
-      <div id="panel-wish" style="display:none;">
-        <h3 class="review-form-title">Пожелание или идея</h3>
-        <input id="wish-name" class="rev-input" type="text" placeholder="Ваше имя (необязательно)" maxlength="100" />
-        <textarea id="wish-text" class="rev-input rev-textarea" rows="3" placeholder="Что хотели бы добавить или улучшить? Любые идеи приветствуются…" maxlength="1000"></textarea>
-      </div>
-
-      <button class="btn-review" id="review-submit-btn" onclick="submitReview()">Отправить</button>
-      <div id="review-message" class="form-msg" style="display:none"></div>
-      <p class="review-notice" id="review-notice-text">Отзывы публикуются после проверки</p>
+      <form id="reviewForm" novalidate>
+        <div id="ratingWrap" class="field">
+          <label class="field-label">Ваша оценка</label>
+          <div class="rf-rate" id="rfRate">
+            <button type="button" data-v="1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6 5.9 20.8l1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg></button>
+            <button type="button" data-v="2"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6 5.9 20.8l1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg></button>
+            <button type="button" data-v="3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6 5.9 20.8l1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg></button>
+            <button type="button" data-v="4"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6 5.9 20.8l1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg></button>
+            <button type="button" data-v="5"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6 5.9 20.8l1.2-6.8-5-4.8 6.9-.9L12 2Z"/></svg></button>
+          </div>
+        </div>
+        <div class="field-row two">
+          <div class="field"><label class="field-label" for="revName">Имя</label><input class="input" id="revName" placeholder="Как вас зовут?" /></div>
+          <div class="field"><label class="field-label" for="revPlace">Село / город</label><input class="input" id="revPlace" placeholder="Откуда вы?" /></div>
+        </div>
+        <div class="field"><label class="field-label" for="revText" id="revTextLabel">Ваш отзыв</label><textarea class="textarea" id="revText" placeholder="Расскажите о поездке…"></textarea></div>
+        <button type="submit" class="btn btn-primary btn-lg" id="revSubmit">Отправить отзыв</button>
+      </form>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ FAQ (частые вопросы) ═══════════ -->
-<section class="faq-section" id="faq-section" style="padding:48px 20px; max-width:760px; margin:0 auto;">
-  <h2 class="section-title" style="text-align:center;">Частые вопросы</h2>
-  <div class="faq-list" style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
-
-    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
-      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Сколько стоит такси из Казанского до Ишима?</summary>
-      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Поездка Казанское → Ишим стоит 2 000 ₽ в одну сторону и 3 000 ₽ туда-обратно с ожиданием. Цена фиксированная и известна заранее.</p>
-    </details>
-
-    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
-      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Сколько стоит доехать до Петропавловска?</summary>
-      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Казанское → Петропавловск — 5 000 ₽ в одну сторону и 7 500 ₽ туда-обратно с ожиданием.</p>
-    </details>
-
-    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
-      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Можно ли заказать такси заранее?</summary>
-      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Да. В форме заказа выберите «Выбрать время», укажите дату и время — диспетчер заранее назначит водителя на нужный час.</p>
-    </details>
-
-    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
-      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Вы работаете ночью и круглосуточно?</summary>
-      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Да, мы работаем круглосуточно и без выходных. Достаточно позвонить по номеру +7 (963) 060-84-19.</p>
-    </details>
-
-    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
-      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Как можно оплатить поездку?</summary>
-      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Оплатить можно наличными водителю или переводом. Способ оплаты выбирается при оформлении заказа.</p>
-    </details>
-
-    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
-      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Возите ли вы по сёлам Казанского района?</summary>
-      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Да, мы возим по всем населённым пунктам Казанского района — Новоселезнево, Ильинка, Гагарье, Афонькино и другим. Цены указаны на сайте.</p>
-    </details>
-
+<!-- ================= FAQ ================= -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Вопросы и ответы</span>
+      <h2>Частые вопросы</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <button class="faq-q" type="button">Сколько стоит доехать до Ишима и Петропавловска?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">До Ишима — 2000 ₽ в одну сторону или 3000 ₽ туда-обратно. До Петропавловска — 5000 ₽ в одну сторону, 7500 ₽ туда-обратно. Цена фиксированная и известна заранее.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" type="button">Можно ли заказать такси заранее?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Да. В форме заказа выберите «Выбрать время», укажите дату и время — и машина подъедет к нужному моменту. Удобно для поездок к поезду, автобусу или на приём.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" type="button">Вы работаете ночью?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Работаем круглосуточно, без выходных. Звоните в любое время суток — диспетчер ответит и подаст машину.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" type="button">Как можно оплатить поездку?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Принимаем наличные водителю или перевод на карту по номеру телефона. Выберите удобный способ при заказе.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" type="button">Возите ли вы по сёлам района?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Да, возим по всему Казанскому району — Новоселезнёво, Шадринка, Гагарье, Ильинка, Афонькино и другие сёла. Цену по вашему направлению подскажет диспетчер.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" type="button">Нужно ли устанавливать приложение?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div class="faq-a"><div class="faq-a-inner">Не обязательно. Можно просто позвонить или оформить заказ на сайте. А приложение (Android APK или установка на телефон) делает повторные заказы ещё быстрее.</div></div>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- ═══════════ ПОДВАЛ ═══════════ -->
-<footer class="site-footer">
-  <div>
-    <span>© 2025 Казанское Такси</span>
-    <span class="footer-sep">·</span>
-    <span>Казанский район, Тюменская область</span>
-    <span class="footer-sep">·</span>
-    <span>Круглосуточно</span>
-  </div>
-  <div class="footer-legal">
-    <a href="/privacy" target="_blank" rel="noopener">Политика персональных данных</a>
-    <span class="footer-sep">·</span>
-    <a href="/offer" target="_blank" rel="noopener">Публичная оферта</a>
-    <span class="footer-sep">·</span>
-    <a href="/join">Стать водителем</a>
+<!-- ================= FOOTER ================= -->
+<footer id="driver">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <span class="brand">
+          <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19.5v-1M16 19.5v-1M9.5 8.5h5l.6-2.2A1 1 0 0 0 14.2 5H9.8a1 1 0 0 0-.96 1.3L9.5 8.5Z" stroke="#1A1710" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="brand-text"><b>Казанское Такси</b><span>Казанский р-н · Тюменская обл.</span></span>
+        </span>
+        <p>Местная служба такси: поездки по району и межгороду с понятной ценой и быстрой подачей.</p>
+        <a href="tel:+79630608419" class="foot-phone">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          +7 (963) 060-84-19
+        </a>
+        <div style="margin-top:16px"><span class="foot-badge"><span class="dot"></span>Работаем круглосуточно</span></div>
+      </div>
+      <div class="foot-col">
+        <h5>Навигация</h5>
+        <a href="#order">Заказать поездку</a>
+        <a href="#prices">Цены</a>
+        <a href="#reviews">Отзывы</a>
+        <a href="#app">Приложение</a>
+      </div>
+      <div class="foot-col">
+        <h5>Для водителей</h5>
+        <a href="/join">Стать водителем</a>
+        <a href="/privacy" target="_blank" rel="noopener">Политика данных</a>
+        <a href="/offer" target="_blank" rel="noopener">Публичная оферта</a>
+        <a href="tel:+79630608419">Связаться с нами</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <div class="fb-links">
+        <a href="/privacy" target="_blank" rel="noopener">Политика обработки данных</a>
+        <a href="/offer" target="_blank" rel="noopener">Публичная оферта</a>
+        <a href="/join">Стать водителем</a>
+      </div>
+      <div>© 2026 Казанское Такси · Казанский район, Тюменская область · Все права защищены</div>
+    </div>
   </div>
 </footer>
+</main>
 
-<!-- ═══════════ COOKIE BANNER ═══════════ -->
-<div id="cookie-banner" class="cookie-banner" style="display:none">
-  <div class="cookie-text">
-    🍪 Сайт использует куки для работы Яндекс.Карт.
-    Продолжая использование, вы соглашаетесь с
-    <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a>.
-  </div>
-  <button class="cookie-btn" onclick="acceptCookies()">Понятно</button>
+<!-- ================= STICKY MOBILE BAR ================= -->
+<div class="sticky-bar" id="stickyBar">
+  <a href="#order" class="btn btn-primary">Заказать поездку</a>
+  <a href="tel:+79630608419" class="btn btn-call" aria-label="Позвонить"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></a>
 </div>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v={{ static_ver }}"></script>
+<!-- ================= POPUP ================= -->
+<div class="popup" id="popup" role="dialog" aria-modal="true">
+  <div class="popup-veil" id="popupVeil"></div>
+  <div class="popup-card">
+    <button class="popup-close" id="popupClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
+    <div class="popup-check"><svg viewBox="0 0 24 24" fill="none"><path d="m5 13 4 4 10-10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h3>Заказ принят!</h3>
+    <p id="popupText">Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.</p>
+    <div class="popup-eta"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Подача через 10–20 минут</div>
+    <a href="tel:+79630608419" class="btn btn-primary btn-block btn-lg">Позвонить диспетчеру</a>
+    <button class="btn btn-ghost btn-block" id="popupOk" style="margin-top:10px">Хорошо</button>
+  </div>
+</div>
+
 <script>
-function updateConsentState() {
-  const checked = document.getElementById('consent-checkbox').checked;
-  const btn     = document.getElementById('submit-btn');
-  const label   = document.getElementById('consent-label');
-  btn.disabled  = !checked;
-  label.classList.toggle('consent-checked', checked);
-  if (checked) localStorage.setItem('consent_ok', '1');
-}
+(function(){
+  "use strict";
+  var root=document.documentElement;
 
-(function initConsent() {
-  if (localStorage.getItem('consent_ok')) {
-    const cb = document.getElementById('consent-checkbox');
-    cb.checked = true;
-    document.getElementById('submit-btn').disabled = false;
-    document.getElementById('consent-label').classList.add('consent-checked');
+  /* ---------- THEME ---------- */
+  var THEME_KEY='kt-theme';
+  function applyTheme(t){
+    root.setAttribute('data-theme',t);
+    var meta=document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute('content', t==='dark' ? '#0C0B08' : '#FBFAF7');
   }
-})();
-
-(function () {
-  if (!localStorage.getItem('cookie_ok')) {
-    document.getElementById('cookie-banner').style.display = 'flex';
-  }
-})();
-
-function acceptCookies() {
-  localStorage.setItem('cookie_ok', '1');
-  const el = document.getElementById('cookie-banner');
-  el.style.opacity = '0';
-  el.style.transition = 'opacity 0.4s';
-  setTimeout(() => el.style.display = 'none', 420);
-}
-</script>
-<script>
-// ── PWA: регистрация сервис-воркера ──────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/client-sw.js', { scope: '/' }).catch(() => {});
-}
-
-// ── PWA: кнопка «Установить» (Android Chrome) ─────────────────────────────────
-let _installPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _installPrompt = e;
-  // Показываем кнопку «Установить на телефон»
-  const btn = document.getElementById('btn-install-pwa');
-  if (btn) btn.style.display = 'inline-flex';
-  // Прячем кнопку «Скачать APK» если можно установить как PWA
-  const apkBtn = document.getElementById('link-download-apk');
-  if (apkBtn) apkBtn.style.display = 'none';
-});
-
-function installPWA() {
-  if (!_installPrompt) return;
-  _installPrompt.prompt();
-  _installPrompt.userChoice.then(r => {
-    if (r.outcome === 'accepted') {
-      document.getElementById('app-download-section').style.display = 'none';
-    }
-    _installPrompt = null;
+  try{
+    var saved=localStorage.getItem(THEME_KEY);
+    if(saved){applyTheme(saved);}
+    else{applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+  }catch(e){}
+  document.getElementById('themeToggle').addEventListener('click',function(){
+    var next=root.getAttribute('data-theme')==='dark'?'light':'dark';
+    applyTheme(next);
+    try{localStorage.setItem(THEME_KEY,next);}catch(e){}
   });
-}
+  try{
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){
+      if(!localStorage.getItem(THEME_KEY)) applyTheme(e.matches?'dark':'light');
+    });
+  }catch(e){}
 
-// Если уже установлено как PWA — скрываем секцию скачивания
-if (window.matchMedia('(display-mode: standalone)').matches) {
-  const sec = document.getElementById('app-download-section');
-  if (sec) sec.style.display = 'none';
-  const btn = document.getElementById('btn-dl-app');
-  if (btn) btn.style.display = 'none';
-}
+  /* ---------- HEADER SCROLL + STICKY BAR ---------- */
+  var header=document.getElementById('top');
+  var stickyBar=document.getElementById('stickyBar');
+  var orderSec=document.getElementById('order');
+  function onScroll(){
+    var y=window.scrollY;
+    header.classList.toggle('scrolled', y>10);
+    var show = y>520;
+    // hide sticky when order form is in view
+    var r=orderSec.getBoundingClientRect();
+    if(r.top < window.innerHeight*0.6 && r.bottom > 0) show=false;
+    stickyBar.classList.toggle('show', show);
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  onScroll();
+
+  /* ---------- BURGER ---------- */
+  var mm=document.getElementById('mobileMenu');
+  function openMM(){mm.classList.add('open');document.body.style.overflow='hidden';}
+  function closeMM(){mm.classList.remove('open');document.body.style.overflow='';}
+  document.getElementById('burger').addEventListener('click',openMM);
+  document.getElementById('mmClose').addEventListener('click',closeMM);
+  mm.addEventListener('click',function(e){if(e.target===mm)closeMM();});
+  mm.querySelectorAll('[data-close]').forEach(function(a){a.addEventListener('click',closeMM);});
+
+  /* ---------- REVEAL ---------- */
+  var revealEls=Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  function revealVisible(){
+    var vh=window.innerHeight||document.documentElement.clientHeight;
+    for(var i=revealEls.length-1;i>=0;i--){
+      var el=revealEls[i];
+      var r=el.getBoundingClientRect();
+      if(r.top < vh*0.92 && r.bottom > 0){
+        el.classList.add('in');
+        revealEls.splice(i,1);
+      }
+    }
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          en.target.classList.add('in');io.unobserve(en.target);
+          var k=revealEls.indexOf(en.target);if(k>-1)revealEls.splice(k,1);
+        }
+      });
+    },{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+    revealEls.forEach(function(el){io.observe(el);});
+  }
+  /* immediate + scroll + safety fallbacks (IO can be inert in some embeds) */
+  revealVisible();
+  window.addEventListener('scroll',revealVisible,{passive:true});
+  window.addEventListener('load',revealVisible);
+  setTimeout(revealVisible,200);
+  setTimeout(function(){revealEls.forEach(function(el){el.classList.add('in');});},1600);
+
+  /* ---------- ORDER STATE ---------- */
+  var state={from:'',to:'',price:null,when:'Сейчас',type:'Индивидуально',pay:'Наличные'};
+  var fromInput=document.getElementById('fromInput');
+  var toInput=document.getElementById('toInput');
+
+  function fmtPrice(p){return p==null?'—':(p.toLocaleString('ru-RU')+' ₽');}
+  function updateSummary(){
+    var route='—';
+    if(state.from && state.to) route=state.from+' → '+state.to;
+    else if(state.to) route='→ '+state.to;
+    else if(state.from) route=state.from+' → …';
+    document.getElementById('sumRoute').textContent=route;
+    document.getElementById('sumWhen').textContent=state.when;
+    document.getElementById('sumType').textContent=state.type;
+    document.getElementById('sumPay').textContent=state.pay;
+    document.getElementById('sumPrice').textContent=state.price==null?'по запросу':('от '+fmtPrice(state.price));
+  }
+  fromInput.addEventListener('input',function(){state.from=fromInput.value.trim();updateSummary();});
+  toInput.addEventListener('input',function(){state.to=toInput.value.trim();state.price=null;clearChips();updateSummary();});
+
+  /* swap */
+  document.getElementById('swapBtn').addEventListener('click',function(){
+    var t=fromInput.value;fromInput.value=toInput.value;toInput.value=t;
+    state.from=fromInput.value.trim();state.to=toInput.value.trim();updateSummary();
+  });
+
+  /* chips */
+  var chips=document.querySelectorAll('#chipsRow .chip');
+  function clearChips(){chips.forEach(function(c){c.classList.remove('active');});}
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      var active=c.classList.contains('active');
+      clearChips();
+      if(!active){
+        c.classList.add('active');
+        toInput.value=c.getAttribute('data-dest');
+        state.to=toInput.value;
+        state.price=parseInt(c.getAttribute('data-price'),10);
+      }else{
+        state.price=null;
+      }
+      updateSummary();
+    });
+  });
+
+  /* when tabs */
+  var whenSeg=document.getElementById('whenSeg');
+  var whenPanel=document.getElementById('whenPanel');
+  var timeInput=document.getElementById('timeInput');
+  whenSeg.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click',function(){
+      whenSeg.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+      t.classList.add('active');
+      if(t.getAttribute('data-when')==='later'){
+        whenPanel.classList.add('show');
+        updateWhenLabel();
+      }else{
+        whenPanel.classList.remove('show');
+        state.when='Сейчас';updateSummary();
+      }
+    });
+  });
+
+  /* calendar */
+  var MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  var DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  var today=new Date();today.setHours(0,0,0,0);
+  var viewY=today.getFullYear(), viewM=today.getMonth();
+  var selDate=null;
+  var calGrid=document.getElementById('calGrid');
+  function renderCal(){
+    document.getElementById('calTitle').textContent=MONTHS[viewM]+' '+viewY;
+    calGrid.innerHTML='';
+    DOW.forEach(function(d){var e=document.createElement('div');e.className='dow';e.textContent=d;calGrid.appendChild(e);});
+    var first=new Date(viewY,viewM,1);
+    var startDow=(first.getDay()+6)%7; // Mon=0
+    var days=new Date(viewY,viewM+1,0).getDate();
+    for(var i=0;i<startDow;i++){var em=document.createElement('div');em.className='cal-day empty';calGrid.appendChild(em);}
+    for(var d=1;d<=days;d++){
+      var cell=document.createElement('button');
+      cell.type='button';cell.className='cal-day';cell.textContent=d;
+      var date=new Date(viewY,viewM,d);
+      if(date.getTime()===today.getTime()) cell.classList.add('today');
+      if(date<today){cell.classList.add('past');}
+      if(selDate && date.getTime()===selDate.getTime()) cell.classList.add('sel');
+      (function(date){
+        cell.addEventListener('click',function(){
+          selDate=date;renderCal();updateWhenLabel();
+        });
+      })(date);
+      calGrid.appendChild(cell);
+    }
+  }
+  function updateWhenLabel(){
+    var dt = selDate || today;
+    var label=dt.getDate()+' '+MONTHS[dt.getMonth()].toLowerCase().slice(0,3)+'., '+timeInput.value;
+    state.when=label;updateSummary();
+  }
+  document.getElementById('calPrev').addEventListener('click',function(){
+    viewM--;if(viewM<0){viewM=11;viewY--;}renderCal();
+  });
+  document.getElementById('calNext').addEventListener('click',function(){
+    viewM++;if(viewM>11){viewM=0;viewY++;}renderCal();
+  });
+  timeInput.addEventListener('change',function(){if(whenPanel.classList.contains('show'))updateWhenLabel();});
+  renderCal();
+
+  /* trip type / payment */
+  function bindOpts(id,key){
+    var grp=document.getElementById(id);
+    grp.querySelectorAll('.opt').forEach(function(o){
+      o.addEventListener('click',function(){
+        grp.querySelectorAll('.opt').forEach(function(x){x.classList.remove('active');});
+        o.classList.add('active');
+        state[key]=o.getAttribute('data-'+(key==='type'?'type':'pay'));
+        updateSummary();
+      });
+    });
+  }
+  bindOpts('tripType','type');
+  bindOpts('payType','pay');
+
+  /* deep-link buttons (intercity cards -> order) */
+  document.querySelectorAll('[data-dest][data-price]').forEach(function(b){
+    if(b.classList.contains('chip')) return;
+    b.addEventListener('click',function(){
+      toInput.value=b.getAttribute('data-dest');
+      state.to=toInput.value;
+      state.price=parseInt(b.getAttribute('data-price'),10);
+      clearChips();
+      var match=Array.prototype.find.call(chips,function(c){return c.getAttribute('data-dest')===state.to;});
+      if(match)match.classList.add('active');
+      updateSummary();
+    });
+  });
+
+  updateSummary();
+
+  /* ---------- SUBMIT ---------- */
+  var form=document.getElementById('orderForm');
+  var errEl=document.getElementById('formError');
+  var submitBtn=form.querySelector('button[type="submit"]');
+  function scheduledISO(){
+    if(!whenPanel.classList.contains('show')) return null;
+    var dt=selDate||today;
+    var hm=(timeInput.value||'12:00').split(':');
+    var d=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),parseInt(hm[0],10)||0,parseInt(hm[1],10)||0,0,0);
+    return d.toISOString();
+  }
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();
+    errEl.style.display='none';
+    var phone=document.getElementById('phoneInput').value.trim();
+    if(!state.from){return showErr('Укажите, откуда вас забрать',fromInput);}
+    if(!state.to){return showErr('Укажите, куда едем',toInput);}
+    var digits=phone.replace(/\D/g,'');
+    if(digits.length<10){return showErr('Введите корректный номер телефона',document.getElementById('phoneInput'));}
+    if(!document.getElementById('consent').checked){return showErr('Подтвердите согласие на обработку данных');}
+    if(submitBtn._busy) return; submitBtn._busy=true;
+    var orig=submitBtn.innerHTML; submitBtn.disabled=true; submitBtn.textContent='Отправляем…';
+    try{
+      var res=await fetch('/order',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          phone:phone,
+          from_address:state.from,
+          to_address:state.to,
+          comment:document.getElementById('commentInput').value.trim(),
+          payment:state.pay==='Перевод'?'transfer':'cash',
+          ride_type:state.type==='Попутно'?'shared':'individual',
+          estimated_price:state.price,
+          scheduled_at:scheduledISO()
+        })
+      });
+      var data=await res.json().catch(function(){return {};});
+      if(res.ok && data.success){
+        openPopup();
+        form.reset();
+        clearChips();
+        state.from='';state.to='';state.price=null;state.when='Сейчас';state.type='Индивидуально';state.pay='Наличные';
+        document.querySelectorAll('#tripType .opt, #payType .opt').forEach(function(o){o.classList.remove('active');});
+        document.querySelector('#tripType .opt').classList.add('active');
+        document.querySelector('#payType .opt').classList.add('active');
+        whenPanel.classList.remove('show');
+        whenSeg.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+        whenSeg.querySelector('.tab').classList.add('active');
+        updateSummary();
+      }else{
+        showErr((data && data.error) ? data.error : 'Не удалось отправить заказ. Позвоните нам по телефону.');
+      }
+    }catch(err){
+      showErr('Нет связи с сервером. Проверьте интернет или позвоните нам.');
+    }finally{
+      submitBtn.disabled=false; submitBtn.innerHTML=orig; submitBtn._busy=false;
+    }
+  });
+  function showErr(msg,el){
+    errEl.textContent=msg;errEl.style.display='block';
+    if(el){el.focus();el.style.borderColor='#d23b3b';setTimeout(function(){el.style.borderColor='';},2000);}
+  }
+
+  /* ---------- POPUP ---------- */
+  var popup=document.getElementById('popup');
+  function openPopup(){
+    document.querySelector('.popup-card h3').textContent='Заказ принят!';
+    document.querySelector('.popup-eta').style.display='';
+    var t=document.getElementById('popupText');
+    if(state.from&&state.to){t.textContent='Маршрут «'+state.from+' → '+state.to+'» принят. Диспетчер перезвонит, чтобы подтвердить цену и время подачи.';}
+    else{t.textContent='Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.';}
+    popup.classList.add('show');document.body.style.overflow='hidden';
+  }
+  function closePopup(){popup.classList.remove('show');document.body.style.overflow='';}
+  document.getElementById('popupClose').addEventListener('click',closePopup);
+  document.getElementById('popupOk').addEventListener('click',closePopup);
+  document.getElementById('popupVeil').addEventListener('click',closePopup);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closePopup();closeMM();}});
+
+  /* ---------- REVIEW BLOCK ---------- */
+  var revSeg=document.getElementById('reviewSeg');
+  var ratingWrap=document.getElementById('ratingWrap');
+  var revTextLabel=document.getElementById('revTextLabel');
+  var revText=document.getElementById('revText');
+  var revSubmit=document.getElementById('revSubmit');
+  revSeg.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click',function(){
+      revSeg.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active','accent');});
+      t.classList.add('active','accent');
+      if(t.getAttribute('data-rev')==='wish'){
+        ratingWrap.style.display='none';
+        revTextLabel.textContent='Ваше пожелание';
+        revText.placeholder='Что нам улучшить?';
+        revSubmit.textContent='Отправить пожелание';
+      }else{
+        ratingWrap.style.display='';
+        revTextLabel.textContent='Ваш отзыв';
+        revText.placeholder='Расскажите о поездке…';
+        revSubmit.textContent='Отправить отзыв';
+      }
+    });
+  });
+  /* star rating */
+  var rating=5;
+  var rfBtns=document.querySelectorAll('#rfRate button');
+  function paintStars(n){rfBtns.forEach(function(b,i){b.classList.toggle('on',i<n);});}
+  rfBtns.forEach(function(b,i){
+    b.addEventListener('mouseenter',function(){rfBtns.forEach(function(x,j){x.classList.toggle('hover',j<=i);});});
+    b.addEventListener('mouseleave',function(){rfBtns.forEach(function(x){x.classList.remove('hover');});});
+    b.addEventListener('click',function(){rating=i+1;paintStars(rating);});
+  });
+  paintStars(rating);
+  var reviewForm=document.getElementById('reviewForm');
+  function showRevErr(msg){ alert(msg); }
+  reviewForm.addEventListener('submit',async function(e){
+    e.preventDefault();
+    var activeTab=revSeg.querySelector('.tab.active');
+    var type=activeTab?activeTab.getAttribute('data-rev'):'review';
+    var name=document.getElementById('revName').value.trim();
+    var text=document.getElementById('revText').value.trim();
+    var place=document.getElementById('revPlace').value.trim();
+    if(place){ name = name ? (name+' · '+place) : place; }
+    if(!name){ return showRevErr('Укажите ваше имя'); }
+    if(!text){ return showRevErr('Напишите текст сообщения'); }
+    revSubmit.disabled=true; var origRev=revSubmit.textContent; revSubmit.textContent='Отправляем…';
+    try{
+      var res=await fetch('/review',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:name.slice(0,100),text:text.slice(0,1000),type:type})
+      });
+      var data=await res.json().catch(function(){return {};});
+      if(res.ok && data.success){
+        document.getElementById('popupText').textContent = (type==='wish')
+          ? 'Спасибо! Ваше пожелание отправлено — мы обязательно его прочитаем.'
+          : 'Спасибо за отзыв! Он появится на сайте после проверки модератором.';
+        document.querySelector('.popup-card h3').textContent='Отправлено!';
+        document.querySelector('.popup-eta').style.display='none';
+        popup.classList.add('show');document.body.style.overflow='hidden';
+        reviewForm.reset();rating=5;paintStars(5);
+      }else{
+        showRevErr((data && data.error) ? data.error : 'Не удалось отправить. Попробуйте позже.');
+      }
+    }catch(err){ showRevErr('Нет связи с сервером.'); }
+    finally{ revSubmit.disabled=false; revSubmit.textContent=origRev; }
+  });
+
+  /* ---------- FAQ ---------- */
+  document.querySelectorAll('.faq-item').forEach(function(item){
+    var q=item.querySelector('.faq-q');
+    var a=item.querySelector('.faq-a');
+    q.addEventListener('click',function(){
+      var open=item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(function(o){o.classList.remove('open');o.querySelector('.faq-a').style.maxHeight=null;});
+      if(!open){item.classList.add('open');a.style.maxHeight=a.scrollHeight+'px';}
+    });
+  });
+
+  /* ---------- PWA: УСТАНОВКА + SERVICE WORKER ---------- */
+  var deferredPrompt=null;
+  var installBtn=document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();deferredPrompt=e;
+    if(installBtn)installBtn.style.display='';
+  });
+  if(installBtn){
+    installBtn.addEventListener('click',function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function(){deferredPrompt=null;});
+      }else{
+        alert('Чтобы установить приложение: откройте сайт в браузере телефона (Chrome или Safari) и выберите «Добавить на главный экран».');
+      }
+    });
+  }
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    var appSec=document.getElementById('app'); if(appSec)appSec.style.display='none';
+  }
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/static/client-sw.js',{scope:'/'}).catch(function(){});
+  }
+
+  /* smooth-scroll offset handled by CSS scroll-margin; close mm on hash nav */
+})();
 </script>
+
 <!-- ═══════════ СТРУКТУРИРОВАННЫЕ ДАННЫЕ (JSON-LD) ═══════════ -->
 <script type="application/ld+json">
 {
@@ -772,33 +1590,33 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Сколько стоит такси из Казанского до Ишима?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Поездка Казанское → Ишим стоит 2 000 ₽ в одну сторону и 3 000 ₽ туда-обратно с ожиданием. Цена фиксированная и известна заранее." }
-    },
-    {
-      "@type": "Question",
-      "name": "Сколько стоит доехать до Петропавловска?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Казанское → Петропавловск — 5 000 ₽ в одну сторону и 7 500 ₽ туда-обратно с ожиданием." }
+      "name": "Сколько стоит доехать до Ишима и Петропавловска?",
+      "acceptedAnswer": { "@type": "Answer", "text": "До Ишима — 2000 ₽ в одну сторону или 3000 ₽ туда-обратно. До Петропавловска — 5000 ₽ в одну сторону, 7500 ₽ туда-обратно. Цена фиксированная и известна заранее." }
     },
     {
       "@type": "Question",
       "name": "Можно ли заказать такси заранее?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Да. В форме заказа выберите «Выбрать время», укажите дату и время — диспетчер заранее назначит водителя на нужный час." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Да. В форме заказа выберите «Выбрать время», укажите дату и время — и машина подъедет к нужному моменту. Удобно для поездок к поезду, автобусу или на приём." }
     },
     {
       "@type": "Question",
-      "name": "Вы работаете ночью и круглосуточно?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Да, мы работаем круглосуточно и без выходных. Достаточно позвонить по номеру +7 (963) 060-84-19." }
+      "name": "Вы работаете ночью?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Работаем круглосуточно, без выходных. Звоните в любое время суток — диспетчер ответит и подаст машину." }
     },
     {
       "@type": "Question",
       "name": "Как можно оплатить поездку?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Оплатить можно наличными водителю или переводом. Способ оплаты выбирается при оформлении заказа." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Принимаем наличные водителю или перевод на карту по номеру телефона. Выберите удобный способ при заказе." }
     },
     {
       "@type": "Question",
-      "name": "Возите ли вы по сёлам Казанского района?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Да, мы возим по всем населённым пунктам Казанского района — Новоселезнево, Ильинка, Гагарье, Афонькино и другим. Цены указаны на сайте." }
+      "name": "Возите ли вы по сёлам района?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Да, возим по всему Казанскому району — Новоселезнёво, Шадринка, Гагарье, Ильинка, Афонькино и другие сёла. Цену по вашему направлению подскажет диспетчер." }
+    },
+    {
+      "@type": "Question",
+      "name": "Нужно ли устанавливать приложение?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Не обязательно. Можно просто позвонить или оформить заказ на сайте. А приложение (Android APK или установка на телефон) делает повторные заказы ещё быстрее." }
     }
   ]
 }
