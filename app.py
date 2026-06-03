@@ -51,7 +51,8 @@ STATIC_VER = os.environ.get('RAILWAY_DEPLOYMENT_ID', str(int(time.time())))
 
 @app.context_processor
 def inject_static_ver():
-    return dict(static_ver=STATIC_VER, now=datetime.utcnow)
+    return dict(static_ver=STATIC_VER, now=datetime.utcnow,
+                site_url=SITE_URL, geo_lat=GEO_LAT, geo_lon=GEO_LON)
 
 @app.after_request
 def set_cache_headers(response):
@@ -94,7 +95,11 @@ OWNER_ADDRESS   = os.environ.get('OWNER_ADDRESS', 'Тюменская облас
 OWNER_PHONE     = os.environ.get('OWNER_PHONE',   '+7 (963) 060-84-19')
 OWNER_PHONE_RAW = os.environ.get('OWNER_PHONE_RAW', '+79630608419')
 OWNER_EMAIL     = os.environ.get('OWNER_EMAIL',   'info@example.ru')
-SITE_URL        = os.environ.get('SITE_URL',      'https://kazanskoe-taxi.ru')
+SITE_URL        = os.environ.get('SITE_URL',      'https://kazanskoe-taxi.xyz').rstrip('/')
+
+# Координаты с. Казанское (Тюменская область) — для гео-разметки SEO
+GEO_LAT = os.environ.get('GEO_LAT', '55.6456')
+GEO_LON = os.environ.get('GEO_LON', '69.2206')
 
 def legal_ctx():
     return dict(
@@ -276,6 +281,50 @@ def index():
     no_map = request.args.get('nomap') == '1'
     return render_template('index.html', reviews=reviews, yandex_maps_key=YANDEX_MAPS_KEY,
                            hero_bg=hero_bg, no_map=no_map)
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    host = SITE_URL.split('://', 1)[-1]
+    lines = [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /admin',
+        'Disallow: /a',
+        'Disallow: /driver',
+        'Disallow: /api',
+        'Disallow: /order',
+        'Disallow: /webhook',
+        'Disallow: /download',
+        '',
+        f'Host: {host}',
+        f'Sitemap: {SITE_URL}/sitemap.xml',
+        '',
+    ]
+    return Response('\n'.join(lines), mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    pages = [
+        ('/',        '1.0', 'daily'),
+        ('/join',    '0.6', 'monthly'),
+        ('/offer',   '0.3', 'yearly'),
+        ('/privacy', '0.3', 'yearly'),
+    ]
+    urls = '\n'.join(
+        f'  <url><loc>{SITE_URL}{path}</loc><lastmod>{today}</lastmod>'
+        f'<changefreq>{freq}</changefreq><priority>{prio}</priority></url>'
+        for path, prio, freq in pages
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f'{urls}\n'
+        '</urlset>\n'
+    )
+    return Response(xml, mimetype='application/xml')
 
 
 @app.route('/order', methods=['POST'])

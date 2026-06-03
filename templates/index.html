@@ -2,9 +2,46 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Казанское Такси — Казанский район</title>
-  <meta name="description" content="Такси по Казанскому району и межгороду. Ишим, Петропавловск, любые населённые пункты. Фиксированные цены, быстрая подача, свои водители." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ═══════════ SEO ═══════════ -->
+  <title>Такси Казанское — по району и межгороду | Ишим, Петропавловск</title>
+  <meta name="description" content="Такси Казанское: поездки по Казанскому району Тюменской области и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно. Тел. +7 963 060-84-19." />
+  <link rel="canonical" href="{{ site_url }}/" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="keywords" content="такси Казанское, такси Казанский район, такси Тюменская область, такси межгород, такси Ишим, такси Петропавловск, заказать такси, фиксированные цены" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Казанское Такси" />
+  <meta property="og:title" content="Такси Казанское — по району и межгороду | Ишим, Петропавловск" />
+  <meta property="og:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно." />
+  <meta property="og:url" content="{{ site_url }}/" />
+  <meta property="og:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="ru_RU" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Такси Казанское — по району и межгороду" />
+  <meta name="twitter:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск. Фиксированные цены, круглосуточно." />
+  <meta name="twitter:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
+
+  <!-- Гео-теги -->
+  <meta name="geo.region" content="RU-TYU" />
+  <meta name="geo.placename" content="Казанское, Казанский район, Тюменская область" />
+  <meta name="geo.position" content="{{ geo_lat }};{{ geo_lon }}" />
+  <meta name="ICBM" content="{{ geo_lat }}, {{ geo_lon }}" />
+
+  <!-- Ускорение загрузки карт -->
+  <link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
+  <link rel="dns-prefetch" href="https://api-maps.yandex.ru" />
+
+  <!-- Верификация поисковиков (вставь коды после регистрации сайта) -->
+  <!-- <meta name="yandex-verification" content="ВАШ_КОД_ЯНДЕКС" /> -->
+  <!-- <meta name="google-site-verification" content="ВАШ_КОД_GOOGLE" /> -->
+
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚖</text></svg>" />
   <link rel="manifest" href="/static/client-manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -92,7 +129,7 @@
   <div class="topbar-logo">
     <img src="{{ url_for('static', filename='img/logo.png') }}"
          class="topbar-logo-img"
-         alt="Казанское Такси"
+         alt="Логотип Казанское Такси — такси по Казанскому району"
          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
     <span class="topbar-icon" style="display:none">🚖</span>
     <div>
@@ -166,7 +203,7 @@ function activateWishTab() { setTimeout(() => { if (typeof switchReviewTab === '
   </div>
 
   <div class="hero-photo">
-    <img src="{{ hero_bg }}" alt="Казанское Такси" />
+    <img src="{{ hero_bg }}" alt="Такси в Казанском районе Тюменской области — поездки по сёлам и межгород" loading="eager" />
   </div>
 
 </section>
@@ -549,6 +586,44 @@ function activateWishTab() { setTimeout(() => { if (typeof switchReviewTab === '
   </div>
 </section>
 
+<!-- ═══════════ FAQ (частые вопросы) ═══════════ -->
+<section class="faq-section" id="faq-section" style="padding:48px 20px; max-width:760px; margin:0 auto;">
+  <h2 class="section-title" style="text-align:center;">Частые вопросы</h2>
+  <div class="faq-list" style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
+
+    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
+      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Сколько стоит такси из Казанского до Ишима?</summary>
+      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Поездка Казанское → Ишим стоит 2 000 ₽ в одну сторону и 3 000 ₽ туда-обратно с ожиданием. Цена фиксированная и известна заранее.</p>
+    </details>
+
+    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
+      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Сколько стоит доехать до Петропавловска?</summary>
+      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Казанское → Петропавловск — 5 000 ₽ в одну сторону и 7 500 ₽ туда-обратно с ожиданием.</p>
+    </details>
+
+    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
+      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Можно ли заказать такси заранее?</summary>
+      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Да. В форме заказа выберите «Выбрать время», укажите дату и время — диспетчер заранее назначит водителя на нужный час.</p>
+    </details>
+
+    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
+      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Вы работаете ночью и круглосуточно?</summary>
+      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Да, мы работаем круглосуточно и без выходных. Достаточно позвонить по номеру +7 (963) 060-84-19.</p>
+    </details>
+
+    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
+      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Как можно оплатить поездку?</summary>
+      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Оплатить можно наличными водителю или переводом. Способ оплаты выбирается при оформлении заказа.</p>
+    </details>
+
+    <details class="faq-item" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px;">
+      <summary style="cursor:pointer; font-weight:700; font-size:16px; color:#F5B800; list-style:none;">Возите ли вы по сёлам Казанского района?</summary>
+      <p style="margin-top:10px; color:#C2CEDF; line-height:1.6;">Да, мы возим по всем населённым пунктам Казанского района — Новоселезнево, Ильинка, Гагарье, Афонькино и другим. Цены указаны на сайте.</p>
+    </details>
+
+  </div>
+</section>
+
 <!-- ═══════════ ПОДВАЛ ═══════════ -->
 <footer class="site-footer">
   <div>
@@ -647,6 +722,85 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
   if (sec) sec.style.display = 'none';
   const btn = document.getElementById('btn-dl-app');
   if (btn) btn.style.display = 'none';
+}
+</script>
+<!-- ═══════════ СТРУКТУРИРОВАННЫЕ ДАННЫЕ (JSON-LD) ═══════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "additionalType": "https://schema.org/TaxiService",
+  "@id": "{{ site_url }}/#business",
+  "name": "Казанское Такси",
+  "description": "Такси по Казанскому району Тюменской области и межгород: Ишим, Петропавловск, все сёла. Фиксированные цены, круглосуточно.",
+  "url": "{{ site_url }}/",
+  "image": "{{ site_url }}/static/img/hero-bg.jpg",
+  "logo": "{{ site_url }}/static/img/logo.png",
+  "telephone": "+79630608419",
+  "priceRange": "150–7500 ₽",
+  "currenciesAccepted": "RUB",
+  "paymentAccepted": "Наличные, Перевод",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "RU",
+    "addressRegion": "Тюменская область",
+    "addressLocality": "село Казанское",
+    "streetAddress": "Казанский район"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": {{ geo_lat }},
+    "longitude": {{ geo_lon }}
+  },
+  "areaServed": [
+    { "@type": "AdministrativeArea", "name": "Казанский район" },
+    { "@type": "City", "name": "Ишим" },
+    { "@type": "City", "name": "Петропавловск" }
+  ],
+  "openingHoursSpecification": [{
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+    "opens": "00:00",
+    "closes": "23:59"
+  }]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Сколько стоит такси из Казанского до Ишима?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Поездка Казанское → Ишим стоит 2 000 ₽ в одну сторону и 3 000 ₽ туда-обратно с ожиданием. Цена фиксированная и известна заранее." }
+    },
+    {
+      "@type": "Question",
+      "name": "Сколько стоит доехать до Петропавловска?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Казанское → Петропавловск — 5 000 ₽ в одну сторону и 7 500 ₽ туда-обратно с ожиданием." }
+    },
+    {
+      "@type": "Question",
+      "name": "Можно ли заказать такси заранее?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Да. В форме заказа выберите «Выбрать время», укажите дату и время — диспетчер заранее назначит водителя на нужный час." }
+    },
+    {
+      "@type": "Question",
+      "name": "Вы работаете ночью и круглосуточно?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Да, мы работаем круглосуточно и без выходных. Достаточно позвонить по номеру +7 (963) 060-84-19." }
+    },
+    {
+      "@type": "Question",
+      "name": "Как можно оплатить поездку?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Оплатить можно наличными водителю или переводом. Способ оплаты выбирается при оформлении заказа." }
+    },
+    {
+      "@type": "Question",
+      "name": "Возите ли вы по сёлам Казанского района?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Да, мы возим по всем населённым пунктам Казанского района — Новоселезнево, Ильинка, Гагарье, Афонькино и другим. Цены указаны на сайте." }
+    }
+  ]
 }
 </script>
 </body>
