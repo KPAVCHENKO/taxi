@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Такси Казанское — по району и межгороду | Ишим, Петропавловск</title>
-<meta name="description" content="Такси Казанское: поездки по Казанскому району Тюменской области и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно. Тел. +7 963 060-84-19." />
+<meta name="description" content="Такси Казанское: поездки по Казанскому району Тюменской области и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, местные водители. Тел. +7 963 060-84-19." />
 <meta name="theme-color" content="#FBFAF7" />
 <link rel="canonical" href="{{ site_url }}/" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Казанское Такси" />
 <meta property="og:title" content="Такси Казанское — по району и межгороду | Ишим, Петропавловск" />
-<meta property="og:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, круглосуточно." />
+<meta property="og:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск, любые сёла. Фиксированные цены заранее, быстрая подача, местные водители." />
 <meta property="og:url" content="{{ site_url }}/" />
 <meta property="og:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -24,7 +24,7 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Такси Казанское — по району и межгороду" />
-<meta name="twitter:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск. Фиксированные цены, круглосуточно." />
+<meta name="twitter:description" content="Поездки по Казанскому району и межгород — Ишим, Петропавловск. Фиксированные цены, местные водители." />
 <meta name="twitter:image" content="{{ site_url }}/static/img/hero-bg.jpg" />
 
 <!-- Гео-теги -->
@@ -548,6 +548,26 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
 .kt-mode.on .d{box-shadow:0 0 0 4px var(--accent-soft)}
 .kt-badge{position:absolute;bottom:10px;left:10px;z-index:5;background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:700;color:var(--text);box-shadow:var(--shadow-sm)}
 .kt-hint{position:absolute;bottom:10px;right:10px;z-index:5;pointer-events:none;background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:99px;padding:6px 11px;font-size:11px;font-weight:600;color:var(--text-2)}
+/* автоподсказки адреса */
+.fromto{position:relative;z-index:20}
+.kt-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:var(--surface);border:1px solid var(--border-2);border-radius:13px;box-shadow:var(--shadow-lg);max-height:288px;overflow:auto;display:none}
+.kt-drop.open{display:block}
+.kt-di{display:flex;gap:11px;align-items:center;padding:11px 13px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s}
+.kt-di:last-child{border-bottom:none}
+.kt-di:hover{background:var(--surface-2)}
+.kt-di .ic{flex:none;font-size:16px;line-height:1}
+.kt-di .tx{min-width:0}
+.kt-di .tx b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kt-di .tx span{display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kt-di-empty{padding:14px 13px;color:var(--text-3);font-size:13px;text-align:center;line-height:1.5}
+/* Кнопка телефона со свечением (в hero, для мобильных) */
+.hero-phone-cta{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;padding:10px 17px 10px 11px;border-radius:99px;font-family:'Unbounded';font-weight:600;font-size:14.5px;letter-spacing:-.01em;color:var(--accent-ink);background:linear-gradient(180deg,var(--accent-2),var(--accent));box-shadow:0 6px 18px var(--glow-2), inset 0 1px 0 rgba(255,255,255,.35);transition:transform .18s;animation:hpcGlow 2.6s ease-in-out infinite}
+.hero-phone-cta:active{transform:translateY(1px)}
+.hero-phone-cta .hpc-ic{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(26,23,16,.14);flex:none}
+.hero-phone-cta .hpc-ic svg{width:15px;height:15px}
+@keyframes hpcGlow{0%,100%{box-shadow:0 6px 18px var(--glow-2), inset 0 1px 0 rgba(255,255,255,.35)}50%{box-shadow:0 10px 30px var(--glow), inset 0 1px 0 rgba(255,255,255,.45)}}
+@media(min-width:920px){.hero-phone-cta{display:none}}
+@media(prefers-reduced-motion:reduce){.hero-phone-cta{animation:none}}
 </style>
 <link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
 {% if no_map %}<script>window.NO_MAP=true;</script>{% endif %}
@@ -598,7 +618,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     <div class="mm-head">
       <span class="brand">
         <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19.5v-1M16 19.5v-1M9.5 8.5h5l.6-2.2A1 1 0 0 0 14.2 5H9.8a1 1 0 0 0-.96 1.3L9.5 8.5Z" stroke="#1A1710" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <span class="brand-text"><b>Казанское Такси</b><span>Круглосуточно</span></span>
+        <span class="brand-text"><b>Казанское Такси</b><span>Казанский р-н</span></span>
       </span>
       <button class="icon-btn" id="mmClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
     </div>
@@ -614,7 +634,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         +7 (963) 060-84-19
       </a>
-      <p style="font-size:12.5px;color:var(--text-3);text-align:center">Работаем 24/7 · Водители — местные</p>
+      <p style="font-size:12.5px;color:var(--text-3);text-align:center">Свои водители · Казанский район</p>
     </div>
   </div>
 </div>
@@ -629,12 +649,16 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   </div>
   <div class="wrap">
     <div class="hero-content reveal">
+      <a href="tel:+79630608419" class="hero-phone-cta" aria-label="Позвонить +7 963 060-84-19">
+        <span class="hpc-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
+        +7 (963) 060-84-19
+      </a>
       <span class="eyebrow hero-eyebrow">Казанский район · Тюменская область</span>
       <h1>Местное такси, на&nbsp;которое можно <span class="hl">положиться</span></h1>
-      <p class="hero-sub">Поездки по району и межгороду круглосуточно. Цену знаете заранее, подача — 10–20 минут, а за рулём всегда местные водители.</p>
+      <p class="hero-sub">Поездки по Казанскому району и межгороду. Цену знаете заранее, а за рулём — местные водители, которые знают каждую дорогу.</p>
       <ul class="trust">
         <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Местные водители</li>
-        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Подача 10–20 мин</li>
+        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Быстрая подача</li>
         <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Цена заранее</li>
         <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>Можно просто позвонить</li>
       </ul>
@@ -653,8 +677,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     <div class="hero-visual reveal">
       <div class="route-card">
         <div class="rc-top">
-          <span class="rc-pill"><span class="dot"></span>Машина свободна</span>
-          <span class="rc-eta">≈ 12 мин до подачи</span>
+          <span class="rc-pill"><span class="dot"></span>Казанский район</span>
+          <span class="rc-eta">Фиксированная цена</span>
         </div>
         <div class="map-mini">
           <svg class="map-svg" viewBox="0 0 340 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -688,7 +712,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   <div class="wrap reveal">
     <div class="as-text">
       <h3>Приложение «Казанское Такси»</h3>
-      <p>Заказывайте в пару касаний, отслеживайте машину и платите как удобно. Установите на телефон — занимает секунды.</p>
+      <p>Заказывайте поездку в пару касаний. Установите на телефон — и заказ всегда под рукой.</p>
     </div>
     <div class="app-buttons">
       <a href="/download/app" id="apkBtn" class="store-btn" aria-label="Скачать приложение для Android">
@@ -708,9 +732,9 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   <div class="wrap">
     <div class="bigcta-inner reveal">
       <div class="bc-glow"></div>
-      <span class="eyebrow" style="color:rgba(255,255,255,.6)">Круглосуточно · без выходных</span>
+      <span class="eyebrow" style="color:rgba(255,255,255,.6)">Без приложения и регистрации</span>
       <h2 style="margin-top:14px">Нужна машина прямо сейчас?</h2>
-      <p>Позвоните диспетчеру — назовём цену сразу и подадим машину за 10–20 минут. Без приложения и регистрации.</p>
+      <p>Позвоните диспетчеру — назовём цену сразу и примем заказ. Можно без приложения и регистрации.</p>
       <a href="tel:+79630608419" class="bc-phone">
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         +7 (963) 060-84-19
@@ -728,8 +752,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow">Онлайн-заказ</span>
-      <h2>Оформите поездку за минуту</h2>
-      <p>Заполните маршрут — мы перезвоним, подтвердим цену и подадим машину. Всё прозрачно, без скрытых доплат.</p>
+      <h2>Оформите поездку онлайн</h2>
+      <p>Заполните маршрут — диспетчер подтвердит цену и назначит водителя. Всё прозрачно, без скрытых доплат.</p>
     </div>
 
     <form class="order-grid reveal" id="orderForm" novalidate>
@@ -744,6 +768,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
             <div class="input-icon from">
               <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.4" opacity=".4"/></svg>
               <input class="input" id="fromInput" name="from" placeholder="с. Казанское, ул. Ленина 1" autocomplete="off" />
+              <div class="kt-drop" id="ktDropFrom"></div>
             </div>
           </div>
           <div class="field">
@@ -751,6 +776,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
             <div class="input-icon to">
               <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
               <input class="input" id="toInput" name="to" placeholder="Куда едем?" autocomplete="off" />
+              <div class="kt-drop" id="ktDropTo"></div>
             </div>
           </div>
         </div>
@@ -826,7 +852,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
           </div>
           <div class="field">
             <label class="field-label" for="commentInput">Комментарий</label>
-            <input class="input" id="commentInput" name="comment" placeholder="Подъезд, детское кресло, багаж…" />
+            <input class="input" id="commentInput" name="comment" placeholder="Подъезд, ориентир, пожелания…" />
           </div>
         </div>
 
@@ -885,7 +911,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
           <div class="sum-total"><span>Ориентир. цена</span><b id="sumPrice">—</b></div>
         </div>
         <ul class="mini-trust">
-          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Подача 10–20 минут</b><p>Машина рядом — в районе всегда есть свободные</p></span></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Быстрая подача</b><p>Машина обычно рядом — в районе есть свободные</p></span></li>
           <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span><b>Цена известна заранее</b><p>Назовём стоимость до поездки — без сюрпризов</p></span></li>
           <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span><b>Местные водители</b><p>Знают каждое село и дорогу в районе</p></span></li>
         </ul>
@@ -912,13 +938,13 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
         <span class="step-n">02</span>
         <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
         <h3>Узнайте цену</h3>
-        <p>Скажем точную стоимость заранее. Никаких счётчиков и доплат в пути.</p>
+        <p>Диспетчер назовёт стоимость заранее — цена фиксированная.</p>
       </div>
       <div class="step reveal">
         <span class="step-n">03</span>
         <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5h14M6.5 16.5l1.2-4.2A2 2 0 0 1 9.6 11h4.8a2 2 0 0 1 1.9 1.3l1.2 4.2M8 19v-.5M16 19v-.5M9.5 8.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <h3>Садитесь и едьте</h3>
-        <p>Машина у подъезда за 10–20 минут. Местный водитель довезёт с комфортом.</p>
+        <h3>Ждите водителя</h3>
+        <p>Диспетчер назначит водителя и сообщит цену и время подачи.</p>
       </div>
     </div>
   </div>
@@ -935,14 +961,35 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     <div class="price-wrap">
       <div class="villages reveal">
         <h3>По Казанскому району</h3>
-        <p class="vh-sub">Примеры направлений · цена за поездку</p>
+        <p class="vh-sub">Цена за поездку в одну сторону · попутно — дешевле</p>
         <div class="village-grid">
           <div class="vrow"><span class="vn"><span class="pin-ic"></span>По Казанскому</span><span class="vp">150 ₽</span></div>
-          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Новоселезнёво</span><span class="vp">200 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Новоселезнево</span><span class="vp">200 ₽</span></div>
           <div class="vrow"><span class="vn"><span class="pin-ic"></span>Шадринка</span><span class="vp">300 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Яровское</span><span class="vp">300 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Большие Ярки</span><span class="vp">300 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Малые Ярки</span><span class="vp">400 ₽</span></div>
           <div class="vrow"><span class="vn"><span class="pin-ic"></span>Гагарье</span><span class="vp">500 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Сладчанка</span><span class="vp">500 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Боровлянка</span><span class="vp">600 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Дальнетравное</span><span class="vp">600 ₽</span></div>
           <div class="vrow"><span class="vn"><span class="pin-ic"></span>Ильинка</span><span class="vp">700 ₽</span></div>
-          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Афонькино</span><span class="vp">1000 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Кугаево</span><span class="vp">700 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Чирки</span><span class="vp">700 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Огнево</span><span class="vp">800 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Дубынка, Заречка</span><span class="vp">900 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Смирное</span><span class="vp">900 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Афонькино</span><span class="vp">1 000 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Пешнево, Копотилово</span><span class="vp">1 000 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Ченчерь</span><span class="vp">1 000 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Ельцово</span><span class="vp">1 000 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Коротаевка</span><span class="vp">1 100 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Грачи</span><span class="vp">1 200 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Паленка</span><span class="vp">1 200 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Новогеоргиевка</span><span class="vp">1 500 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Новоалександровка</span><span class="vp">1 500 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Челюскинцев</span><span class="vp">1 500 ₽</span></div>
+          <div class="vrow"><span class="vn"><span class="pin-ic"></span>Викторовка, Долматово</span><span class="vp">1 800 ₽</span></div>
           <a href="tel:+79630608419" class="vrow ask"><span class="vn"><span class="pin-ic"></span>Другое село?</span><span class="vp">Спросить цену →</span></a>
         </div>
       </div>
@@ -992,11 +1039,11 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
       <div class="comfort-inner">
         <span class="eyebrow">О поездках</span>
         <h2 style="margin-top:14px">Комфортные поездки по&nbsp;домашним ценам</h2>
-        <p>Чистый салон, аккуратное вождение и водители, которые знают район как свои пять пальцев. Едете на работу, в больницу или на вокзал — довезём вовремя и без нервов.</p>
+        <p>Аккуратное вождение и водители, которые знают район как свои пять пальцев. Едете на работу, в больницу или на вокзал — довезём с комфортом.</p>
         <div class="comfort-feats">
           <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg></span><div><b>Знаем каждый адрес</b><p>Любое село района</p></div></div>
-          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M7 6V4h10v2M3 12h18" stroke="currentColor" stroke-width="1.7"/></svg></span><div><b>Багаж и кресло</b><p>Перевезём вещи и детей</p></div></div>
-          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Точно вовремя</b><p>К поезду и автобусу</p></div></div>
+          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.5 8 6.4 0 1.8-1.8 3-4 3s-4-1.3-4-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><div><b>Цена заранее</b><p>Известна до поездки</p></div></div>
+          <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><div><b>Удобный заказ</b><p>Звонок или форма онлайн</p></div></div>
           <div class="cfeat"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Безопасно</b><p>Опытные водители</p></div></div>
         </div>
       </div>
@@ -1068,10 +1115,6 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
         <div class="faq-a"><div class="faq-a-inner">Да. В форме заказа выберите «Выбрать время», укажите дату и время — и машина подъедет к нужному моменту. Удобно для поездок к поезду, автобусу или на приём.</div></div>
       </div>
       <div class="faq-item reveal">
-        <button class="faq-q" type="button">Вы работаете ночью?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-        <div class="faq-a"><div class="faq-a-inner">Работаем круглосуточно, без выходных. Звоните в любое время суток — диспетчер ответит и подаст машину.</div></div>
-      </div>
-      <div class="faq-item reveal">
         <button class="faq-q" type="button">Как можно оплатить поездку?<span class="pm"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <div class="faq-a"><div class="faq-a-inner">Принимаем наличные водителю или перевод на карту по номеру телефона. Выберите удобный способ при заказе.</div></div>
       </div>
@@ -1101,7 +1144,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
           <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
           +7 (963) 060-84-19
         </a>
-        <div style="margin-top:16px"><span class="foot-badge"><span class="dot"></span>Работаем круглосуточно</span></div>
+        <div style="margin-top:16px"><span class="foot-badge"><span class="dot"></span>Местное такси Казанского района</span></div>
       </div>
       <div class="foot-col">
         <h5>Навигация</h5>
@@ -1144,7 +1187,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     <div class="popup-check"><svg viewBox="0 0 24 24" fill="none"><path d="m5 13 4 4 10-10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <h3>Заказ принят!</h3>
     <p id="popupText">Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.</p>
-    <div class="popup-eta"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Подача через 10–20 минут</div>
+    <div class="popup-eta"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Диспетчер скоро свяжется с вами</div>
     <a href="tel:+79630608419" class="btn btn-primary btn-block btn-lg">Позвонить диспетчеру</a>
     <button class="btn btn-ghost btn-block" id="popupOk" style="margin-top:10px">Хорошо</button>
   </div>
@@ -1645,8 +1688,81 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   var ktBtnA=document.getElementById('ktModeA'),ktBtnB=document.getElementById('ktModeB');
   if(ktBtnA)ktBtnA.addEventListener('click',function(){setKtMode('a');});
   if(ktBtnB)ktBtnB.addEventListener('click',function(){setKtMode('b');});
-  fromInput.addEventListener('change',function(){var v=fromInput.value.trim();if(v&&window.ymaps){ktGeo(v).then(function(r){if(r){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});}});
-  toInput.addEventListener('change',function(){var v=toInput.value.trim();if(v&&window.ymaps){ktGeo(v).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});}});
+  fromInput.addEventListener('change',function(){var v=fromInput.value.trim();if(!v||!window.ymaps)return;if(kt.A&&kt.A.address===v)return;ktGeo(v).then(function(r){if(r){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});});
+  toInput.addEventListener('change',function(){var v=toInput.value.trim();if(!v||!window.ymaps)return;if(kt.B&&kt.B.address===v)return;ktGeo(v).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});});
+
+  /* автоподсказки адреса при вводе (как раньше) */
+  var KT_PLACES=[
+    {name:'Казанское',q:'Казанское, Казанский район, Тюменская область'},
+    {name:'Ишим',q:'Ишим, Тюменская область'},
+    {name:'Новоселезнево',q:'Новоселезнево, Казанский район, Тюменская область'},
+    {name:'Большие Ярки',q:'Большие Ярки, Казанский район, Тюменская область'},
+    {name:'Ильинка',q:'Ильинка, Казанский район, Тюменская область'},
+    {name:'Яровское',q:'Яровское, Казанский район, Тюменская область'},
+    {name:'Петропавловск',q:'Петропавловск, Северо-Казахстанская область, Казахстан'}
+  ];
+  function ktCtxQuery(q){
+    var l=q.toLowerCase();
+    if(/петропавловск|ишим|тюмень|омск|казанск|тюменск/.test(l))return q;
+    var other=(kt.mode==='b'&&kt.A)?((kt.A.address||'').toLowerCase()):(kt.mode==='a'&&kt.B)?((kt.B.address||'').toLowerCase()):'';
+    if(other.indexOf('ишим')>=0)return q+', Ишим, Тюменская область';
+    if(other.indexOf('петропавловск')>=0)return q+', Петропавловск, Казахстан';
+    return q+', Казанский район, Тюменская область';
+  }
+  function ktEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function ktSuggest(q){
+    var ql=q.toLowerCase().trim();
+    var local=KT_PLACES.filter(function(p){return p.name.toLowerCase().indexOf(ql)>=0;}).map(function(p){return{local:true,name:p.name,q:p.q,main:p.name,sub:'Казанский район',icon:'🏘'};});
+    if(!window.ymaps)return Promise.resolve(local);
+    return ymaps.geocode(ktCtxQuery(q),{boundedBy:KT_BOUNDS,strictBounds:false,results:6}).then(function(res){
+      var items=[];
+      res.geoObjects.each(function(o){
+        var c=o.geometry?o.geometry.getCoordinates():null;if(!c)return;
+        var nm=o.properties.get('name')||'',ad=o.getAddressLine()||'';
+        var poi=nm&&nm!==ad&&nm.length<80;
+        var label=poi?(nm+(ad?', '+ad:'')):ad;
+        if(local.some(function(l){return label.toLowerCase().indexOf(l.name.toLowerCase())>=0;}))return;
+        items.push({coords:c,full:label,main:poi?nm:ad,sub:poi?ad:'',icon:poi?'🏪':'📍'});
+      });
+      return local.concat(items);
+    }).catch(function(){return local;});
+  }
+  function ktRenderDrop(drop,items,onPick){
+    drop.innerHTML='';
+    if(!items.length){drop.innerHTML='<div class="kt-di-empty">Ничего не найдено.<br>Уточните село или кликните на карте.</div>';drop.classList.add('open');return;}
+    items.forEach(function(it){
+      var d=document.createElement('div');d.className='kt-di';
+      d.innerHTML='<span class="ic">'+it.icon+'</span><span class="tx"><b>'+ktEsc(it.main)+'</b>'+(it.sub?'<span>'+ktEsc(it.sub)+'</span>':'')+'</span>';
+      d.addEventListener('mousedown',function(e){e.preventDefault();onPick(it);});
+      drop.appendChild(d);
+    });
+    drop.classList.add('open');
+  }
+  function ktBindSuggest(input,drop,which){
+    var t;
+    input.addEventListener('input',function(){
+      clearTimeout(t);var q=input.value.trim();
+      if(q.length<2){drop.classList.remove('open');return;}
+      t=setTimeout(function(){
+        ktSuggest(q).then(function(items){
+          ktRenderDrop(drop,items,function(it){
+            drop.classList.remove('open');
+            function done(lat,lon,addr){
+              if(which==='a'){placeA(lat,lon,addr);if(kt.map)kt.map.setCenter([lat,lon],13);if(!kt.B)setKtMode('b');}
+              else{placeB(lat,lon,addr);if(kt.map)kt.map.setCenter([lat,lon],13);}
+              recalcPrice();drawRoute();
+            }
+            if(it.local){ktGeo(it.q).then(function(r){if(r)done(r.lat,r.lon,it.name);});}
+            else{done(it.coords[0],it.coords[1],it.full);}
+          });
+        });
+      },280);
+    });
+    input.addEventListener('blur',function(){setTimeout(function(){drop.classList.remove('open');},200);});
+  }
+  var ktDropFrom=document.getElementById('ktDropFrom'),ktDropTo=document.getElementById('ktDropTo');
+  if(ktDropFrom)ktBindSuggest(fromInput,ktDropFrom,'a');
+  if(ktDropTo)ktBindSuggest(toInput,ktDropTo,'b');
   chips.forEach(function(c){c.addEventListener('click',function(){if(!c.classList.contains('active'))return;var dest=c.getAttribute('data-dest');if(window.ymaps){ktGeo(dest).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);setKtMode('a');recalcPrice();drawRoute();}});}});});
   if(window.ymaps && !window.NO_MAP){try{ymaps.ready(initKtMap);}catch(e){}}
 
@@ -1662,7 +1778,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   "additionalType": "https://schema.org/TaxiService",
   "@id": "{{ site_url }}/#business",
   "name": "Казанское Такси",
-  "description": "Такси по Казанскому району Тюменской области и межгород: Ишим, Петропавловск, все сёла. Фиксированные цены, круглосуточно.",
+  "description": "Такси по Казанскому району Тюменской области и межгород: Ишим, Петропавловск, все сёла. Фиксированные цены, местные водители.",
   "url": "{{ site_url }}/",
   "image": "{{ site_url }}/static/img/hero-bg.jpg",
   "logo": "{{ site_url }}/static/img/logo.png",
@@ -1686,13 +1802,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     { "@type": "AdministrativeArea", "name": "Казанский район" },
     { "@type": "City", "name": "Ишим" },
     { "@type": "City", "name": "Петропавловск" }
-  ],
-  "openingHoursSpecification": [{
-    "@type": "OpeningHoursSpecification",
-    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-    "opens": "00:00",
-    "closes": "23:59"
-  }]
+  ]
 }
 </script>
 <script type="application/ld+json">
@@ -1709,11 +1819,6 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
       "@type": "Question",
       "name": "Можно ли заказать такси заранее?",
       "acceptedAnswer": { "@type": "Answer", "text": "Да. В форме заказа выберите «Выбрать время», укажите дату и время — и машина подъедет к нужному моменту. Удобно для поездок к поезду, автобусу или на приём." }
-    },
-    {
-      "@type": "Question",
-      "name": "Вы работаете ночью?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Работаем круглосуточно, без выходных. Звоните в любое время суток — диспетчер ответит и подаст машину." }
     },
     {
       "@type": "Question",
