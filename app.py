@@ -63,6 +63,26 @@ def set_cache_headers(response):
         response.headers['Pragma'] = 'no-cache'
     return response
 
+
+# ── Yandex.Metrika (счётчик на все HTML-страницы) ─────────────────────────────
+METRIKA_HTML = """<!-- Yandex.Metrika counter --> <script type="text/javascript">     (function(m,e,t,r,i,k,a){         m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};         m[i].l=1*new Date();         for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}         k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)     })(window, document,'script','https://mc.webvisor.org/metrika/tag_ww.js?id=109627527', 'ym');      ym(109627527, 'init', {ssr:true, webvisor:true, trackHash:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true}); </script>  <!-- /Yandex.Metrika counter -->"""
+
+@app.after_request
+def inject_metrika(response):
+    try:
+        if (not response.direct_passthrough
+                and 'text/html' in (response.content_type or '')):
+            body = response.get_data(as_text=True)
+            if '<head' in body and 'tag_ww.js?id=109627527' not in body:
+                import re as _re
+                body = _re.sub(r'<head[^>]*>',
+                               lambda m: m.group(0) + '\n' + METRIKA_HTML,
+                               body, count=1)
+                response.set_data(body)
+    except Exception:
+        pass
+    return response
+
 # ── Config ────────────────────────────────────────────────────────────────────
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production-please')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)

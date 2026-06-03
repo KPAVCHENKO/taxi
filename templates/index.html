@@ -534,6 +534,24 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   .foot-grid{grid-template-columns:1.4fr 1fr 1fr}
 }
 </style>
+
+<!-- ===== Живая Яндекс-карта (интеграция в дизайн) ===== -->
+<style>
+.kt-map-wrap{position:relative;margin:6px 0 4px}
+#ktMap{height:300px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface-3)}
+.kt-modes{position:absolute;top:10px;left:10px;z-index:5;display:flex;gap:6px}
+.kt-mode{display:inline-flex;align-items:center;gap:7px;background:color-mix(in srgb,var(--surface) 88%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border-2);border-radius:99px;padding:8px 13px;font-size:12.5px;font-weight:700;color:var(--text-2);box-shadow:var(--shadow-sm);cursor:pointer;transition:.2s}
+.kt-mode .d{width:9px;height:9px;border-radius:50%}
+.kt-mode .d.a{background:var(--good)}
+.kt-mode .d.b{background:var(--accent)}
+.kt-mode.on{color:var(--text);border-color:var(--accent-line);background:var(--surface)}
+.kt-mode.on .d{box-shadow:0 0 0 4px var(--accent-soft)}
+.kt-badge{position:absolute;bottom:10px;left:10px;z-index:5;background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:700;color:var(--text);box-shadow:var(--shadow-sm)}
+.kt-hint{position:absolute;bottom:10px;right:10px;z-index:5;pointer-events:none;background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:99px;padding:6px 11px;font-size:11px;font-weight:600;color:var(--text-2)}
+</style>
+<link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
+{% if no_map %}<script>window.NO_MAP=true;</script>{% endif %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -738,20 +756,17 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
         </div>
 
         <!-- MAP -->
-        <div class="map-box" aria-hidden="true">
-          <svg class="map-svg" viewBox="0 0 600 190" preserveAspectRatio="xMidYMid slice">
-            <g fill="none" stroke-linecap="round">
-              <path class="road big" d="M-20 70 H620"/>
-              <path class="road" d="M-20 140 H620"/>
-              <path class="road big" d="M160 -20 V210"/>
-              <path class="road" d="M430 -20 V210"/>
-              <path class="road" d="M40 100 H300 V210"/>
-            </g>
-            <path d="M120 130 C 200 80, 280 150, 360 105 S 470 60, 470 60" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 10" opacity=".95"/>
-            <circle cx="120" cy="130" r="7" fill="var(--good)" stroke="var(--surface)" stroke-width="3"/>
-            <circle cx="470" cy="60" r="7" fill="var(--accent)" stroke="var(--surface)" stroke-width="3"/>
-          </svg>
-          <span class="map-hint"><svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6-2 6 2v14l-6-2-6 2-6-2V4l6 2Zm0 0v14m6-12v14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Маршрут на карте · ориентировочно</span>
+        <div class="field" style="margin-top:6px">
+          <label class="field-label">Карта — отметьте точки маршрута</label>
+          <div class="kt-map-wrap">
+            <div id="ktMap"></div>
+            <div class="kt-modes">
+              <button type="button" class="kt-mode on" id="ktModeA"><span class="d a"></span>Откуда</button>
+              <button type="button" class="kt-mode" id="ktModeB"><span class="d b"></span>Куда</button>
+            </div>
+            <div class="kt-badge" id="ktBadge" style="display:none"></div>
+            <span class="kt-hint">Нажмите на карту</span>
+          </div>
         </div>
 
         <!-- QUICK CHIPS -->
@@ -1386,6 +1401,12 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
           phone:phone,
           from_address:state.from,
           to_address:state.to,
+          from_lat:(kt&&kt.A)?kt.A.lat:null,
+          from_lon:(kt&&kt.A)?kt.A.lon:null,
+          to_lat:(kt&&kt.B)?kt.B.lat:null,
+          to_lon:(kt&&kt.B)?kt.B.lon:null,
+          distance_km:(kt?kt.km:null),
+          duration_min:(kt?kt.mins:null),
           comment:document.getElementById('commentInput').value.trim(),
           payment:state.pay==='Перевод'?'transfer':'cash',
           ride_type:state.type==='Попутно'?'shared':'individual',
@@ -1406,6 +1427,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
         whenSeg.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
         whenSeg.querySelector('.tab').classList.add('active');
         updateSummary();
+        if(typeof resetKtMap==='function')resetKtMap();
       }else{
         showErr((data && data.error) ? data.error : 'Не удалось отправить заказ. Позвоните нам по телефону.');
       }
@@ -1537,6 +1559,96 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/static/client-sw.js',{scope:'/'}).catch(function(){});
   }
+
+  /* ---------- ЖИВАЯ ЯНДЕКС-КАРТА С ТОЧКАМИ (логика как раньше) ---------- */
+  var kt={map:null,mA:null,mB:null,A:null,B:null,mode:'a',route:null,km:null,mins:null};
+  var KT_BOUNDS=[[54.3,65.5],[57.5,72.5]], KT_CENTER=[55.73,69.23];
+  var PRICE_LOCAL={'казанское':150,'новоселезнево':200,'шадринка':300,'яровское':300,'большие ярки':300,'малые ярки':400,'гагарье':500,'сладчанка':500,'боровлянка':600,'дальнетравное':600,'ильинка':700,'кугаево':700,'чирки':700,'огнево':800,'дубынка':900,'заречка':900,'смирное':900,'афонькино':1000,'пешнево':1000,'копотилово':1000,'ченчерь':1000,'ельцово':1000,'коротаевка':1100,'грачи':1200,'паленка':1200,'новогеоргиевка':1500,'новоалександровка':1500,'челюскинцев':1500,'викторовка':1800,'долматово':1800};
+  var PRICE_IC={'ишим':{one_way:2000,round_trip:3000},'петропавловск':{one_way:5000,round_trip:7500}};
+  fetch('/api/tariffs').then(function(r){return r.json();}).then(function(d){
+    if(d&&d.local)Object.assign(PRICE_LOCAL,d.local);
+    if(d&&d.intercity)Object.assign(PRICE_IC,d.intercity);
+    recalcPrice();
+  }).catch(function(){});
+
+  function matchSettle(addr){
+    if(!addr)return null;var a=addr.toLowerCase();
+    for(var k in PRICE_IC){if(a.indexOf(k)>=0)return{name:k,type:'ic'};}
+    for(var k2 in PRICE_LOCAL){if(a.indexOf(k2)>=0)return{name:k2,type:'loc'};}
+    return null;
+  }
+  function calcPrice(){
+    var from=kt.A?kt.A.address:state.from, to=kt.B?kt.B.address:state.to;
+    var mA=matchSettle(from),mB=matchSettle(to);
+    if(!mA||!mB)return null;
+    if(mA.type==='ic')return PRICE_IC[mA.name].one_way;
+    if(mB.type==='ic')return PRICE_IC[mB.name].one_way;
+    var dest=null;
+    if(mA.name==='казанское')dest=mB.name;else if(mB.name==='казанское')dest=mA.name;else return null;
+    return (PRICE_LOCAL[dest]!=null)?PRICE_LOCAL[dest]:null;
+  }
+  function recalcPrice(){var p=calcPrice();if(p!=null)state.price=p;updateSummary();}
+
+  var ktBadge=document.getElementById('ktBadge');
+  function setKtMode(m){kt.mode=m;var a=document.getElementById('ktModeA'),b=document.getElementById('ktModeB');if(a)a.classList.toggle('on',m==='a');if(b)b.classList.toggle('on',m==='b');}
+  function ktPin(label,color){var s='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 42 16 42S32 28 32 16C32 7.16 24.84 0 16 0Z" fill="'+color+'"/><circle cx="16" cy="16" r="9" fill="#fff" opacity="0.95"/><text x="16" y="20" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="800" fill="'+color+'">'+label+'</text></svg>';return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);}
+  function ktRevGeo(lat,lon){return ymaps.geocode([lat,lon],{results:1}).then(function(res){var o=res.geoObjects.get(0);return o?o.getAddressLine():lat.toFixed(5)+', '+lon.toFixed(5);});}
+  function ktGeo(q){return ymaps.geocode(q,{boundedBy:KT_BOUNDS,strictBounds:false,results:1}).then(function(res){var o=res.geoObjects.get(0);if(!o)return null;var c=o.geometry.getCoordinates();return{lat:c[0],lon:c[1],address:o.getAddressLine()};});}
+  function placeA(lat,lon,addr){
+    if(kt.map&&kt.mA)kt.map.geoObjects.remove(kt.mA);
+    kt.A={lat:lat,lon:lon,address:addr};
+    if(kt.map){
+      kt.mA=new ymaps.Placemark([lat,lon],{hintContent:'Откуда'},{iconLayout:'default#image',iconImageHref:ktPin('A','#1E8C5A'),iconImageSize:[32,42],iconImageOffset:[-16,-42],draggable:true});
+      kt.mA.events.add('dragend',function(){var c=kt.mA.geometry.getCoordinates();ktRevGeo(c[0],c[1]).then(function(ad){kt.A={lat:c[0],lon:c[1],address:ad};fromInput.value=ad;state.from=ad;recalcPrice();drawRoute();});});
+      kt.map.geoObjects.add(kt.mA);
+    }
+    fromInput.value=addr;state.from=addr;
+  }
+  function placeB(lat,lon,addr){
+    if(kt.map&&kt.mB)kt.map.geoObjects.remove(kt.mB);
+    kt.B={lat:lat,lon:lon,address:addr};
+    if(kt.map){
+      kt.mB=new ymaps.Placemark([lat,lon],{hintContent:'Куда'},{iconLayout:'default#image',iconImageHref:ktPin('B','#E8A317'),iconImageSize:[32,42],iconImageOffset:[-16,-42],draggable:true});
+      kt.mB.events.add('dragend',function(){var c=kt.mB.geometry.getCoordinates();ktRevGeo(c[0],c[1]).then(function(ad){kt.B={lat:c[0],lon:c[1],address:ad};toInput.value=ad;state.to=ad;recalcPrice();drawRoute();});});
+      kt.map.geoObjects.add(kt.mB);
+    }
+    toInput.value=addr;state.to=addr;
+  }
+  function clearRoute(){if(kt.map&&kt.route){kt.map.geoObjects.remove(kt.route);kt.route=null;}kt.km=null;kt.mins=null;if(ktBadge)ktBadge.style.display='none';}
+  function drawRoute(){
+    if(!(kt.A&&kt.B&&kt.map&&window.ymaps))return;
+    clearRoute();
+    ymaps.route([[kt.A.lat,kt.A.lon],[kt.B.lat,kt.B.lon]],{routingMode:'auto',mapStateAutoApply:false}).then(function(route){
+      route.getPaths().each(function(p){p.options.set({strokeColor:'#E8A317',strokeWidth:5,strokeOpacity:.9});});
+      route.getWayPoints().each(function(wp){wp.options.set({visible:false});});
+      kt.route=route;kt.map.geoObjects.add(route);
+      kt.km=Math.round(route.getLength()/100)/10;kt.mins=Math.round(route.getDuration()/60);
+      if(ktBadge){ktBadge.textContent='📍 '+kt.km+' км · ~'+kt.mins+' мин';ktBadge.style.display='';}
+      try{var b=route.getBounds();if(b)kt.map.setBounds(b,{checkZoomRange:true,zoomMargin:50});}catch(e){}
+    }).catch(function(){});
+  }
+  function resetKtMap(){if(kt.map){if(kt.mA)kt.map.geoObjects.remove(kt.mA);if(kt.mB)kt.map.geoObjects.remove(kt.mB);}kt.A=null;kt.B=null;kt.mA=null;kt.mB=null;clearRoute();setKtMode('a');}
+  function ktClick(lat,lon){
+    if(!window.ymaps)return;
+    ktRevGeo(lat,lon).then(function(ad){
+      if(kt.mode==='a'){placeA(lat,lon,ad);if(!kt.B)setKtMode('b');}
+      else{placeB(lat,lon,ad);}
+      recalcPrice();drawRoute();
+    });
+  }
+  function initKtMap(){
+    var el=document.getElementById('ktMap');if(!el)return;
+    kt.map=new ymaps.Map('ktMap',{center:KT_CENTER,zoom:10,controls:['zoomControl']},{suppressMapOpenBlock:true,yandexMapDisablePoiInteractivity:true});
+    kt.map.events.add('click',function(e){var c=e.get('coords');ktClick(c[0],c[1]);});
+    setKtMode('a');
+  }
+  var ktBtnA=document.getElementById('ktModeA'),ktBtnB=document.getElementById('ktModeB');
+  if(ktBtnA)ktBtnA.addEventListener('click',function(){setKtMode('a');});
+  if(ktBtnB)ktBtnB.addEventListener('click',function(){setKtMode('b');});
+  fromInput.addEventListener('change',function(){var v=fromInput.value.trim();if(v&&window.ymaps){ktGeo(v).then(function(r){if(r){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});}});
+  toInput.addEventListener('change',function(){var v=toInput.value.trim();if(v&&window.ymaps){ktGeo(v).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],12);recalcPrice();drawRoute();}});}});
+  chips.forEach(function(c){c.addEventListener('click',function(){if(!c.classList.contains('active'))return;var dest=c.getAttribute('data-dest');if(window.ymaps){ktGeo(dest).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);setKtMode('a');recalcPrice();drawRoute();}});}});});
+  if(window.ymaps && !window.NO_MAP){try{ymaps.ready(initKtMap);}catch(e){}}
 
   /* smooth-scroll offset handled by CSS scroll-margin; close mm on hash nav */
 })();
