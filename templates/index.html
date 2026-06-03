@@ -571,7 +571,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
 </style>
 <link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
 {% if no_map %}<script>window.NO_MAP=true;</script>{% endif %}
-<script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU" async></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -1308,17 +1308,15 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   function clearChips(){chips.forEach(function(c){c.classList.remove('active');});}
   chips.forEach(function(c){
     c.addEventListener('click',function(){
-      var active=c.classList.contains('active');
+      var dest=c.getAttribute('data-dest');
+      var price=parseInt(c.getAttribute('data-price'),10);
+      var toFrom=(typeof kt!=='undefined' && kt.mode==='a');
       clearChips();
-      if(!active){
-        c.classList.add('active');
-        toInput.value=c.getAttribute('data-dest');
-        state.to=toInput.value;
-        state.price=parseInt(c.getAttribute('data-price'),10);
-      }else{
-        state.price=null;
-      }
+      c.classList.add('active');
+      if(toFrom){ fromInput.value=dest; state.from=dest; } else { toInput.value=dest; state.to=dest; }
+      if(!isNaN(price)) state.price=price;
       updateSummary();
+      if(typeof ktChipSelect==='function') ktChipSelect(dest, toFrom);
     });
   });
 
@@ -1635,8 +1633,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   var ktBadge=document.getElementById('ktBadge');
   function setKtMode(m){kt.mode=m;var a=document.getElementById('ktModeA'),b=document.getElementById('ktModeB');if(a)a.classList.toggle('on',m==='a');if(b)b.classList.toggle('on',m==='b');}
   function ktPin(label,color){var s='<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 42 16 42S32 28 32 16C32 7.16 24.84 0 16 0Z" fill="'+color+'"/><circle cx="16" cy="16" r="9" fill="#fff" opacity="0.95"/><text x="16" y="20" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="800" fill="'+color+'">'+label+'</text></svg>';return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);}
-  function ktRevGeo(lat,lon){return ymaps.geocode([lat,lon],{results:1}).then(function(res){var o=res.geoObjects.get(0);return o?o.getAddressLine():lat.toFixed(5)+', '+lon.toFixed(5);});}
-  function ktGeo(q){return ymaps.geocode(q,{boundedBy:KT_BOUNDS,strictBounds:false,results:1}).then(function(res){var o=res.geoObjects.get(0);if(!o)return null;var c=o.geometry.getCoordinates();return{lat:c[0],lon:c[1],address:o.getAddressLine()};});}
+  function ktRevGeo(lat,lon){if(!window.ymaps)return Promise.resolve(lat.toFixed(5)+', '+lon.toFixed(5));return ymaps.geocode([lat,lon],{results:1}).then(function(res){var o=res.geoObjects.get(0);return o?o.getAddressLine():lat.toFixed(5)+', '+lon.toFixed(5);}).catch(function(){return lat.toFixed(5)+', '+lon.toFixed(5);});}
+  function ktGeo(q){if(!window.ymaps)return Promise.resolve(null);return ymaps.geocode(q,{boundedBy:KT_BOUNDS,strictBounds:false,results:1}).then(function(res){var o=res.geoObjects.get(0);if(!o)return null;var c=o.geometry.getCoordinates();return{lat:c[0],lon:c[1],address:o.getAddressLine()};}).catch(function(){return null;});}
   function placeA(lat,lon,addr){
     if(kt.map&&kt.mA)kt.map.geoObjects.remove(kt.mA);
     kt.A={lat:lat,lon:lon,address:addr};
@@ -1675,15 +1673,19 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     if(!window.ymaps)return;
     ktRevGeo(lat,lon).then(function(ad){
       if(kt.mode==='a'){placeA(lat,lon,ad);if(!kt.B)setKtMode('b');}
-      else{placeB(lat,lon,ad);}
+      else{placeB(lat,lon,ad);setKtMode('a');}
       recalcPrice();drawRoute();
     });
   }
   function initKtMap(){
-    var el=document.getElementById('ktMap');if(!el)return;
+    var el=document.getElementById('ktMap');if(!el||kt.map)return;
     kt.map=new ymaps.Map('ktMap',{center:KT_CENTER,zoom:10,controls:['zoomControl']},{suppressMapOpenBlock:true,yandexMapDisablePoiInteractivity:true});
     kt.map.events.add('click',function(e){var c=e.get('coords');ktClick(c[0],c[1]);});
-    setKtMode('a');
+    setKtMode(kt.mode||'a');
+    var a=kt.A,b=kt.B;kt.A=null;kt.B=null;
+    if(a)placeA(a.lat,a.lon,a.address);
+    if(b)placeB(b.lat,b.lon,b.address);
+    if(kt.A&&kt.B)drawRoute();
   }
   var ktBtnA=document.getElementById('ktModeA'),ktBtnB=document.getElementById('ktModeB');
   if(ktBtnA)ktBtnA.addEventListener('click',function(){setKtMode('a');});
@@ -1763,8 +1765,9 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   var ktDropFrom=document.getElementById('ktDropFrom'),ktDropTo=document.getElementById('ktDropTo');
   if(ktDropFrom)ktBindSuggest(fromInput,ktDropFrom,'a');
   if(ktDropTo)ktBindSuggest(toInput,ktDropTo,'b');
-  chips.forEach(function(c){c.addEventListener('click',function(){if(!c.classList.contains('active'))return;var dest=c.getAttribute('data-dest');if(window.ymaps){ktGeo(dest).then(function(r){if(r){placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);setKtMode('a');recalcPrice();drawRoute();}});}});});
-  if(window.ymaps && !window.NO_MAP){try{ymaps.ready(initKtMap);}catch(e){}}
+  function ktChipQuery(dest){var d=String(dest||'').replace(/^По\s+/i,'').replace(/^с\.\s*/i,'').replace(/^г\.\s*/i,'').trim();var dl=d.toLowerCase();if(dl.indexOf('ишим')>=0)return 'Ишим, Тюменская область';if(dl.indexOf('петропавловск')>=0)return 'Петропавловск, Северо-Казахстанская область, Казахстан';if(dl.indexOf('казанско')>=0)return 'Казанское, Казанский район, Тюменская область';return d+', Казанский район, Тюменская область';}
+  function ktChipSelect(dest,toFrom){ktGeo(ktChipQuery(dest)).then(function(r){if(!r)return;if(toFrom){placeA(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);if(!kt.B)setKtMode('b');}else{placeB(r.lat,r.lon,r.address);if(kt.map)kt.map.setCenter([r.lat,r.lon],11);setKtMode('a');}recalcPrice();drawRoute();});}
+  (function ktInit(n){if(window.NO_MAP)return;if(window.ymaps&&window.ymaps.ready){ymaps.ready(initKtMap);}else if(n>0){setTimeout(function(){ktInit(n-1);},150);}})(80);
 
   /* smooth-scroll offset handled by CSS scroll-margin; close mm on hash nav */
 })();
