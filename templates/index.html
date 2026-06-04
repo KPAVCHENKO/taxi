@@ -907,7 +907,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
           <div class="sum-line"><span>Когда</span><b id="sumWhen">Сейчас</b></div>
           <div class="sum-line"><span>Тип</span><b id="sumType">Индивидуально</b></div>
           <div class="sum-line"><span>Оплата</span><b id="sumPay">Наличные</b></div>
-          <div class="sum-total"><span>Ориентир. цена</span><b id="sumPrice">—</b></div>
+          <div class="sum-total"><span>Стоимость</span><b id="sumPrice">—</b></div>
         </div>
         <ul class="mini-trust">
           <li><span class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Быстрая подача</b><p>Машина обычно рядом — в районе есть свободные</p></span></li>
@@ -1295,7 +1295,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     document.getElementById('sumWhen').textContent=state.when;
     document.getElementById('sumType').textContent=state.type;
     document.getElementById('sumPay').textContent=state.pay;
-    document.getElementById('sumPrice').textContent=state.price==null?'по запросу':('от '+fmtPrice(state.price));
+    document.getElementById('sumPrice').textContent=state.price==null?'уточняется':fmtPrice(state.price);
   }
   fromInput.addEventListener('input',function(){state.from=fromInput.value.trim();updateSummary();});
   toInput.addEventListener('input',function(){state.to=toInput.value.trim();state.price=null;clearChips();updateSummary();});
