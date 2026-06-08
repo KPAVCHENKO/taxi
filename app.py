@@ -1183,66 +1183,6 @@ def admin_chat_read():
     return jsonify({'ok': True})
 
 
-# ── Приложение водителя: чат ──────────────────────────────────────────────────
-@app.route('/driver/api/chat')
-@driver_required
-def driver_chat_fetch():
-    driver = _get_driver_session()
-    which  = request.args.get('room', 'group')
-    after  = request.args.get('after', 0, type=int)
-    room = 'group' if which == 'group' else f'd{driver.id}'
-    msgs = (ChatMessage.query
-            .filter(ChatMessage.room == room, ChatMessage.id > after)
-            .order_by(ChatMessage.id.asc()).limit(200).all())
-    return jsonify({'messages': [_msg_dict(m) for m in msgs], 'me': driver.id})
-
-
-@app.route('/driver/api/chat/send', methods=['POST'])
-@driver_required
-def driver_chat_send():
-    driver = _get_driver_session()
-    data = request.get_json(silent=True) or {}
-    which = str(data.get('room', 'group')).strip()
-    body  = str(data.get('body', '')).strip()
-    if not body:
-        return jsonify({'error': 'Пустое сообщение'}), 400
-    if len(body) > 2000:
-        body = body[:2000]
-    room = 'group' if which == 'group' else f'd{driver.id}'
-
-    m = ChatMessage(room=room, sender='driver', driver_id=driver.id,
-                    author_name=driver.name, body=body, read_admin=False)
-    db.session.add(m)
-    db.session.commit()
-
-    # Push диспетчеру (+ другим водителям в общем чате)
-    try:
-        if room == 'group':
-            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
-            for other in Driver.query.filter(Driver.active == True, Driver.id != driver.id).all():
-                _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat')
-        else:
-            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
-    except Exception as _e:
-        print(f'[CHAT-PUSH] {_e}')
-
-    return jsonify({'ok': True, 'message': _msg_dict(m)})
-
-
-@app.route('/driver/api/chat/seen', methods=['POST'])
-@driver_required
-def driver_chat_seen():
-    driver = _get_driver_session()
-    which = str((request.get_json(silent=True) or {}).get('room', 'group')).strip()
-    now = datetime.utcnow()
-    if which == 'group':
-        driver.chat_seen_group = now
-    else:
-        driver.chat_seen_direct = now
-    db.session.commit()
-    return jsonify({'ok': True})
-
-
 def _driver_chat_unread(driver):
     """Непрочитанные для водителя: (общий, личный)."""
     g_seen = driver.chat_seen_group or datetime(2000, 1, 1)
@@ -2297,6 +2237,66 @@ def driver_push_unsubscribe():
     if endpoint:
         DriverPushSubscription.query.filter_by(endpoint=endpoint).delete()
         db.session.commit()
+    return jsonify({'ok': True})
+
+
+# ── Приложение водителя: чат ──────────────────────────────────────────────────
+@app.route('/driver/api/chat')
+@driver_required
+def driver_chat_fetch():
+    driver = _get_driver_session()
+    which  = request.args.get('room', 'group')
+    after  = request.args.get('after', 0, type=int)
+    room = 'group' if which == 'group' else f'd{driver.id}'
+    msgs = (ChatMessage.query
+            .filter(ChatMessage.room == room, ChatMessage.id > after)
+            .order_by(ChatMessage.id.asc()).limit(200).all())
+    return jsonify({'messages': [_msg_dict(m) for m in msgs], 'me': driver.id})
+
+
+@app.route('/driver/api/chat/send', methods=['POST'])
+@driver_required
+def driver_chat_send():
+    driver = _get_driver_session()
+    data = request.get_json(silent=True) or {}
+    which = str(data.get('room', 'group')).strip()
+    body  = str(data.get('body', '')).strip()
+    if not body:
+        return jsonify({'error': 'Пустое сообщение'}), 400
+    if len(body) > 2000:
+        body = body[:2000]
+    room = 'group' if which == 'group' else f'd{driver.id}'
+
+    m = ChatMessage(room=room, sender='driver', driver_id=driver.id,
+                    author_name=driver.name, body=body, read_admin=False)
+    db.session.add(m)
+    db.session.commit()
+
+    # Push диспетчеру (+ другим водителям в общем чате)
+    try:
+        if room == 'group':
+            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
+            for other in Driver.query.filter(Driver.active == True, Driver.id != driver.id).all():
+                _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat')
+        else:
+            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
+    except Exception as _e:
+        print(f'[CHAT-PUSH] {_e}')
+
+    return jsonify({'ok': True, 'message': _msg_dict(m)})
+
+
+@app.route('/driver/api/chat/seen', methods=['POST'])
+@driver_required
+def driver_chat_seen():
+    driver = _get_driver_session()
+    which = str((request.get_json(silent=True) or {}).get('room', 'group')).strip()
+    now = datetime.utcnow()
+    if which == 'group':
+        driver.chat_seen_group = now
+    else:
+        driver.chat_seen_direct = now
+    db.session.commit()
     return jsonify({'ok': True})
 
 
