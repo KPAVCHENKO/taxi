@@ -143,7 +143,11 @@ def _normalize_vapid_key(k):
 
 VAPID_PRIVATE_KEY = _normalize_vapid_key(os.environ.get('VAPID_PRIVATE_KEY', ''))
 VAPID_PUBLIC_KEY  = os.environ.get('VAPID_PUBLIC_KEY', '')
-VAPID_EMAIL       = os.environ.get('VAPID_EMAIL', 'mailto:admin@example.com')
+VAPID_EMAIL       = os.environ.get('VAPID_EMAIL', '').strip()
+if not VAPID_EMAIL:
+    VAPID_EMAIL = 'mailto:admin@kazanskoe-taxi.xyz'
+elif not (VAPID_EMAIL.startswith('mailto:') or VAPID_EMAIL.startswith('https:')):
+    VAPID_EMAIL = 'mailto:' + VAPID_EMAIL
 
 OWNER_NAME      = os.environ.get('OWNER_NAME',    'ИП Иванов Иван Иванович')
 OWNER_OGRN      = os.environ.get('OWNER_OGRN',    '000000000000000')
