@@ -167,11 +167,31 @@ def set_setting(key, value):
         db.session.add(Setting(key=key, value=value))
     db.session.commit()
 
+def _vapid_key_for_sign(priv_pem):
+    """Строит объект Vapid для подписи push. Передавать ключ строкой ненадёжно —
+    pywebpush трактует её по-разному между версиями (отсюда 'Could not deserialize').
+    Объект работает всегда."""
+    if not priv_pem:
+        return None
+    try:
+        from py_vapid import Vapid01
+        try:
+            return Vapid01.from_pem(priv_pem.encode())
+        except Exception:
+            from cryptography.hazmat.primitives.serialization import load_pem_private_key
+            import base64
+            pk  = load_pem_private_key(priv_pem.encode(), password=None)
+            raw = pk.private_numbers().private_value.to_bytes(32, 'big')
+            return Vapid01.from_raw(base64.urlsafe_b64encode(raw).decode().rstrip('=').encode())
+    except Exception as e:
+        print(f'[VAPID sign] {e}')
+        return priv_pem
+
 def current_vapid():
-    """(public, private, email). Приоритет — ключи из БД (надёжнее env)."""
+    """(public, signer, email). Приоритет — ключи из БД. signer — объект Vapid для webpush."""
     pub  = get_setting('vapid_public')  or VAPID_PUBLIC_KEY
     priv = _normalize_vapid_key(get_setting('vapid_private') or VAPID_PRIVATE_KEY)
-    return pub, priv, VAPID_EMAIL
+    return pub, _vapid_key_for_sign(priv), VAPID_EMAIL
 
 def _generate_vapid_pair():
     """Генерирует пару VAPID-ключей: (public_b64url, private_pem)."""
