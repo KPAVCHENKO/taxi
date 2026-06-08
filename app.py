@@ -42,7 +42,28 @@ try:
                     print(f'[reminder] error order {o.id}: {_re}')
                     db.session.rollback()
 
+    def _renotify_new_orders():
+        """Повторно пушим непринятые заказы — чтобы водитель точно увидел (как в настоящих приложениях)."""
+        with app.app_context():
+            now = datetime.utcnow()
+            lo  = now - timedelta(minutes=15)
+            hi  = now - timedelta(minutes=2)
+            orders = Order.query.filter(
+                Order.status == 'new',
+                Order.created_at >= lo,
+                Order.created_at <= hi,
+            ).all()
+            for o in orders:
+                try:
+                    _send_push_to_driver_subs('🚖 Заказ ждёт водителя!',
+                                              f'{o.from_address} → {o.to_address}', '/driver/')
+                    _send_push_to_all('⏳ Заказ ещё не принят',
+                                      f'#{o.id}: {o.from_address} → {o.to_address}', '/admin/dispatcher')
+                except Exception as _re:
+                    print(f'[renotify] error order {o.id}: {_re}')
+
     _scheduler.add_job(_check_reminders, 'interval', minutes=10, id='reminders')
+    _scheduler.add_job(_renotify_new_orders, 'interval', minutes=3, id='renotify')
     _scheduler.start()
 except Exception as _sched_err:
     print(f'[APScheduler] not started: {_sched_err}')
