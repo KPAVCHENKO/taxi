@@ -125,7 +125,23 @@ COMMISSION_RATE       = float(os.environ.get('COMMISSION_RATE', '20')) / 100
 INTERCITY_COMMISSION  = int(os.environ.get('INTERCITY_COMMISSION', '200'))  # фикс. комиссия с межгорода ₽
 MAX_BOT_TOKEN    = os.environ.get('MAX_BOT_TOKEN', '')
 
-VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+def _normalize_vapid_key(k):
+    """Чинит VAPID private key, если в переменной окружения потерялись переводы строк
+    (частая проблема при вставке многострочного PEM в панель Railway)."""
+    if not k:
+        return k
+    import re as _re
+    k = k.strip().replace('\\n', '\n')
+    if '-----BEGIN' in k:
+        m = _re.match(r'^-----BEGIN ([A-Z0-9 ]+?)-----\s*(.*?)\s*-----END \1-----\s*$', k, _re.S)
+        if m:
+            label   = m.group(1).strip()
+            body    = _re.sub(r'\s+', '', m.group(2))
+            wrapped = '\n'.join(body[i:i+64] for i in range(0, len(body), 64))
+            k = f'-----BEGIN {label}-----\n{wrapped}\n-----END {label}-----\n'
+    return k
+
+VAPID_PRIVATE_KEY = _normalize_vapid_key(os.environ.get('VAPID_PRIVATE_KEY', ''))
 VAPID_PUBLIC_KEY  = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_EMAIL       = os.environ.get('VAPID_EMAIL', 'mailto:admin@example.com')
 
