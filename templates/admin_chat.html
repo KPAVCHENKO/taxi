@@ -1,0 +1,180 @@
+{% extends "admin_base.html" %}
+{% block title %}Чат{% endblock %}
+{% block page_title %}Чат с водителями{% endblock %}
+{% block content %}
+<style>
+  .content { padding: 0 !important; overflow: hidden !important; }
+  .chat-wrap { display: flex; height: calc(100vh - 69px); }
+  .chat-rooms {
+    width: 300px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column; background: #161927;
+  }
+  .chat-rooms-head { padding: 14px 18px; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .chat-rooms-list { flex: 1; overflow-y: auto; }
+  .room-item {
+    display: flex; align-items: center; gap: 11px; padding: 13px 18px; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04); transition: background .12s;
+  }
+  .room-item:hover { background: rgba(255,255,255,0.03); }
+  .room-item.active { background: rgba(124,111,255,0.14); border-left: 3px solid #7c6fff; padding-left: 15px; }
+  .room-ava { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 16px; color: #fff; background: linear-gradient(145deg,#7c6fff,#5b4fd6); position: relative; }
+  .room-ava.group { background: linear-gradient(145deg,#f59e0b,#d97706); }
+  .room-ava .dot { position: absolute; bottom: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #161927; background: #475569; }
+  .room-ava .dot.on { background: #34d399; }
+  .room-info { min-width: 0; flex: 1; }
+  .room-name { font-size: 14px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .room-last { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .room-badge { background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; border-radius: 10px; padding: 1px 7px; flex: none; }
+
+  .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .chat-head { padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+  .chat-head .sub { font-size: 12px; color: #64748b; font-weight: 400; }
+  .chat-msgs { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 70%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; word-wrap: break-word; }
+  .msg .who { font-size: 12px; font-weight: 700; margin-bottom: 3px; color: #a78bfa; }
+  .msg .time { font-size: 10.5px; color: #64748b; margin-top: 4px; text-align: right; }
+  .msg.in { align-self: flex-start; background: #232738; color: #e2e8f0; border-bottom-left-radius: 4px; }
+  .msg.out { align-self: flex-end; background: #5b4fd6; color: #fff; border-bottom-right-radius: 4px; }
+  .msg.out .time { color: rgba(255,255,255,.6); }
+  .chat-empty { text-align: center; color: #475569; margin: auto; }
+  .chat-compose { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .chat-compose textarea {
+    flex: 1; resize: none; height: 44px; max-height: 120px; padding: 11px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; font-size: 14px; font-family: inherit;
+  }
+  .chat-send { background: #7c6fff; color: #fff; border: none; border-radius: 10px; padding: 0 20px; font-weight: 600; cursor: pointer; }
+  .chat-send:hover { background: #6c5fff; }
+  .chat-pick { margin: auto; text-align: center; color: #475569; }
+  @media (max-width: 760px) {
+    .chat-rooms { width: 100%; position: absolute; z-index: 5; height: calc(100vh - 69px); }
+    .chat-rooms.hidden-mobile { display: none; }
+    .chat-main { width: 100%; }
+  }
+</style>
+
+<div class="chat-wrap">
+  <aside class="chat-rooms" id="chatRooms">
+    <div class="chat-rooms-head">Диалоги</div>
+    <div class="chat-rooms-list" id="roomsList"></div>
+  </aside>
+  <section class="chat-main">
+    <div class="chat-head" id="chatHead"><span>Выберите диалог</span></div>
+    <div class="chat-msgs" id="chatMsgs"><div class="chat-pick">← Выберите общий чат или водителя</div></div>
+    <div class="chat-compose" id="chatCompose" style="display:none;">
+      <textarea id="chatInput" placeholder="Сообщение…" maxlength="2000"></textarea>
+      <button class="chat-send" id="chatSendBtn" onclick="sendMsg()">Отпр.</button>
+    </div>
+  </section>
+</div>
+
+<script>
+let rooms = [];
+let currentRoom = null;
+let currentName = '';
+let lastId = 0;
+let msgTimer = null;
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+function fmtTime(iso){ try{ const d=new Date(iso); return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+
+async function loadRooms(){
+  try{
+    const r = await fetch('/admin/chat/rooms');
+    const d = await r.json();
+    rooms = d.rooms || [];
+    renderRooms();
+    const totalUnread = rooms.reduce((s,x)=>s+(x.unread||0),0);
+    const nav = document.getElementById('nav-chat-badge');
+    if(nav){ nav.style.display = totalUnread>0?'inline-block':'none'; nav.textContent = totalUnread; }
+  }catch(e){}
+}
+
+function renderRooms(){
+  const el = document.getElementById('roomsList');
+  el.innerHTML = '';
+  rooms.forEach(rm=>{
+    const div = document.createElement('div');
+    div.className = 'room-item' + (rm.room===currentRoom?' active':'');
+    const initial = (rm.name||'?').trim().charAt(0).toUpperCase();
+    let dotHtml = '';
+    if(rm.kind==='group'){ dotHtml = ''; }
+    else { dotHtml = `<span class="dot ${rm.online?'on':''}"></span>`; }
+    const avaCls = rm.kind==='group' ? 'room-ava group' : 'room-ava';
+    const avaInner = rm.kind==='group' ? '💬' : esc(initial);
+    const sub = rm.kind==='group' ? `${rm.online}/${rm.total} в сети` : (rm.last||'');
+    div.innerHTML =
+      `<div class="${avaCls}">${avaInner}${dotHtml}</div>`+
+      `<div class="room-info"><div class="room-name">${esc(rm.name)}</div>`+
+      `<div class="room-last">${esc(rm.last|| (rm.kind==='group'?'Сообщения для всех водителей':'Нет сообщений'))}</div></div>`+
+      (rm.unread>0?`<span class="room-badge">${rm.unread}</span>`:'');
+    div.onclick = ()=> openRoom(rm.room, rm.name);
+    el.appendChild(div);
+  });
+}
+
+async function openRoom(room, name){
+  currentRoom = room; currentName = name; lastId = 0;
+  document.getElementById('chatRooms').classList.add('hidden-mobile');
+  document.getElementById('chatHead').innerHTML = `<span>${esc(name)}</span>` + (room==='group'?'<span class="sub">общий чат всех водителей</span>':'<span class="sub">личный чат</span>');
+  document.getElementById('chatMsgs').innerHTML = '';
+  document.getElementById('chatCompose').style.display = 'flex';
+  renderRooms();
+  await loadMessages(true);
+  fetch('/admin/chat/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room})}).then(loadRooms);
+}
+
+async function loadMessages(scroll){
+  if(!currentRoom) return;
+  try{
+    const r = await fetch(`/admin/chat/messages?room=${encodeURIComponent(currentRoom)}&after=${lastId}`);
+    const d = await r.json();
+    const box = document.getElementById('chatMsgs');
+    (d.messages||[]).forEach(m=>{
+      lastId = Math.max(lastId, m.id);
+      box.appendChild(renderMsg(m));
+    });
+    if((d.messages||[]).length && (scroll || isNearBottom(box))) box.scrollTop = box.scrollHeight;
+  }catch(e){}
+}
+
+function isNearBottom(box){ return box.scrollHeight - box.scrollTop - box.clientHeight < 120; }
+
+function renderMsg(m){
+  const div = document.createElement('div');
+  const out = m.sender==='admin';
+  div.className = 'msg ' + (out?'out':'in');
+  let html = '';
+  if(!out && currentRoom==='group') html += `<div class="who">${esc(m.author)}</div>`;
+  html += esc(m.body).replace(/\n/g,'<br>');
+  html += `<div class="time">${fmtTime(m.ts)}</div>`;
+  div.innerHTML = html;
+  return div;
+}
+
+async function sendMsg(){
+  const inp = document.getElementById('chatInput');
+  const body = inp.value.trim();
+  if(!body || !currentRoom) return;
+  inp.value = '';
+  try{
+    const r = await fetch('/admin/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:currentRoom, body})});
+    const d = await r.json();
+    if(d.ok && d.message){
+      lastId = Math.max(lastId, d.message.id);
+      const box = document.getElementById('chatMsgs');
+      box.appendChild(renderMsg(d.message));
+      box.scrollTop = box.scrollHeight;
+      loadRooms();
+    }
+  }catch(e){ inp.value = body; }
+}
+
+document.getElementById('chatInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMsg(); }
+});
+
+loadRooms();
+setInterval(()=>{ if(currentRoom) loadMessages(false); }, 4000);
+setInterval(loadRooms, 9000);
+</script>
+{% endblock %}

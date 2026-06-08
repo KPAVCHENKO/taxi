@@ -10,7 +10,7 @@ from flask import (
 )
 from flask_migrate import Migrate
 from sqlalchemy import text
-from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription
+from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription, ChatMessage
 import telegram_bot
 
 app = Flask(__name__)
@@ -208,6 +208,8 @@ with app.app_context():
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted_at TIMESTAMP",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS online_at TIMESTAMP",
+        "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS chat_seen_group TIMESTAMP",
+        "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS chat_seen_direct TIMESTAMP",
     ]
     for _sql in _migrations:
         try:
@@ -1031,6 +1033,231 @@ def _send_push_to_driver_subs(title, body, url='/driver/'):
         pass
     except Exception as e:
         print(f'[DRIVER-PUSH] {e}')
+
+
+def _send_push_to_one_driver(driver_id, title, body, url='/driver/'):
+    """Send Web Push only to a specific driver's subscribed browsers."""
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return
+    try:
+        from pywebpush import webpush
+        subs = DriverPushSubscription.query.filter_by(driver_id=driver_id).all()
+        dead = []
+        for sub in subs:
+            try:
+                webpush(
+                    subscription_info={
+                        'endpoint': sub.endpoint,
+                        'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
+                    },
+                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims={'sub': VAPID_EMAIL},
+                )
+            except Exception as _pe:
+                if '410' in str(_pe) or '404' in str(_pe):
+                    dead.append(sub.id)
+        for did in dead:
+            DriverPushSubscription.query.filter_by(id=did).delete()
+        if dead:
+            db.session.commit()
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f'[DRIVER-PUSH-ONE] {e}')
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ВСТРОЕННЫЙ ЧАТ (общий + личные с водителями)
+# ══════════════════════════════════════════════════════════════════════════════
+def _msg_dict(m):
+    return {
+        'id': m.id,
+        'room': m.room,
+        'sender': m.sender,
+        'driver_id': m.driver_id,
+        'author': m.author_name or ('Диспетчер' if m.sender == 'admin' else 'Водитель'),
+        'body': m.body,
+        'ts': (m.created_at or datetime.utcnow()).isoformat() + 'Z',
+    }
+
+
+# ── Админка: чат ──────────────────────────────────────────────────────────────
+@app.route('/admin/chat')
+@admin_required
+def admin_chat():
+    return render_template('admin_chat.html')
+
+
+@app.route('/admin/chat/rooms')
+@admin_required
+def admin_chat_rooms():
+    drivers = Driver.query.filter_by(active=True).order_by(Driver.name).all()
+    rooms = []
+
+    # Общий чат
+    g_last = ChatMessage.query.filter_by(room='group').order_by(ChatMessage.id.desc()).first()
+    g_unread = ChatMessage.query.filter_by(room='group', sender='driver', read_admin=False).count()
+    rooms.append({
+        'room': 'group', 'name': 'Общий чат', 'kind': 'group',
+        'online': sum(1 for d in drivers if d.is_online),
+        'total': len(drivers),
+        'last': (g_last.body[:60] if g_last else ''),
+        'last_ts': ((g_last.created_at.isoformat() + 'Z') if g_last and g_last.created_at else ''),
+        'unread': g_unread,
+    })
+
+    # Личные чаты с каждым водителем
+    for d in drivers:
+        room = f'd{d.id}'
+        last = ChatMessage.query.filter_by(room=room).order_by(ChatMessage.id.desc()).first()
+        unread = ChatMessage.query.filter_by(room=room, sender='driver', read_admin=False).count()
+        rooms.append({
+            'room': room, 'name': d.name, 'kind': 'direct', 'driver_id': d.id,
+            'online': bool(d.is_online),
+            'last': (last.body[:60] if last else ''),
+            'last_ts': ((last.created_at.isoformat() + 'Z') if last and last.created_at else ''),
+            'unread': unread,
+        })
+    return jsonify({'rooms': rooms})
+
+
+@app.route('/admin/chat/messages')
+@admin_required
+def admin_chat_messages():
+    room  = request.args.get('room', 'group')
+    after = request.args.get('after', 0, type=int)
+    q = ChatMessage.query.filter(ChatMessage.room == room, ChatMessage.id > after)
+    msgs = q.order_by(ChatMessage.id.asc()).limit(200).all()
+    return jsonify({'messages': [_msg_dict(m) for m in msgs]})
+
+
+@app.route('/admin/chat/send', methods=['POST'])
+@admin_required
+def admin_chat_send():
+    data = request.get_json(silent=True) or {}
+    room = str(data.get('room', 'group')).strip()
+    body = str(data.get('body', '')).strip()
+    if not body:
+        return jsonify({'error': 'Пустое сообщение'}), 400
+    if len(body) > 2000:
+        body = body[:2000]
+
+    driver_id = None
+    if room.startswith('d'):
+        try:
+            driver_id = int(room[1:])
+        except ValueError:
+            return jsonify({'error': 'Некорректная комната'}), 400
+        if not Driver.query.get(driver_id):
+            return jsonify({'error': 'Водитель не найден'}), 404
+    elif room != 'group':
+        return jsonify({'error': 'Некорректная комната'}), 400
+
+    m = ChatMessage(room=room, sender='admin', driver_id=driver_id,
+                    author_name='Диспетчер', body=body, read_admin=True)
+    db.session.add(m)
+    db.session.commit()
+
+    # Push водителям
+    try:
+        if room == 'group':
+            _send_push_to_driver_subs('💬 Общий чат', body[:120], '/driver/?tab=chat')
+        elif driver_id:
+            _send_push_to_one_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat')
+    except Exception as _e:
+        print(f'[CHAT-PUSH] {_e}')
+
+    return jsonify({'ok': True, 'message': _msg_dict(m)})
+
+
+@app.route('/admin/chat/read', methods=['POST'])
+@admin_required
+def admin_chat_read():
+    data = request.get_json(silent=True) or {}
+    room = str(data.get('room', '')).strip()
+    if room:
+        ChatMessage.query.filter_by(room=room, sender='driver', read_admin=False).update(
+            {'read_admin': True})
+        db.session.commit()
+    return jsonify({'ok': True})
+
+
+# ── Приложение водителя: чат ──────────────────────────────────────────────────
+@app.route('/driver/api/chat')
+@driver_required
+def driver_chat_fetch():
+    driver = _get_driver_session()
+    which  = request.args.get('room', 'group')
+    after  = request.args.get('after', 0, type=int)
+    room = 'group' if which == 'group' else f'd{driver.id}'
+    msgs = (ChatMessage.query
+            .filter(ChatMessage.room == room, ChatMessage.id > after)
+            .order_by(ChatMessage.id.asc()).limit(200).all())
+    return jsonify({'messages': [_msg_dict(m) for m in msgs], 'me': driver.id})
+
+
+@app.route('/driver/api/chat/send', methods=['POST'])
+@driver_required
+def driver_chat_send():
+    driver = _get_driver_session()
+    data = request.get_json(silent=True) or {}
+    which = str(data.get('room', 'group')).strip()
+    body  = str(data.get('body', '')).strip()
+    if not body:
+        return jsonify({'error': 'Пустое сообщение'}), 400
+    if len(body) > 2000:
+        body = body[:2000]
+    room = 'group' if which == 'group' else f'd{driver.id}'
+
+    m = ChatMessage(room=room, sender='driver', driver_id=driver.id,
+                    author_name=driver.name, body=body, read_admin=False)
+    db.session.add(m)
+    db.session.commit()
+
+    # Push диспетчеру (+ другим водителям в общем чате)
+    try:
+        if room == 'group':
+            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
+            for other in Driver.query.filter(Driver.active == True, Driver.id != driver.id).all():
+                _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat')
+        else:
+            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
+    except Exception as _e:
+        print(f'[CHAT-PUSH] {_e}')
+
+    return jsonify({'ok': True, 'message': _msg_dict(m)})
+
+
+@app.route('/driver/api/chat/seen', methods=['POST'])
+@driver_required
+def driver_chat_seen():
+    driver = _get_driver_session()
+    which = str((request.get_json(silent=True) or {}).get('room', 'group')).strip()
+    now = datetime.utcnow()
+    if which == 'group':
+        driver.chat_seen_group = now
+    else:
+        driver.chat_seen_direct = now
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+def _driver_chat_unread(driver):
+    """Непрочитанные для водителя: (общий, личный)."""
+    g_seen = driver.chat_seen_group or datetime(2000, 1, 1)
+    d_seen = driver.chat_seen_direct or datetime(2000, 1, 1)
+    unread_group = ChatMessage.query.filter(
+        ChatMessage.room == 'group',
+        ChatMessage.created_at > g_seen,
+        db.or_(ChatMessage.sender == 'admin', ChatMessage.driver_id != driver.id),
+    ).count()
+    unread_direct = ChatMessage.query.filter(
+        ChatMessage.room == f'd{driver.id}',
+        ChatMessage.sender == 'admin',
+        ChatMessage.created_at > d_seen,
+    ).count()
+    return unread_group, unread_direct
 
 
 # ── Admin: reviews ────────────────────────────────────────────────────────────
@@ -1929,6 +2156,7 @@ def driver_api_orders():
         Order.status == 'completed',
         Order.created_at >= _today_utc,
     ).scalar() or 0
+    _unread_group, _unread_direct = _driver_chat_unread(driver)
     return jsonify({
         'new_orders': result,
         'my_order': my_order_data,
@@ -1938,6 +2166,8 @@ def driver_api_orders():
         'today_earnings': today_earnings,
         'driver_name': driver.name,
         'is_online': bool(driver.is_online),
+        'chat_unread_group': _unread_group,
+        'chat_unread_direct': _unread_direct,
     })
 
 

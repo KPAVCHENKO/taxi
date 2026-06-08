@@ -224,6 +224,10 @@
     <a href="{{ url_for('admin_driver_applications') }}" class="{{ 'active' if request.endpoint == 'admin_driver_applications' else '' }}">
       <span class="nav-icon">🆕</span> <span>Новые водители</span>
     </a>
+    <a href="{{ url_for('admin_chat') }}" class="{{ 'active' if request.endpoint == 'admin_chat' else '' }}">
+      <span class="nav-icon">💬</span> <span>Чат</span>
+      <span id="nav-chat-badge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 7px;">0</span>
+    </a>
     <a href="{{ url_for('admin_reviews') }}" class="{{ 'active' if request.endpoint == 'admin_reviews' else '' }}">
       <span class="nav-icon">⭐</span> <span>Отзывы</span>
     </a>

@@ -65,6 +65,8 @@ class Driver(db.Model):
     regulations_accepted_at = db.Column(db.DateTime, nullable=True)
     is_online        = db.Column(db.Boolean, default=False)   # в сети прямо сейчас
     online_at        = db.Column(db.DateTime, nullable=True)  # когда вышел на смену
+    chat_seen_group  = db.Column(db.DateTime, nullable=True)  # когда последний раз открывал общий чат
+    chat_seen_direct = db.Column(db.DateTime, nullable=True)  # когда последний раз открывал чат с диспетчером
 
     @property
     def car_info(self):
@@ -103,6 +105,19 @@ class Review(db.Model):
     approved   = db.Column(db.Boolean,     default=False)
     type       = db.Column(db.String(20),  default='review')  # review | wish
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
+
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    room        = db.Column(db.String(40), nullable=False, index=True)  # 'group' | 'd<driver_id>'
+    sender      = db.Column(db.String(10), nullable=False)              # 'admin' | 'driver'
+    driver_id   = db.Column(db.Integer, nullable=True)                  # автор (если driver) / собеседник
+    author_name = db.Column(db.String(100), nullable=True)
+    body        = db.Column(db.Text, nullable=False)
+    read_admin  = db.Column(db.Boolean, default=False)                  # диспетчер прочитал сообщение водителя
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 
 class DriverApplication(db.Model):

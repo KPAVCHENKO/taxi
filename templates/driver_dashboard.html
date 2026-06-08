@@ -504,6 +504,7 @@
     <span class="tab-badge" id="badge-mine" style="display:none;">1</span>
   </button>
   <button class="tab-btn" onclick="showTab('history')" id="tab-btn-history">История</button>
+  <button class="tab-btn" onclick="showTab('chat')" id="tab-btn-chat">Чат<span class="tab-badge" id="badge-chat" style="display:none;">0</span></button>
   <button class="tab-btn" onclick="showTab('profile')" id="tab-btn-profile">Профиль</button>
 </div>
 
@@ -534,6 +535,35 @@
       <div class="empty-icon">⏳</div>
       <p>Загрузка...</p>
     </div>
+  </div>
+</div>
+
+<!-- ═══ CHAT TAB ═══ -->
+<style>
+  .chat-subtabs { display:flex; gap:8px; padding:12px 16px 4px; }
+  .chat-subtab { flex:1; padding:10px; border-radius:11px; background:#1a1d2e; border:1px solid rgba(255,255,255,0.08); color:#94a3b8; font-size:14px; font-weight:600; cursor:pointer; position:relative; }
+  .chat-subtab.active { background:rgba(245,184,0,0.15); color:#f5b800; border-color:rgba(245,184,0,0.35); }
+  .chat-subtab .sb-dot { position:absolute; top:7px; right:12px; width:8px; height:8px; border-radius:50%; background:#ef4444; display:none; }
+  .dch-msgs { height:56vh; overflow-y:auto; padding:14px 16px 8px; display:flex; flex-direction:column; gap:8px; }
+  .dch-msg { max-width:82%; padding:9px 13px; border-radius:14px; font-size:14px; line-height:1.45; word-wrap:break-word; }
+  .dch-msg .who { font-size:11.5px; font-weight:700; margin-bottom:2px; color:#f5b800; }
+  .dch-msg .t { font-size:10px; opacity:.6; margin-top:3px; text-align:right; }
+  .dch-msg.in { align-self:flex-start; background:#232738; color:#e2e8f0; border-bottom-left-radius:4px; }
+  .dch-msg.out { align-self:flex-end; background:#f5b800; color:#0f1117; border-bottom-right-radius:4px; }
+  .dch-compose { display:flex; gap:8px; padding:10px 14px; margin-bottom:84px; }
+  .dch-compose textarea { flex:1; resize:none; height:44px; max-height:110px; padding:11px 13px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#e2e8f0; font-size:14px; font-family:inherit; }
+  .dch-send { background:#f5b800; color:#0f1117; border:none; border-radius:12px; padding:0 18px; font-size:18px; font-weight:700; cursor:pointer; }
+  .dch-empty { margin:auto; text-align:center; color:#475569; font-size:14px; padding:30px; line-height:1.6; }
+</style>
+<div class="tab-content" id="tab-chat" style="padding:0;">
+  <div class="chat-subtabs">
+    <button class="chat-subtab active" id="csub-group" onclick="openChatRoom('group')">Общий чат<span class="sb-dot" id="sbdot-group"></span></button>
+    <button class="chat-subtab" id="csub-direct" onclick="openChatRoom('direct')">Диспетчер<span class="sb-dot" id="sbdot-direct"></span></button>
+  </div>
+  <div class="dch-msgs" id="dch-msgs"><div class="dch-empty">Загрузка…</div></div>
+  <div class="dch-compose">
+    <textarea id="dch-input" placeholder="Сообщение…" maxlength="2000"></textarea>
+    <button class="dch-send" onclick="sendChat()">➤</button>
   </div>
 </div>
 
@@ -671,6 +701,10 @@
   <button class="nav-item" id="nav-history" onclick="showTab('history')">
     <span class="ni-icon">📁</span>История
   </button>
+  <button class="nav-item" id="nav-chat" onclick="showTab('chat')" style="position:relative;">
+    <span class="ni-icon">💬</span>Чат
+    <span id="nav-chat-dot" style="display:none;position:absolute;top:5px;right:14px;width:9px;height:9px;border-radius:50%;background:#ef4444;"></span>
+  </button>
   <button class="nav-item" id="nav-profile" onclick="showTab('profile')">
     <span class="ni-icon">👤</span>Профиль
   </button>
@@ -683,6 +717,7 @@
 let currentTab = 'new';
 let pendingCompleteId = null;
 let lastNewCount = null;
+let lastChatTotal = null;
 let pollTimer = null;
 let _isOnline = false;
 
@@ -792,10 +827,11 @@ function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.getElementById('tab-btn-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
+  const c = document.getElementById('tab-' + name); if (c) c.classList.add('active');
+  const b = document.getElementById('tab-btn-' + name); if (b) b.classList.add('active');
+  const n = document.getElementById('nav-' + name); if (n) n.classList.add('active');
   currentTab = name;
+  if (name === 'chat') onEnterChat(); else stopChatPoll();
 }
 
 function toast(msg, type = '') {
@@ -831,6 +867,17 @@ async function loadData() {
 
     const hasMine = !!data.my_order;
     document.getElementById('badge-mine').style.display = hasMine ? 'flex' : 'none';
+
+    // Чат — бейджи непрочитанного
+    const cg = data.chat_unread_group || 0, cd = data.chat_unread_direct || 0, ctotal = cg + cd;
+    const bChat = document.getElementById('badge-chat');
+    if (bChat) { if (ctotal > 0) { bChat.style.display='flex'; bChat.textContent=ctotal; } else bChat.style.display='none'; }
+    const navDot = document.getElementById('nav-chat-dot'); if (navDot) navDot.style.display = ctotal>0 ? 'block':'none';
+    const sg = document.getElementById('sbdot-group'); if (sg) sg.style.display = cg>0 ? 'block':'none';
+    const sd = document.getElementById('sbdot-direct'); if (sd) sd.style.display = cd>0 ? 'block':'none';
+    if (lastChatTotal === null) { lastChatTotal = ctotal; }
+    else if (ctotal > lastChatTotal) { if (currentTab !== 'chat') { playAlertSound(); vibrateAlert(); toast('💬 Новое сообщение', 'success'); } lastChatTotal = ctotal; }
+    else { lastChatTotal = ctotal; }
 
     // Уведомление о новом заказе
     if (lastNewCount === null) {
@@ -1139,11 +1186,81 @@ function updateNotifStatus() {
   }
 }
 
+// ── Чат водителя ──────────────────────────────────────────────────────────────
+let chatRoom = 'group';
+let chatLastId = 0;
+let chatTimer = null;
+const chatMe = {{ driver.id }};
+
+function chEsc(s){ const d=document.createElement('div'); d.textContent=(s==null?'':s); return d.innerHTML; }
+function chTime(iso){ try{ return new Date(iso).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+
+function openChatRoom(which){
+  chatRoom = which; chatLastId = 0;
+  document.getElementById('csub-group').classList.toggle('active', which==='group');
+  document.getElementById('csub-direct').classList.toggle('active', which==='direct');
+  document.getElementById('dch-msgs').innerHTML = '<div class="dch-empty">Загрузка…</div>';
+  loadChat(true);
+  fetch('/driver/api/chat/seen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:which})}).then(()=>loadData());
+}
+
+async function loadChat(scroll){
+  try{
+    const r = await fetch('/driver/api/chat?room=' + chatRoom + '&after=' + chatLastId);
+    const d = await r.json();
+    const box = document.getElementById('dch-msgs');
+    if(chatLastId===0) box.innerHTML='';
+    (d.messages||[]).forEach(m=>{ chatLastId=Math.max(chatLastId,m.id); box.appendChild(chRenderMsg(m, d.me)); });
+    if(!box.children.length) box.innerHTML='<div class="dch-empty">Сообщений пока нет.<br>Напишите первым!</div>';
+    if((d.messages||[]).length && (scroll || (box.scrollHeight-box.scrollTop-box.clientHeight<160))) box.scrollTop=box.scrollHeight;
+  }catch(e){}
+}
+
+function chRenderMsg(m, me){
+  const div = document.createElement('div');
+  const out = (m.sender==='driver' && m.driver_id===me);
+  div.className = 'dch-msg ' + (out?'out':'in');
+  let html='';
+  if(!out && m.sender==='admin') html += '<div class="who">Диспетчер</div>';
+  else if(!out && chatRoom==='group' && m.sender==='driver') html += '<div class="who">'+chEsc(m.author)+'</div>';
+  html += chEsc(m.body).replace(/\n/g,'<br>');
+  html += '<div class="t">'+chTime(m.ts)+'</div>';
+  div.innerHTML = html;
+  return div;
+}
+
+async function sendChat(){
+  const inp = document.getElementById('dch-input');
+  const body = inp.value.trim();
+  if(!body) return;
+  inp.value='';
+  try{
+    const r = await fetch('/driver/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:chatRoom, body})});
+    const d = await r.json();
+    if(d.ok && d.message){
+      chatLastId=Math.max(chatLastId,d.message.id);
+      const box=document.getElementById('dch-msgs');
+      if(box.querySelector('.dch-empty')) box.innerHTML='';
+      box.appendChild(chRenderMsg(d.message, chatMe));
+      box.scrollTop=box.scrollHeight;
+    }
+  }catch(e){ inp.value=body; }
+}
+
+function onEnterChat(){ openChatRoom(chatRoom); startChatPoll(); }
+function startChatPoll(){ stopChatPoll(); chatTimer=setInterval(function(){ if(currentTab==='chat') loadChat(false); }, 4000); }
+function stopChatPoll(){ if(chatTimer){ clearInterval(chatTimer); chatTimer=null; } }
+
+(function(){ const ci=document.getElementById('dch-input'); if(ci) ci.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } }); })();
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 initPush();
 updateNotifStatus();
 loadData();
 startPolling();
+
+// Открыть нужную вкладку из push-ссылки (?tab=chat)
+(function(){ try{ const t=new URLSearchParams(location.search).get('tab'); if(t==='chat') showTab('chat'); }catch(e){} })();
 
 // Разблокировать звук при первом касании (требование iOS)
 document.addEventListener('touchstart', () => {
