@@ -578,8 +578,8 @@ self.addEventListener('push', e => {{
   e.waitUntil(
     self.registration.showNotification(title, {{
       body,
-      icon: '/static/img/icon-192.png',
-      badge: '/static/img/icon-192.png',
+      icon: '/static/img/notif-icon.png',
+      badge: '/static/img/badge.png',
       data: {{ url }},
       vibrate: [200, 100, 200],
       requireInteraction: false,
@@ -2254,11 +2254,15 @@ def driver_complete_order(order_id):
         return jsonify({'error': 'Это не ваш заказ'}), 403
     if order.status != 'accepted':
         return jsonify({'error': 'Заказ не в статусе "принят"'}), 409
-    try:
-        actual = int(request.get_json(silent=True).get('actual_price', 0) or 0)
-    except Exception:
-        actual = 0
-    amount = actual or order.estimated_price or 0
+    # Цену задаёт система (фиксированный тариф), а не водитель.
+    if order.estimated_price:
+        amount = int(order.estimated_price)
+    else:
+        # цена не была задана при заказе — запасной вариант из приложения
+        try:
+            amount = int(request.get_json(silent=True).get('actual_price', 0) or 0)
+        except Exception:
+            amount = 0
     commission = INTERCITY_COMMISSION if telegram_bot._is_intercity(order) else 0
     order.status = 'completed'
     if amount:

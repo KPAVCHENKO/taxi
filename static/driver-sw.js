@@ -1,4 +1,4 @@
-const CACHE = 'driver-app-v2';
+const CACHE = 'driver-app-v3';
 
 // Файлы оболочки приложения — кэшируются при установке
 const SHELL = [
@@ -61,13 +61,13 @@ self.addEventListener('push', e => {
   const title = data.title || '🚖 Новый заказ!';
   const options = {
     body:              data.body || 'Откройте приложение, чтобы принять заказ',
-    icon:              '/static/img/icon-192.png',
-    badge:             '/static/img/icon-192.png',
+    icon:              '/static/img/notif-icon.png',
+    badge:             '/static/img/badge.png',
     vibrate:           [300, 100, 300, 100, 300],
     requireInteraction: true,
     data:              { url: data.url || '/driver/' },
     actions: [
-      { action: 'open', title: '📋 Открыть заказы' },
+      { action: 'open', title: '📋 Открыть' },
     ],
   };
   e.waitUntil(self.registration.showNotification(title, options));

@@ -269,8 +269,8 @@ function notifyNewOrder(count) {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('Казанское Такси', {
       body: `${count === 1 ? 'Новый заказ' : count + ' новых заказа'} ожидает обработки`,
-      icon: '/static/img/icon-192.png',
-      badge: '/static/img/icon-192.png',
+      icon: '/static/img/notif-icon.png',
+      badge: '/static/img/badge.png',
       vibrate: [200, 100, 200],
     });
   }

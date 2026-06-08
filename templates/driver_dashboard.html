@@ -646,6 +646,9 @@
       экране и закрытом приложении — отключите «экономию батареи» для приложения:
       Настройки телефона → Приложения → найдите это приложение (или браузер) → Батарея →
       <strong style="color:#94a3b8;">Без ограничений</strong>.
+      <br><br>📱 <strong style="color:#94a3b8;">Samsung:</strong> Настройки → Обслуживание устройства → Батарея →
+      Ограничения фоновой работы → уберите приложение из «<strong style="color:#94a3b8;">Спящих</strong>»
+      (или добавьте в «Никогда не переводить в сон»). Это главная причина, почему на Samsung уведомления не приходят в фоне.
     </div>
   </div>
 
@@ -660,7 +663,7 @@
 <div class="complete-overlay" id="complete-overlay" onclick="closeComplete(event)">
   <div class="complete-sheet" onclick="event.stopPropagation()">
     <div class="sheet-title">✅ Завершить поездку</div>
-    <div class="sheet-label">Сумма за поездку (₽)</div>
+    <div class="sheet-label" id="complete-price-label">Сумма за поездку (₽)</div>
     <input type="number" class="sheet-input" id="complete-price"
            placeholder="0" inputmode="numeric" min="0" />
     <div class="sheet-btns">
@@ -819,8 +822,8 @@ function showOrderNotification(title, body) {
   if (_swReg && _swReg.showNotification) {
     _swReg.showNotification(title, {
       body,
-      icon:              '/static/img/icon-192.png',
-      badge:             '/static/img/icon-192.png',
+      icon:              '/static/img/notif-icon.png',
+      badge:             '/static/img/badge.png',
       vibrate:           [400, 100, 400, 100, 600],
       requireInteraction: true,
       tag:               'new-order',
@@ -834,7 +837,7 @@ function showOrderNotification(title, body) {
     try {
       new Notification(title, {
         body,
-        icon: '/static/img/icon-192.png',
+        icon: '/static/img/notif-icon.png',
         requireInteraction: true,
         tag: 'new-order',
         renotify: true,
@@ -1046,9 +1049,15 @@ async function acceptOrder(id, btn) {
 
 function openComplete(id, price) {
   pendingCompleteId = id;
-  document.getElementById('complete-price').value = price || '';
+  const inp = document.getElementById('complete-price');
+  const fixed = !!(price && price > 0);
+  inp.value = price || '';
+  inp.readOnly = fixed;                 // фиксированный тариф — водитель не меняет
+  inp.style.opacity = fixed ? '0.7' : '1';
+  const lbl = document.getElementById('complete-price-label');
+  if (lbl) lbl.textContent = fixed ? '💰 Стоимость поездки (по тарифу)' : 'Укажите сумму за поездку (₽)';
   document.getElementById('complete-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('complete-price').focus(), 100);
+  if (!fixed) setTimeout(() => inp.focus(), 100);
 }
 
 function closeComplete(e) {
