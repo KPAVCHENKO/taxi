@@ -15,6 +15,25 @@ import telegram_bot
 
 app = Flask(__name__)
 
+# ── Правила: кому и когда «толкать» заказ водителям ───────────────────────────
+def _order_due_now(o, now=None):
+    """Немедленный заказ — да; плановый — только если до него ≤40 мин."""
+    now = now or datetime.utcnow()
+    if not o.scheduled_at:
+        return True
+    return o.scheduled_at <= now + timedelta(minutes=40)
+
+def _should_ping_order(o, now=None):
+    """Стоит ли сейчас (повторно) пушить по этому новому заказу — без вечного спама."""
+    now = now or datetime.utcnow()
+    if o.status != 'new':
+        return False
+    if o.scheduled_at:
+        # окно: за 40 мин до назначенного времени и до 30 мин после
+        return (o.scheduled_at - timedelta(minutes=40)) <= now <= (o.scheduled_at + timedelta(minutes=30))
+    # немедленный: со 2-й по 45-ю минуту (дальше не долбим)
+    return timedelta(minutes=2) <= (now - o.created_at) <= timedelta(minutes=45)
+
 # ── APScheduler (плановые напоминания) ────────────────────────────────────────
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -43,20 +62,17 @@ try:
                     db.session.rollback()
 
     def _renotify_new_orders():
-        """Повторно пушим непринятые заказы — чтобы водитель точно увидел (как в настоящих приложениях)."""
+        """Повторно пушим непринятые заказы — но только онлайн-водителям и только пока заказ актуален."""
         with app.app_context():
             now = datetime.utcnow()
-            lo  = now - timedelta(minutes=15)
-            hi  = now - timedelta(minutes=2)
-            orders = Order.query.filter(
-                Order.status == 'new',
-                Order.created_at >= lo,
-                Order.created_at <= hi,
-            ).all()
+            orders = Order.query.filter(Order.status == 'new').all()
             for o in orders:
+                if not _should_ping_order(o, now):
+                    continue
                 try:
                     _send_push_to_driver_subs('🚖 Заказ ждёт водителя!',
-                                              f'{o.from_address} → {o.to_address}', '/driver/')
+                                              f'{o.from_address} → {o.to_address}', '/driver/',
+                                              online_only=True)
                     _send_push_to_all('⏳ Заказ ещё не принят',
                                       f'#{o.id}: {o.from_address} → {o.to_address}', '/admin/dispatcher')
                 except Exception as _re:
@@ -377,6 +393,8 @@ def _send_push_to_all(title, body, url='/admin/dispatcher'):
                     data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
                     vapid_private_key=_priv,
                     vapid_claims={'sub': _email},
+                    ttl=600,
+                    headers={'Urgency': 'high'},
                 )
             except Exception as _pe:
                 err_str = str(_pe)
@@ -530,7 +548,9 @@ def create_order():
     telegram_bot.notify_drivers(order)
     import max_bot as _max_bot; _max_bot.notify_drivers(order)
     _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher')
-    _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}')
+    # Водителям пушим только онлайн и только если заказ актуален сейчас (плановый на потом — не дёргаем)
+    if _order_due_now(order):
+        _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True)
 
     return jsonify({'success': True, 'order_id': order.id})
 
@@ -934,7 +954,7 @@ def update_order_status(order_id):
         if new_status == 'new' and old_status in ('accepted', 'completed'):
             try:
                 telegram_bot.notify_drivers(order)
-                _send_push_to_driver_subs('🔄 Заказ снова свободен', f'{order.from_address} → {order.to_address}')
+                _send_push_to_driver_subs('🔄 Заказ снова свободен', f'{order.from_address} → {order.to_address}', online_only=True)
             except Exception as _e:
                 print(f'[notify] re-notify error: {_e}')
 
@@ -1104,14 +1124,17 @@ def admin_reset():
 
 
 # ── Driver push notifications ─────────────────────────────────────────────────
-def _send_push_to_driver_subs(title, body, url='/driver/'):
-    """Send Web Push to all subscribed driver browsers."""
+def _send_push_to_driver_subs(title, body, url='/driver/', online_only=False):
+    """Send Web Push to subscribed driver browsers. online_only=True — только водителям «в сети»."""
     _pub, _priv, _email = current_vapid()
     if not _priv or not _pub:
         return
     try:
         from pywebpush import webpush, WebPushException
         subs = DriverPushSubscription.query.all()
+        if online_only:
+            ok_ids = {d.id for d in Driver.query.filter_by(is_online=True, active=True).all()}
+            subs = [s for s in subs if s.driver_id in ok_ids]
         dead = []
         for sub in subs:
             try:
@@ -1123,6 +1146,8 @@ def _send_push_to_driver_subs(title, body, url='/driver/'):
                     data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
                     vapid_private_key=_priv,
                     vapid_claims={'sub': _email},
+                    ttl=600,
+                    headers={'Urgency': 'high'},
                 )
             except Exception as _pe:
                 if '410' in str(_pe) or '404' in str(_pe):
@@ -1156,6 +1181,8 @@ def _send_push_to_one_driver(driver_id, title, body, url='/driver/'):
                     data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
                     vapid_private_key=_priv,
                     vapid_claims={'sub': _email},
+                    ttl=600,
+                    headers={'Urgency': 'high'},
                 )
             except Exception as _pe:
                 if '410' in str(_pe) or '404' in str(_pe):
