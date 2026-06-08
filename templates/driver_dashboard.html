@@ -1187,6 +1187,15 @@ async function enablePush() {
     const { key, enabled } = await keyRes.json();
     if (!enabled) { toast('Push-ключи не настроены на сервере', 'error'); return; }
 
+    // Снимаем старую подписку — после смены ключа браузер иначе не даёт переподписаться
+    try {
+      const old = await _swReg.pushManager.getSubscription();
+      if (old) {
+        try { await fetch('/driver/push/unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ endpoint: old.endpoint }) }); } catch(_){}
+        await old.unsubscribe();
+      }
+    } catch(_){}
+
     const sub = await _swReg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(key),
