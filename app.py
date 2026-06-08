@@ -10,7 +10,7 @@ from flask import (
 )
 from flask_migrate import Migrate
 from sqlalchemy import text
-from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription, ChatMessage
+from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription, ChatMessage, Setting
 import telegram_bot
 
 app = Flask(__name__)
@@ -149,6 +149,44 @@ if VAPID_EMAIL and '@' in VAPID_EMAIL and not VAPID_EMAIL.startswith(('mailto:',
 # Гарантируем валидный 'sub' (mailto:) независимо от настроек Railway
 if not VAPID_EMAIL.startswith(('mailto:', 'https:')) or len(VAPID_EMAIL) < 10:
     VAPID_EMAIL = 'mailto:dispatch@kazanskoe-taxi.xyz'
+
+
+# ── Настройки в БД (надёжнее, чем многострочные env-переменные) ───────────────
+def get_setting(key, default=None):
+    try:
+        s = Setting.query.get(key)
+        return s.value if (s and s.value) else default
+    except Exception:
+        return default
+
+def set_setting(key, value):
+    s = Setting.query.get(key)
+    if s:
+        s.value = value
+    else:
+        db.session.add(Setting(key=key, value=value))
+    db.session.commit()
+
+def current_vapid():
+    """(public, private, email). Приоритет — ключи из БД (надёжнее env)."""
+    pub  = get_setting('vapid_public')  or VAPID_PUBLIC_KEY
+    priv = _normalize_vapid_key(get_setting('vapid_private') or VAPID_PRIVATE_KEY)
+    return pub, priv, VAPID_EMAIL
+
+def _generate_vapid_pair():
+    """Генерирует пару VAPID-ключей: (public_b64url, private_pem)."""
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import serialization
+    import base64
+    pk = ec.generate_private_key(ec.SECP256R1(), default_backend())
+    pub_bytes = pk.public_key().public_bytes(
+        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+    priv_pem = pk.private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL,
+        serialization.NoEncryption()).decode()
+    pub_b64 = base64.urlsafe_b64encode(pub_bytes).decode().rstrip('=')
+    return pub_b64, priv_pem
 
 OWNER_NAME      = os.environ.get('OWNER_NAME',    'ИП Иванов Иван Иванович')
 OWNER_OGRN      = os.environ.get('OWNER_OGRN',    '000000000000000')
@@ -302,7 +340,8 @@ def _log(action, actor='admin', order_id=None, details=None):
 
 def _send_push_to_all(title, body, url='/admin/dispatcher'):
     """Send a Web Push notification to all subscribed clients."""
-    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+    _pub, _priv, _email = current_vapid()
+    if not _priv or not _pub:
         return
     try:
         from pywebpush import webpush, WebPushException
@@ -316,8 +355,8 @@ def _send_push_to_all(title, body, url='/admin/dispatcher'):
                         'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
                     },
                     data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims={'sub': VAPID_EMAIL},
+                    vapid_private_key=_priv,
+                    vapid_claims={'sub': _email},
                 )
             except Exception as _pe:
                 err_str = str(_pe)
@@ -1047,7 +1086,8 @@ def admin_reset():
 # ── Driver push notifications ─────────────────────────────────────────────────
 def _send_push_to_driver_subs(title, body, url='/driver/'):
     """Send Web Push to all subscribed driver browsers."""
-    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+    _pub, _priv, _email = current_vapid()
+    if not _priv or not _pub:
         return
     try:
         from pywebpush import webpush, WebPushException
@@ -1061,8 +1101,8 @@ def _send_push_to_driver_subs(title, body, url='/driver/'):
                         'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
                     },
                     data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims={'sub': VAPID_EMAIL},
+                    vapid_private_key=_priv,
+                    vapid_claims={'sub': _email},
                 )
             except Exception as _pe:
                 if '410' in str(_pe) or '404' in str(_pe):
@@ -1079,7 +1119,8 @@ def _send_push_to_driver_subs(title, body, url='/driver/'):
 
 def _send_push_to_one_driver(driver_id, title, body, url='/driver/'):
     """Send Web Push only to a specific driver's subscribed browsers."""
-    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+    _pub, _priv, _email = current_vapid()
+    if not _priv or not _pub:
         return
     try:
         from pywebpush import webpush
@@ -1093,8 +1134,8 @@ def _send_push_to_one_driver(driver_id, title, body, url='/driver/'):
                         'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
                     },
                     data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims={'sub': VAPID_EMAIL},
+                    vapid_private_key=_priv,
+                    vapid_claims={'sub': _email},
                 )
             except Exception as _pe:
                 if '410' in str(_pe) or '404' in str(_pe):
@@ -1792,7 +1833,8 @@ def edit_application(app_id):
 # ── Push notification routes ──────────────────────────────────────────────────
 @app.route('/api/push/vapid-public-key')
 def push_vapid_public_key():
-    return jsonify({'key': VAPID_PUBLIC_KEY, 'enabled': bool(VAPID_PUBLIC_KEY)})
+    pub, priv, _ = current_vapid()
+    return jsonify({'key': pub, 'enabled': bool(pub and priv)})
 
 
 @app.route('/api/push/subscribe', methods=['POST'])
@@ -1826,33 +1868,39 @@ def push_unsubscribe():
 @app.route('/admin/vapid-setup')
 @admin_required
 def admin_vapid_setup():
+    pub, priv, _ = current_vapid()
     generated = None
     if request.args.get('generate') == '1':
         try:
-            from cryptography.hazmat.primitives.asymmetric import ec
-            from cryptography.hazmat.backends import default_backend
-            from cryptography.hazmat.primitives import serialization
-            import base64
-            private_key_obj = ec.generate_private_key(ec.SECP256R1(), default_backend())
-            pub_bytes = private_key_obj.public_key().public_bytes(
-                serialization.Encoding.X962,
-                serialization.PublicFormat.UncompressedPoint,
-            )
-            priv_bytes = private_key_obj.private_bytes(
-                serialization.Encoding.PEM,
-                serialization.PrivateFormat.TraditionalOpenSSL,
-                serialization.NoEncryption(),
-            )
-            pub_b64  = base64.urlsafe_b64encode(pub_bytes).decode().rstrip('=')
-            priv_pem = priv_bytes.decode()
-            generated = {'public': pub_b64, 'private': priv_pem}
+            pb, pp = _generate_vapid_pair()
+            generated = {'public': pb, 'private': pp}
         except Exception as e:
             generated = {'error': str(e)}
     return render_template('admin_vapid_setup.html',
                            generated=generated,
-                           push_enabled=bool(VAPID_PUBLIC_KEY),
-                           vapid_public_key=VAPID_PUBLIC_KEY,
+                           push_enabled=bool(pub and priv),
+                           stored_in_db=bool(get_setting('vapid_public')),
+                           saved=request.args.get('saved'),
+                           vapid_public_key=pub or '',
                            sub_count=PushSubscription.query.count())
+
+
+@app.route('/admin/vapid-generate-save', methods=['POST'])
+@admin_required
+def vapid_generate_save():
+    """Генерирует VAPID-ключи и сохраняет их в БД (без копирования в Railway)."""
+    try:
+        pb, pp = _generate_vapid_pair()
+        set_setting('vapid_public', pb)
+        set_setting('vapid_private', pp)
+        # старые подписки привязаны к прежнему ключу — сбрасываем
+        PushSubscription.query.delete()
+        DriverPushSubscription.query.delete()
+        db.session.commit()
+        _log('vapid_generated', actor='admin', details='VAPID-ключи сгенерированы и сохранены в БД')
+    except Exception as e:
+        print(f'[VAPID] {e}')
+    return redirect(url_for('admin_vapid_setup', saved='1'))
 
 
 # ── PWA service worker ────────────────────────────────────────────────────────
@@ -2348,7 +2396,8 @@ def driver_push_test():
     """Самопроверка фонового push: реально шлёт push водителю и возвращает,
     сколько подписок, сколько доставлено push-сервису и текст ошибок."""
     driver = _get_driver_session()
-    vapid_ok = bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
+    _pub, _priv, _email = current_vapid()
+    vapid_ok = bool(_pub and _priv)
     subs = DriverPushSubscription.query.filter_by(driver_id=driver.id).all()
     sent, dead, errors = 0, [], []
     if vapid_ok and subs:
@@ -2365,8 +2414,8 @@ def driver_push_test():
                         subscription_info={'endpoint': sub.endpoint,
                                            'keys': {'p256dh': sub.p256dh, 'auth': sub.auth}},
                         data=payload,
-                        vapid_private_key=VAPID_PRIVATE_KEY,
-                        vapid_claims={'sub': VAPID_EMAIL},
+                        vapid_private_key=_priv,
+                        vapid_claims={'sub': _email},
                     )
                     sent += 1
                 except Exception as _pe:

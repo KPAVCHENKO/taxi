@@ -29,7 +29,34 @@
   </div>
 </div>
 
-<!-- Generate keys -->
+{% if saved %}
+<div class="card" style="margin-bottom:24px; border-top:3px solid #34d399;">
+  <div class="card-header">✅ Готово — Push включён</div>
+  <div style="padding:20px; color:#cbd5e1; font-size:14px; line-height:1.6;">
+    Ключи сгенерированы и сохранены в базе. Все подписки сброшены —
+    попроси водителей открыть «Такси Водитель» → Профиль → <strong>«Включить уведомления»</strong>,
+    и сам нажми «Включить уведомления» в Диспетчере.
+  </div>
+</div>
+{% endif %}
+
+<!-- One-click setup via DB -->
+<div class="card" style="margin-bottom:24px; border-top:3px solid #7c6fff;">
+  <div class="card-header">🔔 Включить Push в один клик (рекомендуется)</div>
+  <div style="padding:20px;">
+    <p style="color:#94a3b8; font-size:14px; margin-bottom:16px; line-height:1.6;">
+      Сгенерирует ключи и сохранит их прямо в базе данных —
+      <strong style="color:#e2e8f0;">ничего копировать в Railway не нужно.</strong>
+      {% if stored_in_db %}<br><span style="color:#34d399;">✅ Сейчас используются ключи из базы.</span>{% endif %}
+    </p>
+    <form method="POST" action="{{ url_for('vapid_generate_save') }}"
+          onsubmit="return confirm('Сгенерировать ключи? Текущие подписки сбросятся — водителям нужно будет снова нажать «Включить».');">
+      <button type="submit" class="btn btn-primary-sm" style="font-size:15px; padding:11px 20px;">⚡ Сгенерировать и включить</button>
+    </form>
+  </div>
+</div>
+
+<!-- Generate keys (ручной способ через Railway) -->
 {% if not push_enabled %}
 <div class="card" style="margin-bottom:24px;">
   <div class="card-header">Шаг 1 — Сгенерировать VAPID-ключи</div>

@@ -107,6 +107,13 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime,    default=datetime.utcnow)
 
 
+class Setting(db.Model):
+    __tablename__ = 'settings'
+
+    key   = db.Column(db.String(60), primary_key=True)
+    value = db.Column(db.Text)
+
+
 class ChatMessage(db.Model):
     __tablename__ = 'chat_messages'
 
