@@ -144,10 +144,11 @@ def _normalize_vapid_key(k):
 VAPID_PRIVATE_KEY = _normalize_vapid_key(os.environ.get('VAPID_PRIVATE_KEY', ''))
 VAPID_PUBLIC_KEY  = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_EMAIL       = os.environ.get('VAPID_EMAIL', '').strip()
-if not VAPID_EMAIL:
-    VAPID_EMAIL = 'mailto:admin@kazanskoe-taxi.xyz'
-elif not (VAPID_EMAIL.startswith('mailto:') or VAPID_EMAIL.startswith('https:')):
+if VAPID_EMAIL and '@' in VAPID_EMAIL and not VAPID_EMAIL.startswith(('mailto:', 'https:')):
     VAPID_EMAIL = 'mailto:' + VAPID_EMAIL
+# Гарантируем валидный 'sub' (mailto:) независимо от настроек Railway
+if not VAPID_EMAIL.startswith(('mailto:', 'https:')) or len(VAPID_EMAIL) < 10:
+    VAPID_EMAIL = 'mailto:dispatch@kazanskoe-taxi.xyz'
 
 OWNER_NAME      = os.environ.get('OWNER_NAME',    'ИП Иванов Иван Иванович')
 OWNER_OGRN      = os.environ.get('OWNER_OGRN',    '000000000000000')
