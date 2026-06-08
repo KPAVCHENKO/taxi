@@ -493,6 +493,20 @@
   </button>
 </div>
 
+<!-- Баннер установки приложения (PWA) -->
+<div id="install-banner" style="display:none; align-items:center; justify-content:space-between;
+     gap:12px; padding:10px 16px;
+     background:rgba(124,111,255,0.1); border-bottom:1px solid rgba(124,111,255,0.2);">
+  <div style="font-size:14px; color:#a78bfa; line-height:1.4;">
+    📲 <strong>Установите приложение</strong> — <span id="install-hint">быстрый доступ и надёжные уведомления</span>
+  </div>
+  <button id="install-btn" onclick="doInstall()"
+          style="flex-shrink:0; padding:8px 16px; background:#7c6fff; color:#fff;
+                 border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer;">
+    Установить
+  </button>
+</div>
+
 <!-- Tab bar -->
 <div class="tab-bar">
   <button class="tab-btn active" onclick="showTab('new')" id="tab-btn-new">
@@ -1111,6 +1125,35 @@ function hidePushBanner() {
   document.getElementById('push-banner').style.display = 'none';
 }
 
+// ── Установка приложения (PWA) ───────────────────────────────────────────────
+let _deferredInstall = null;
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); _deferredInstall = e; maybeShowInstall(); });
+window.addEventListener('appinstalled', function(){ const b=document.getElementById('install-banner'); if(b) b.style.display='none'; });
+function maybeShowInstall(){
+  const b = document.getElementById('install-banner'); if(!b) return;
+  if(isStandalone()){ b.style.display='none'; return; }
+  if(_deferredInstall){
+    b.style.display='flex';
+    document.getElementById('install-btn').style.display='';
+    document.getElementById('install-hint').textContent='быстрый доступ и надёжные уведомления';
+  } else if(isIOS()){
+    b.style.display='flex';
+    document.getElementById('install-btn').style.display='none';
+    document.getElementById('install-hint').innerHTML='нажмите «Поделиться» → «На экран «Домой»» — иначе на iPhone уведомления не приходят';
+  } else {
+    b.style.display='none';
+  }
+}
+async function doInstall(){
+  if(!_deferredInstall) return;
+  _deferredInstall.prompt();
+  try{ await _deferredInstall.userChoice; }catch(e){}
+  _deferredInstall = null;
+  const b = document.getElementById('install-banner'); if(b) b.style.display='none';
+}
+
 async function enablePush() {
   try {
     // Если уже заблокировано — показываем инструкцию
@@ -1258,6 +1301,8 @@ initPush();
 updateNotifStatus();
 loadData();
 startPolling();
+
+maybeShowInstall();
 
 // Открыть нужную вкладку из push-ссылки (?tab=chat)
 (function(){ try{ const t=new URLSearchParams(location.search).get('tab'); if(t==='chat') showTab('chat'); }catch(e){} })();
