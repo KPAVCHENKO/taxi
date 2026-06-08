@@ -255,6 +255,38 @@
     }
     .btn-cancel-order:hover { background: rgba(239,68,68,0.2); }
 
+    /* ── Полноэкранный приём заказа ── */
+    .incoming-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 500;
+      background: linear-gradient(160deg, #0f1117 0%, #161a26 100%);
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px calc(env(safe-area-inset-bottom, 0px) + 18px);
+      overflow-y: auto;
+    }
+    .incoming-overlay.open { display: flex; animation: incPop .22s ease; }
+    @keyframes incPop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .incoming-card { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 18px; margin: auto 0; }
+    .incoming-top { text-align: center; }
+    .incoming-ring { position: relative; width: 116px; height: 116px; margin: 0 auto 14px; }
+    .incoming-ring svg { width: 116px; height: 116px; transform: rotate(-90deg); }
+    .incoming-ring .ring-bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 8; }
+    .incoming-ring .ring-fg { fill: none; stroke: #f5b800; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+    .incoming-count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 800; color: #f5b800; }
+    .incoming-title { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+    .incoming-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .incoming-route { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
+    .incoming-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: center; font-size: 15px; color: #cbd5e1; }
+    .incoming-meta a { color: #7dd3fc; text-decoration: none; }
+    .inc-meta-item.inc-price { font-size: 22px; font-weight: 800; color: #34d399; width: 100%; text-align: center; }
+    .incoming-comment { background: rgba(245,184,0,0.08); border: 1px solid rgba(245,184,0,0.2); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #fbbf24; text-align: center; }
+    .incoming-actions { display: flex; gap: 12px; margin-top: 6px; }
+    .inc-skip, .inc-accept { padding: 18px; border: none; border-radius: 16px; font-size: 18px; font-weight: 800; cursor: pointer; }
+    .inc-skip { flex: 0 0 38%; background: rgba(100,116,139,0.18); color: #94a3b8; }
+    .inc-accept { flex: 1; background: linear-gradient(135deg, #34d399, #10b981); color: #06281d; box-shadow: 0 8px 24px rgba(16,185,129,0.35); animation: incPulse 1.4s ease-in-out infinite; }
+    @keyframes incPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    .inc-accept:active, .inc-skip:active { transform: scale(.97); }
+
     /* ── Complete form overlay ── */
     .complete-overlay {
       display: none;
@@ -659,6 +691,40 @@
   </a>
 </div>
 
+<!-- ═══ Полноэкранный приём нового заказа ═══ -->
+<div class="incoming-overlay" id="incoming-overlay">
+  <div class="incoming-card">
+    <div class="incoming-top">
+      <div class="incoming-ring">
+        <svg viewBox="0 0 116 116">
+          <circle class="ring-bg" cx="58" cy="58" r="52"></circle>
+          <circle class="ring-fg" id="incoming-ring-fg" cx="58" cy="58" r="52"></circle>
+        </svg>
+        <div class="incoming-count" id="incoming-count">60</div>
+      </div>
+      <div class="incoming-title">🚖 Новый заказ</div>
+      <div class="incoming-badges" id="incoming-badges"></div>
+    </div>
+    <div class="incoming-route">
+      <div class="route-row">
+        <div class="route-dot dot-from"></div>
+        <div class="route-addr" id="inc-from"></div>
+      </div>
+      <div class="route-line" style="margin-left:4px;"></div>
+      <div class="route-row">
+        <div class="route-dot dot-to"></div>
+        <div class="route-addr" id="inc-to"></div>
+      </div>
+    </div>
+    <div class="incoming-meta" id="inc-meta"></div>
+    <div class="incoming-comment" id="inc-comment" style="display:none;"></div>
+    <div class="incoming-actions">
+      <button class="inc-skip" id="inc-skip-btn" onclick="skipIncoming()">Пропустить</button>
+      <button class="inc-accept" id="inc-accept-btn" onclick="acceptIncoming()">✓ Принять</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ Complete order sheet ═══ -->
 <div class="complete-overlay" id="complete-overlay" onclick="closeComplete(event)">
   <div class="complete-sheet" onclick="event.stopPropagation()">
@@ -857,6 +923,135 @@ function alertNewOrder(count) {
   toast(`🔔 Новый заказ! Их ${count}`, 'success');
 }
 
+// ── Полноэкранный приём заказа (как в Яндекс/Максим) ─────────────────────────
+let seenOrderIds = null;                 // null = первая загрузка ещё не была
+const dismissedOrderIds = new Set();     // заказы, которые водитель «Пропустил»
+let incomingQueue = [];
+let incomingActive = false;
+let incomingCurrentId = null;
+let incomingTimer = null;
+let incomingAlarm = null;
+const INCOMING_SECONDS = 60;
+const RING_C = 2 * Math.PI * 52;         // длина окружности кольца
+
+function enqueueIncoming(orders) {
+  if (seenOrderIds === null) {           // первый опрос — запомнить без показа
+    seenOrderIds = new Set(orders.map(o => o.id));
+    return;
+  }
+  if (_isOnline) {                       // оффлайн — заказы не навязываем
+    orders.forEach(o => {
+      if (!seenOrderIds.has(o.id) && !dismissedOrderIds.has(o.id)) incomingQueue.push(o);
+    });
+  }
+  orders.forEach(o => seenOrderIds.add(o.id));
+  processIncomingQueue();
+}
+
+function processIncomingQueue() {
+  if (incomingActive) return;
+  let next = null;
+  while (incomingQueue.length) {
+    const cand = incomingQueue.shift();
+    if (!dismissedOrderIds.has(cand.id)) { next = cand; break; }
+  }
+  if (next) showIncomingOrder(next);
+}
+
+function showIncomingOrder(o) {
+  incomingActive = true;
+  incomingCurrentId = o.id;
+
+  document.getElementById('inc-from').textContent = o.from_address || '';
+  document.getElementById('inc-to').textContent   = o.to_address || '';
+
+  let badges = o.intercity
+    ? '<span class="order-badge badge-intercity">🛣 Межгород</span>'
+    : '<span class="order-badge badge-local">📍 По району</span>';
+  if (o.ride_type === 'Попутчики') badges += ' <span class="order-badge badge-shared">👥 Попутно</span>';
+  if (o.payment === 'Перевод')     badges += ' <span class="order-badge badge-transfer">💳 Перевод</span>';
+  document.getElementById('incoming-badges').innerHTML = badges;
+
+  let meta = '';
+  if (o.estimated_price) meta += `<div class="inc-meta-item inc-price">${o.estimated_price.toLocaleString('ru')} ₽</div>`;
+  if (o.distance_km)     meta += `<div class="inc-meta-item">📏 ${o.distance_km.toFixed(1)} км</div>`;
+  if (o.duration_min)    meta += `<div class="inc-meta-item">⏱ ~${o.duration_min} мин</div>`;
+  meta += `<div class="inc-meta-item">📞 <a href="tel:${o.phone}">${o.phone}</a></div>`;
+  document.getElementById('inc-meta').innerHTML = meta;
+
+  const cm = document.getElementById('inc-comment');
+  if (o.comment) { cm.style.display = 'block'; cm.textContent = '💬 ' + o.comment; }
+  else cm.style.display = 'none';
+
+  const fg = document.getElementById('incoming-ring-fg');
+  fg.style.strokeDasharray  = RING_C;
+  fg.style.strokeDashoffset = 0;
+
+  const btn = document.getElementById('inc-accept-btn');
+  btn.disabled = false; btn.textContent = '✓ Принять';
+
+  document.getElementById('incoming-overlay').classList.add('open');
+  startIncomingAlarm();
+
+  let remaining = INCOMING_SECONDS;
+  document.getElementById('incoming-count').textContent = remaining;
+  clearInterval(incomingTimer);
+  incomingTimer = setInterval(() => {
+    remaining--;
+    document.getElementById('incoming-count').textContent = Math.max(0, remaining);
+    fg.style.strokeDashoffset = RING_C * (1 - remaining / INCOMING_SECONDS);
+    if (remaining <= 0) closeIncoming(false);   // тайм-аут — заказ остаётся в списке
+  }, 1000);
+}
+
+function startIncomingAlarm() {
+  playAlertSound(); vibrateAlert();
+  clearInterval(incomingAlarm);
+  incomingAlarm = setInterval(() => { if (!document.hidden) { playAlertSound(); vibrateAlert(); } }, 2500);
+}
+function stopIncomingAlarm() {
+  clearInterval(incomingAlarm); incomingAlarm = null;
+  try { if (navigator.vibrate) navigator.vibrate(0); } catch(e) {}
+}
+
+function closeIncoming(dismiss) {
+  clearInterval(incomingTimer); incomingTimer = null;
+  stopIncomingAlarm();
+  document.getElementById('incoming-overlay').classList.remove('open');
+  if (dismiss && incomingCurrentId) dismissedOrderIds.add(incomingCurrentId);
+  incomingCurrentId = null;
+  incomingActive = false;
+  setTimeout(processIncomingQueue, 400);   // показать следующий из очереди
+}
+
+function skipIncoming() { closeIncoming(true); }
+
+async function acceptIncoming() {
+  const id = incomingCurrentId;
+  if (!id) return;
+  const btn = document.getElementById('inc-accept-btn');
+  btn.disabled = true; btn.textContent = '⏳ Принимаю...';
+  try {
+    const res = await fetch(`/driver/order/${id}/accept`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      clearInterval(incomingTimer); incomingTimer = null;
+      stopIncomingAlarm();
+      document.getElementById('incoming-overlay').classList.remove('open');
+      incomingActive = false; incomingCurrentId = null;
+      toast('✅ Заказ принят!', 'success');
+      await loadData();
+      showTab('mine');
+    } else {
+      toast('⚠️ ' + (data.error || 'Заказ уже занят'), 'error');
+      closeIncoming(true);   // занят другим — закрыть и показать следующий
+    }
+  } catch(e) {
+    toast('Ошибка сети', 'error');
+    btn.disabled = false; btn.textContent = '✓ Принять';
+  }
+}
+
 function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -913,11 +1108,17 @@ async function loadData() {
     else if (ctotal > lastChatTotal) { if (currentTab !== 'chat') { playAlertSound(); vibrateAlert(); toast('💬 Новое сообщение', 'success'); } lastChatTotal = ctotal; }
     else { lastChatTotal = ctotal; }
 
-    // Уведомление о новом заказе
+    // Полноэкранный приём заказа: если активный заказ уже разобрали — закрыть оверлей
+    const curIds = new Set((data.new_orders || []).map(o => o.id));
+    if (incomingActive && incomingCurrentId && !curIds.has(incomingCurrentId)) closeIncoming(false);
+    enqueueIncoming(data.new_orders || []);
+
+    // Уведомление о новом заказе (OS-нотификация + тост; звук даёт сам оверлей)
     if (lastNewCount === null) {
       lastNewCount = newCount; // первая загрузка — запомнить без уведомления
     } else if (newCount > lastNewCount) {
-      alertNewOrder(newCount);
+      showOrderNotification(`🚖 Новый заказ! (${newCount})`, 'Откройте приложение и примите заказ');
+      toast(`🔔 Новый заказ! Их ${newCount}`, 'success');
       lastNewCount = newCount;
     } else {
       lastNewCount = newCount;
