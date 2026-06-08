@@ -2321,6 +2321,22 @@ def driver_chat_seen():
     return jsonify({'ok': True})
 
 
+@app.route('/driver/push/test', methods=['POST'])
+@driver_required
+def driver_push_test():
+    """Самопроверка фонового push: шлёт уведомление текущему водителю и сообщает,
+    есть ли у него активная подписка и настроены ли ключи на сервере."""
+    driver = _get_driver_session()
+    subs = DriverPushSubscription.query.filter_by(driver_id=driver.id).count()
+    vapid_ok = bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
+    if subs and vapid_ok:
+        _send_push_to_one_driver(
+            driver.id, '✅ Тест уведомления',
+            'Видите это при закрытом приложении? Значит фоновые уведомления работают!',
+            '/driver/')
+    return jsonify({'ok': True, 'subs': subs, 'vapid': vapid_ok})
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

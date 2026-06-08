@@ -1423,6 +1423,12 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
   var form=document.getElementById('orderForm');
   var errEl=document.getElementById('formError');
   var submitBtn=form.querySelector('button[type="submit"]');
+  /* согласие — запоминаем галочку, чтобы не спрашивать каждый раз */
+  var _consentEl=document.getElementById('consent');
+  if(_consentEl){
+    if(localStorage.getItem('kt_consent')==='1') _consentEl.checked=true;
+    _consentEl.addEventListener('change',function(){ if(_consentEl.checked) localStorage.setItem('kt_consent','1'); else localStorage.removeItem('kt_consent'); });
+  }
   function scheduledISO(){
     if(!whenPanel.classList.contains('show')) return null;
     var dt=selDate||today;
@@ -1465,6 +1471,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
       if(res.ok && data.success){
         openPopup();
         form.reset();
+        if(_consentEl && localStorage.getItem('kt_consent')==='1') _consentEl.checked=true;
         clearChips();
         state.from='';state.to='';state.price=null;state.when='Сейчас';state.type='Индивидуально';state.pay='Наличные';
         document.querySelectorAll('#tripType .opt, #payType .opt').forEach(function(o){o.classList.remove('active');});
