@@ -1237,12 +1237,22 @@ async function testServerPush() {
   try {
     const r = await fetch('/driver/push/test', { method: 'POST' });
     const d = await r.json();
-    if (!d.vapid) {
-      show('❌ <b>На сервере не настроены push-ключи (VAPID).</b>', '#f87171');
-    } else if (!d.subs) {
-      show('❗ <b>Подписки нет.</b><br>Нажмите «📲 Включить фоновые уведомления» выше и разрешите уведомления, затем проверьте снова.', '#fbbf24');
+    if (!d.vapid) { show('❌ <b>На сервере не настроены push-ключи (VAPID).</b>', '#f87171'); return; }
+    if (!d.subs)  { show('❗ <b>Подписки нет.</b><br>Нажмите «📲 Включить» выше и разрешите уведомления.', '#fbbf24'); return; }
+    let html = 'Подписок: <b>' + d.subs + '</b> · доставлено push-сервису: <b>' + d.sent + '</b>';
+    if (d.removed) html += ' · удалено устаревших: ' + d.removed;
+    if (d.sent > 0) {
+      html += '<br><br>✅ <b>Push отправлен.</b> Сверните приложение или заблокируйте экран — должен прийти за пару секунд.';
+      html += '<br><span style="color:#94a3b8;font-size:12.5px;">Если так и не пришёл — причина в телефоне: экономия батареи, отключены уведомления приложения в системных настройках, или приложение в «защищённой/рабочей папке».</span>';
+      show(html, '#34d399');
     } else {
-      show('✅ <b>Отправлено!</b> Активных подписок: ' + d.subs + '.<br>Сверните приложение или заблокируйте экран — push должен прийти за пару секунд.', '#34d399');
+      html += '<br><br>❌ <b>Ни одна не доставлена push-сервису.</b>';
+      if (d.errors && d.errors.length) {
+        html += '<br><span style="color:#fca5a5;font-size:12px;word-break:break-word;">Ошибка: ' +
+                d.errors.map(function(e){ return e.replace(/</g,'&lt;'); }).join('<br>') + '</span>';
+      }
+      html += '<br><span style="color:#94a3b8;font-size:12.5px;">Скорее всего подписки устарели. Нажмите «📲 Переподключить фоновые уведомления» выше и проверьте снова.</span>';
+      show(html, '#f87171');
     }
   } catch(e) {
     show('❌ <b>Ошибка связи с сервером.</b> Проверьте интернет.', '#f87171');

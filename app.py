@@ -2324,17 +2324,51 @@ def driver_chat_seen():
 @app.route('/driver/push/test', methods=['POST'])
 @driver_required
 def driver_push_test():
-    """Самопроверка фонового push: шлёт уведомление текущему водителю и сообщает,
-    есть ли у него активная подписка и настроены ли ключи на сервере."""
+    """Самопроверка фонового push: реально шлёт push водителю и возвращает,
+    сколько подписок, сколько доставлено push-сервису и текст ошибок."""
     driver = _get_driver_session()
-    subs = DriverPushSubscription.query.filter_by(driver_id=driver.id).count()
     vapid_ok = bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
-    if subs and vapid_ok:
-        _send_push_to_one_driver(
-            driver.id, '✅ Тест уведомления',
-            'Видите это при закрытом приложении? Значит фоновые уведомления работают!',
-            '/driver/')
-    return jsonify({'ok': True, 'subs': subs, 'vapid': vapid_ok})
+    subs = DriverPushSubscription.query.filter_by(driver_id=driver.id).all()
+    sent, dead, errors = 0, [], []
+    if vapid_ok and subs:
+        try:
+            from pywebpush import webpush
+            payload = _json_mod.dumps({
+                'title': '✅ Тест уведомления',
+                'body':  'Видите это при закрытом приложении? Значит фоновые уведомления работают!',
+                'url':   '/driver/',
+            })
+            for sub in subs:
+                try:
+                    webpush(
+                        subscription_info={'endpoint': sub.endpoint,
+                                           'keys': {'p256dh': sub.p256dh, 'auth': sub.auth}},
+                        data=payload,
+                        vapid_private_key=VAPID_PRIVATE_KEY,
+                        vapid_claims={'sub': VAPID_EMAIL},
+                    )
+                    sent += 1
+                except Exception as _pe:
+                    msg = str(_pe)
+                    errors.append(msg[:180])
+                    if '410' in msg or '404' in msg:
+                        dead.append(sub.id)
+            for did in dead:
+                DriverPushSubscription.query.filter_by(id=did).delete()
+            if dead:
+                db.session.commit()
+        except ImportError:
+            errors.append('pywebpush не установлен на сервере')
+    uniq = []
+    for e in errors:
+        if e not in uniq:
+            uniq.append(e)
+    return jsonify({
+        'ok': True, 'vapid': vapid_ok,
+        'subs': len(subs), 'sent': sent,
+        'removed': len(dead), 'email': VAPID_EMAIL,
+        'errors': uniq[:3],
+    })
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
