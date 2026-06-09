@@ -16,6 +16,17 @@ from sqlalchemy import text
 from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription, ChatMessage, Setting, DriverFcmToken
 import telegram_bot
 
+# ── Sentry (мониторинг ошибок) — включается, если задан SENTRY_DSN ─────────────
+_SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(dsn=_SENTRY_DSN, integrations=[FlaskIntegration()],
+                        traces_sample_rate=0.0, send_default_pii=False)
+    except Exception as _se:
+        print(f'[Sentry] init error: {_se}')
+
 app = Flask(__name__)
 
 # ── APScheduler (плановые напоминания) ────────────────────────────────────────
@@ -151,7 +162,7 @@ elif _db_url.startswith('postgresql+psycopg2://'):
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-ADMIN_PASSWORD   = os.environ.get('ADMIN_PASSWORD', 'admin123')
+ADMIN_PASSWORD   = os.environ.get('ADMIN_PASSWORD', 'taxiadmin')
 YANDEX_MAPS_KEY  = os.environ.get('YANDEX_MAPS_KEY', '')
 COMMISSION_RATE       = float(os.environ.get('COMMISSION_RATE', '20')) / 100
 INTERCITY_COMMISSION  = int(os.environ.get('INTERCITY_COMMISSION', '200'))  # фикс. комиссия с межгорода ₽
@@ -360,6 +371,17 @@ with app.app_context():
                 _conn.commit()
         except Exception:
             pass
+
+    # ── SECRET_KEY: из env, иначе генерируем и храним в БД (стабильный, не в git) ──
+    if not os.environ.get('SECRET_KEY'):
+        try:
+            _sk = get_setting('secret_key')
+            if not _sk:
+                _sk = _secrets.token_urlsafe(48)
+                set_setting('secret_key', _sk)
+            app.config['SECRET_KEY'] = _sk
+        except Exception as _e:
+            print(f'[SECRET_KEY] {_e}')
 
     # ── Seed tariffs if table is empty ────────────────────────────────────────
     if Tariff.query.count() == 0:
@@ -845,16 +867,41 @@ def max_webhook(token):
 
 
 # ── Admin: auth ───────────────────────────────────────────────────────────────
+_login_attempts = {}  # ip -> [count, window_start_ts]
+
+def _login_blocked(ip):
+    rec = _login_attempts.get(ip)
+    if not rec:
+        return False
+    if time.time() - rec[1] > 900:          # окно 15 минут
+        _login_attempts.pop(ip, None)
+        return False
+    return rec[0] >= 7
+
+def _login_fail(ip):
+    now = time.time()
+    rec = _login_attempts.get(ip)
+    if not rec or now - rec[1] > 900:
+        _login_attempts[ip] = [1, now]
+    else:
+        rec[0] += 1
+
 @app.route('/a', methods=['GET', 'POST'])
 def admin_login():
     if session.get('admin'):
         return redirect(url_for('admin_dashboard'))
     error = None
+    ip = (request.headers.get('X-Forwarded-For', request.remote_addr or '') or '').split(',')[0].strip()
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
+        if _login_blocked(ip):
+            error = 'Слишком много попыток. Подождите 15 минут.'
+        elif request.form.get('password') == ADMIN_PASSWORD:
             session['admin'] = True
+            _login_attempts.pop(ip, None)
             return redirect(url_for('admin_orders'))
-        error = 'Неверный пароль'
+        else:
+            _login_fail(ip)
+            error = 'Неверный пароль'
     return render_template('admin_login.html', error=error)
 
 

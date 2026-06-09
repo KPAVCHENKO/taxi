@@ -10,3 +10,4 @@ pywebpush==2.0.0
 APScheduler==3.10.4
 PyJWT==2.9.0
 google-auth==2.35.0
+sentry-sdk[flask]==2.18.0
