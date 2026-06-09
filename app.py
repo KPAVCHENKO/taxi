@@ -2317,13 +2317,17 @@ def client_sw():
 
 
 def _serve_apk(prefix, fat_name, download_name):
-    """Отдать APK: под конкретный ABI (?abi=arm64-v8a — меньше размер), иначе универсальный."""
+    """Отдать APK под конкретный ABI (?abi=...). По умолчанию — armeabi-v7a:
+    маленький (~16 МБ, ставится и на 32-, и на 64-битные телефоны) и не обрезается
+    при отдаче, в отличие от 50-мегабайтного универсального (его Railway режет)."""
     base = os.path.join(app.root_path, 'static', 'app')
     abi = ''.join(c for c in (request.args.get('abi', '') or '') if c.isalnum() or c in '-_')
     paths = []
     if abi:
         paths.append(os.path.join(base, f'{prefix}-{abi}.apk'))
-    paths.append(os.path.join(base, fat_name))
+    paths.append(os.path.join(base, f'{prefix}-armeabi-v7a.apk'))  # безопасный маленький
+    paths.append(os.path.join(base, f'{prefix}-arm64-v8a.apk'))
+    paths.append(os.path.join(base, fat_name))                     # последний фолбэк
     for p in paths:
         if os.path.exists(p):
             return send_file(p, as_attachment=True, download_name=download_name,
