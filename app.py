@@ -765,6 +765,14 @@ def create_review():
     return jsonify({'success': True})
 
 
+@app.route('/api/reviews')
+def api_reviews():
+    """Одобренные отзывы для приложения пассажира."""
+    revs = (Review.query.filter_by(approved=True, type='review')
+            .order_by(Review.created_at.desc()).limit(30).all())
+    return jsonify({'reviews': [{'name': r.name, 'text': r.text} for r in revs]})
+
+
 # ── Telegram webhook ──────────────────────────────────────────────────────────
 @app.route('/webhook/<token>', methods=['POST'])
 def telegram_webhook(token):
