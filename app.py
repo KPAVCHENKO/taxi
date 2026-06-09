@@ -2363,35 +2363,28 @@ def client_sw():
     return resp
 
 
-def _serve_apk(prefix, fat_name, download_name):
-    """Отдать APK под конкретный ABI (?abi=...). По умолчанию — armeabi-v7a:
-    маленький (~16 МБ, ставится и на 32-, и на 64-битные телефоны) и не обрезается
-    при отдаче, в отличие от 50-мегабайтного универсального (его Railway режет)."""
-    base = os.path.join(app.root_path, 'static', 'app')
+# APK раздаются из GitHub Releases (репозиторий лёгкий, GitHub отдаёт файлы
+# целиком и быстро — без обрезки, которую Railway делает на больших ответах).
+GH_RELEASE = 'https://github.com/KPAVCHENKO/taxi/releases/download/apps'
+
+def _serve_apk(prefix):
+    """Редирект на нужный APK в GitHub Release. По умолчанию armeabi-v7a
+    (ставится и на 32-, и на 64-битные телефоны)."""
     abi = ''.join(c for c in (request.args.get('abi', '') or '') if c.isalnum() or c in '-_')
-    paths = []
-    if abi:
-        paths.append(os.path.join(base, f'{prefix}-{abi}.apk'))
-    paths.append(os.path.join(base, f'{prefix}-armeabi-v7a.apk'))  # безопасный маленький
-    paths.append(os.path.join(base, f'{prefix}-arm64-v8a.apk'))
-    paths.append(os.path.join(base, fat_name))                     # последний фолбэк
-    for p in paths:
-        if os.path.exists(p):
-            return send_file(p, as_attachment=True, download_name=download_name,
-                             mimetype='application/vnd.android.package-archive')
-    return 'APK ещё не загружен', 404
+    asset = f'{prefix}-{abi}.apk' if abi in ('arm64-v8a', 'armeabi-v7a') else f'{prefix}-armeabi-v7a.apk'
+    return redirect(f'{GH_RELEASE}/{asset}')
 
 
 @app.route('/download/app')
 def download_app():
-    """Скачать APK клиентского приложения."""
-    return _serve_apk('client', 'kazanskoe-taxi.apk', 'Казанское-Такси.apk')
+    """Скачать APK клиентского приложения (редирект в GitHub Release)."""
+    return _serve_apk('client')
 
 
 @app.route('/download/driver')
 def download_driver_app():
-    """Скачать APK приложения водителя."""
-    return _serve_apk('driver', 'driver-app.apk', 'Такси-Водитель.apk')
+    """Скачать APK приложения водителя (редирект в GitHub Release)."""
+    return _serve_apk('driver')
 
 
 # ── Digital Asset Links для обоих приложений ─────────────────────────────────
