@@ -8,3 +8,6 @@ instance/
 venv/
 *.log
 .DS_Store
+
+# APK раздаются из GitHub Releases, не в репозитории
+static/app/*.apk
