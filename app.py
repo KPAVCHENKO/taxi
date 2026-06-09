@@ -253,6 +253,12 @@ SITE_URL        = os.environ.get('SITE_URL',      'https://kazanskoe-taxi.xyz').
 GEO_LAT = os.environ.get('GEO_LAT', '55.6456')
 GEO_LON = os.environ.get('GEO_LON', '69.2206')
 
+# Актуальные версии собранных APK (поднимать при каждой новой сборке).
+# Сервер отдаёт max(этой константы, значения из админки) — приложения у которых
+# код версии меньше, увидят обновление, даже если в админке версию не меняли.
+LATEST_DRIVER_VERSION = 4
+LATEST_CLIENT_VERSION = 3
+
 def legal_ctx():
     return dict(
         owner_name=OWNER_NAME, owner_ogrn=OWNER_OGRN, owner_inn=OWNER_INN,
@@ -2968,9 +2974,10 @@ def driver_fcm_unregister():
 def api_driver_app_version():
     """Приложение сверяет version_code; если серверный больше — предлагает обновиться."""
     try:
-        vc = int(get_setting('app_version_code', '1') or '1')
+        vc = int(get_setting('app_version_code', '0') or '0')
     except (ValueError, TypeError):
-        vc = 1
+        vc = 0
+    vc = max(vc, LATEST_DRIVER_VERSION)
     return jsonify({
         'version_code': vc,
         'version_name': get_setting('app_version_name', '1.0.0'),
@@ -2984,9 +2991,10 @@ def api_driver_app_version():
 def api_client_app_version():
     """Версия пользовательского приложения (самообновление)."""
     try:
-        vc = int(get_setting('client_app_version_code', '1') or '1')
+        vc = int(get_setting('client_app_version_code', '0') or '0')
     except (ValueError, TypeError):
-        vc = 1
+        vc = 0
+    vc = max(vc, LATEST_CLIENT_VERSION)
     return jsonify({
         'version_code': vc,
         'version_name': get_setting('client_app_version_name', '1.0.0'),
