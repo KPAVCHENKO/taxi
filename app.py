@@ -256,8 +256,8 @@ GEO_LON = os.environ.get('GEO_LON', '69.2206')
 # Актуальные версии собранных APK (поднимать при каждой новой сборке).
 # Сервер отдаёт max(этой константы, значения из админки) — приложения у которых
 # код версии меньше, увидят обновление, даже если в админке версию не меняли.
-LATEST_DRIVER_VERSION = 5
-LATEST_CLIENT_VERSION = 3
+LATEST_DRIVER_VERSION = 6
+LATEST_CLIENT_VERSION = 4
 
 def legal_ctx():
     return dict(
@@ -2316,26 +2316,31 @@ def client_sw():
     return resp
 
 
+def _serve_apk(prefix, fat_name, download_name):
+    """Отдать APK: под конкретный ABI (?abi=arm64-v8a — меньше размер), иначе универсальный."""
+    base = os.path.join(app.root_path, 'static', 'app')
+    abi = ''.join(c for c in (request.args.get('abi', '') or '') if c.isalnum() or c in '-_')
+    paths = []
+    if abi:
+        paths.append(os.path.join(base, f'{prefix}-{abi}.apk'))
+    paths.append(os.path.join(base, fat_name))
+    for p in paths:
+        if os.path.exists(p):
+            return send_file(p, as_attachment=True, download_name=download_name,
+                             mimetype='application/vnd.android.package-archive')
+    return 'APK ещё не загружен', 404
+
+
 @app.route('/download/app')
 def download_app():
     """Скачать APK клиентского приложения."""
-    apk_path = os.path.join(app.root_path, 'static', 'app', 'kazanskoe-taxi.apk')
-    if os.path.exists(apk_path):
-        return send_file(apk_path, as_attachment=True,
-                         download_name='Казанское-Такси.apk',
-                         mimetype='application/vnd.android.package-archive')
-    return 'APK ещё не загружен', 404
+    return _serve_apk('client', 'kazanskoe-taxi.apk', 'Казанское-Такси.apk')
 
 
 @app.route('/download/driver')
 def download_driver_app():
     """Скачать APK приложения водителя."""
-    apk_path = os.path.join(app.root_path, 'static', 'app', 'driver-app.apk')
-    if os.path.exists(apk_path):
-        return send_file(apk_path, as_attachment=True,
-                         download_name='Такси-Водитель.apk',
-                         mimetype='application/vnd.android.package-archive')
-    return 'APK ещё не загружен', 404
+    return _serve_apk('driver', 'driver-app.apk', 'Такси-Водитель.apk')
 
 
 # ── Digital Asset Links для обоих приложений ─────────────────────────────────

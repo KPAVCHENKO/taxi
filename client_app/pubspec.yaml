@@ -1,7 +1,7 @@
 name: kazanskoe_client
 description: "Казанское Такси — заказ такси"
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -26,6 +26,9 @@ dependencies:
   webview_flutter: ^4.10.0
   webview_flutter_android: ^4.3.0
   permission_handler: ^11.3.1
+  open_filex: ^4.5.0
+  device_info_plus: ^10.1.2
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_lints: ^4.0.0

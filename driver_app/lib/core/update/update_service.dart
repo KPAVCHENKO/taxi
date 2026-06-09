@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/config.dart';
 import '../../config/theme.dart';
 import '../network/dio_client.dart';
+import 'apk_installer.dart';
 
 class UpdateInfo {
   final int versionCode;
@@ -108,7 +109,9 @@ Future<void> runUpdateCheck(BuildContext context, {bool manual = false}) async {
         ElevatedButton(
           onPressed: () async {
             if (ctx.mounted) Navigator.pop(ctx);
-            await _openDownload(context, info.absoluteUrl);
+            // Скачиваем и ставим внутри приложения; если не вышло — открываем браузер.
+            final ok = await ApkInstaller.downloadAndInstall(context, info.absoluteUrl);
+            if (!ok && context.mounted) await _openDownload(context, info.absoluteUrl);
           },
           child: const Text('Обновить'),
         ),
