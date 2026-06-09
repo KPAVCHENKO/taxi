@@ -1,0 +1,24 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+**/android/**/gradle-wrapper.jar
+android/app/google-services.json
+
+# Firebase / секреты
+**/google-services.json
+*.keystore
+*.jks
+
+# IDE
+.idea/
+.vscode/
+*.iml
