@@ -336,6 +336,7 @@ with app.app_context():
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS duration_min INTEGER",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_token VARCHAR(40)",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_fcm_token TEXT",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS driver_pin VARCHAR(20)",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted BOOLEAN DEFAULT FALSE",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted_at TIMESTAMP",
@@ -562,6 +563,7 @@ def create_order():
         distance_km=_float_or_none('distance_km'),
         duration_min=_int_or_none('duration_min'),
         cancel_token=_secrets.token_urlsafe(16),
+        client_fcm_token=(str(data.get('fcm_token', '')).strip() or None),
     )
     db.session.add(order)
     db.session.commit()
@@ -588,6 +590,37 @@ def create_order():
         'order_id': order.id,
         'cancel_token': order.cancel_token,
         'no_drivers_online': online_count == 0,
+    })
+
+
+@app.route('/order/<int:order_id>/status')
+def client_order_status(order_id):
+    """Статус заказа для приложения пассажира (по cancel_token)."""
+    token = request.args.get('token', '')
+    order = Order.query.get_or_404(order_id)
+    if not order.cancel_token or token != order.cancel_token:
+        return jsonify({'error': 'forbidden'}), 403
+    driver_name = order.driver_name
+    car_info = None
+    if order.driver_telegram_id:
+        d = Driver.query.filter_by(telegram_id=order.driver_telegram_id).first()
+        if not d and order.driver_telegram_id.startswith('app:'):
+            try:
+                d = Driver.query.get(int(order.driver_telegram_id.split(':')[1]))
+            except Exception:
+                d = None
+        if d:
+            driver_name = d.name
+            car_info = d.car_info
+    return jsonify({
+        'status': order.status,
+        'status_label': order.status_label,
+        'driver_name': driver_name,
+        'car_info': car_info,
+        'price': order.estimated_price,
+        'from_address': order.from_address,
+        'to_address': order.to_address,
+        'created_at': (order.created_at + timedelta(hours=5)).strftime('%d.%m %H:%M') if order.created_at else None,
     })
 
 
@@ -1380,6 +1413,33 @@ def _order_fcm_data(order):
         'phone': order.phone,
         'ring_timeout': 60,
     }
+
+def _fcm_send_one(token, data_dict):
+    """FCM на один токен (пассажир). No-op, если FCM не настроен или нет токена."""
+    access, proj = _fcm_access_token()
+    if not access or not token:
+        return
+    import requests as _rq
+    endpoint = f'https://fcm.googleapis.com/v1/projects/{proj}/messages:send'
+    payload = {k: ('' if v is None else str(v)) for k, v in data_dict.items()}
+    try:
+        _rq.post(endpoint,
+                 json={'message': {'token': token, 'data': payload, 'android': {'priority': 'high'}}},
+                 headers={'Authorization': f'Bearer {access}'}, timeout=10)
+    except Exception as e:
+        print(f'[FCM-CLIENT] {e}')
+
+def _notify_client(order, title, body):
+    """Push пассажиру о смене статуса его заказа."""
+    if not order or not getattr(order, 'client_fcm_token', None):
+        return
+    _fcm_send_one(order.client_fcm_token, {
+        'type': 'order_status',
+        'order_id': order.id,
+        'status': order.status,
+        'title': title,
+        'body': body,
+    })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -2534,6 +2594,10 @@ def driver_accept_order(order_id):
     # Закрыть экран входящего заказа у остальных онлайн-водителей
     _send_fcm_to_drivers(online_only=True, tag='order', exclude_driver_id=driver.id,
                          data={'type': 'order_taken', 'order_id': order.id})
+    # Уведомить пассажира
+    order.status = 'accepted'
+    _notify_client(order, '✅ Водитель принял заказ',
+                   driver.name + (' · ' + driver.car_info if driver.car_info else ''))
     return jsonify({'ok': True})
 
 
@@ -2565,6 +2629,8 @@ def driver_complete_order(order_id):
     _log('status_changed', actor=driver.name, order_id=order.id,
          details=f'Завершён через приложение. Сумма: {amount} ₽' +
                  (f', комиссия: -{commission} ₽' if commission else ''))
+    _notify_client(order, '🏁 Поездка завершена',
+                   f'Спасибо! Стоимость: {amount} ₽' if amount else 'Спасибо за поездку!')
     return jsonify({'ok': True, 'amount': amount, 'commission': commission})
 
 
@@ -2583,6 +2649,7 @@ def driver_cancel_order(order_id):
     db.session.commit()
     _log('status_changed', actor=driver.name, order_id=order.id,
          details='Водитель отменил заказ через приложение')
+    _notify_client(order, '🔄 Водитель отменил заказ', 'Ищем другого водителя для вас')
     try:
         telegram_bot.notify_drivers(order)
     except Exception:
@@ -2820,6 +2887,22 @@ def api_driver_app_version():
     })
 
 
+@app.route('/api/client/app-version')
+def api_client_app_version():
+    """Версия пользовательского приложения (самообновление)."""
+    try:
+        vc = int(get_setting('client_app_version_code', '1') or '1')
+    except (ValueError, TypeError):
+        vc = 1
+    return jsonify({
+        'version_code': vc,
+        'version_name': get_setting('client_app_version_name', '1.0.0'),
+        'url':          get_setting('client_apk_url', '/download/app'),
+        'notes':        get_setting('client_update_notes', ''),
+        'mandatory':    (get_setting('client_update_mandatory', '0') == '1'),
+    })
+
+
 @app.route('/admin/app-version', methods=['GET', 'POST'])
 @admin_required
 def admin_app_version():
@@ -2830,6 +2913,12 @@ def admin_app_version():
         set_setting('app_apk_url', (request.form.get('apk_url', '/download/driver') or '/download/driver').strip())
         set_setting('app_update_notes', (request.form.get('notes', '') or '').strip())
         set_setting('app_update_mandatory', '1' if request.form.get('mandatory') else '0')
+        # клиентское приложение
+        set_setting('client_app_version_code', str(request.form.get('client_version_code', '1')).strip() or '1')
+        set_setting('client_app_version_name', (request.form.get('client_version_name', '1.0.0') or '1.0.0').strip())
+        set_setting('client_apk_url', (request.form.get('client_apk_url', '/download/app') or '/download/app').strip())
+        set_setting('client_update_notes', (request.form.get('client_notes', '') or '').strip())
+        set_setting('client_update_mandatory', '1' if request.form.get('client_mandatory') else '0')
         set_setting('fcm_project_id', (request.form.get('fcm_project_id', '') or '').strip())
         _fcm_raw = (request.form.get('fcm_service_account', '') or '').strip()
         if _fcm_raw:
@@ -2847,6 +2936,11 @@ def admin_app_version():
         fcm_project_id=proj,
         fcm_configured=bool(raw and proj),
         fcm_token_count=DriverFcmToken.query.count(),
+        client_version_code=get_setting('client_app_version_code', '1'),
+        client_version_name=get_setting('client_app_version_name', '1.0.0'),
+        client_apk_url=get_setting('client_apk_url', '/download/app'),
+        client_notes=get_setting('client_update_notes', ''),
+        client_mandatory=(get_setting('client_update_mandatory', '0') == '1'),
     )
 
 

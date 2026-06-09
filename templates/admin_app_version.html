@@ -55,6 +55,40 @@
 
       <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0 22px;">
 
+      <div class="card-header" style="padding:0; margin-bottom:8px; background:none;">🚕 Приложение пассажира</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div>
+          <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Код версии (число)</label>
+          <input type="number" name="client_version_code" value="{{ client_version_code }}" min="1"
+                 style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                        border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Название версии</label>
+          <input type="text" name="client_version_name" value="{{ client_version_name }}" placeholder="1.0.0"
+                 style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                        border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Ссылка на APK пассажира</label>
+        <input type="text" name="client_apk_url" value="{{ client_apk_url }}" placeholder="/download/app"
+               style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                      border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Что нового (пассажиру)</label>
+        <textarea name="client_notes" rows="2"
+               style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                      border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">{{ client_notes }}</textarea>
+      </div>
+      <label style="display:flex; align-items:center; gap:10px; margin-bottom:20px; cursor:pointer; color:#cbd5e1; font-size:14px;">
+        <input type="checkbox" name="client_mandatory" {% if client_mandatory %}checked{% endif %} style="width:18px; height:18px;">
+        Обязательное обновление пассажирского приложения
+      </label>
+
+      <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0 22px;">
+
       <div class="card-header" style="padding:0; margin-bottom:8px; background:none;">🔔 Firebase Cloud Messaging (надёжный push)</div>
       <p style="color:#94a3b8; font-size:13px; margin-bottom:16px; line-height:1.6;">
         Статус: {% if fcm_configured %}<span style="color:#34d399;">✅ Настроен</span>{% else %}<span style="color:#f87171;">⚪ Не настроен</span>{% endif %}
