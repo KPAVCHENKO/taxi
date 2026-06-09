@@ -73,3 +73,13 @@ class Review {
   final String text;
   const Review(this.name, this.text);
 }
+
+/// Точка маршрута: адрес (для отображения и заказа) + ключ населённого пункта
+/// (для расчёта цены) + координаты (если выбрано на карте).
+class Place {
+  final String address;
+  final String? key;
+  final double? lat;
+  final double? lon;
+  const Place({required this.address, this.key, this.lat, this.lon});
+}

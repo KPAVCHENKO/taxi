@@ -10,6 +10,7 @@ import '../../data/models/models.dart';
 import '../../data/repositories/history.dart';
 import '../../state/providers.dart';
 import '../../widgets/ui.dart';
+import '../map/map_picker_screen.dart';
 import 'order_status_screen.dart';
 
 class OrderScreen extends ConsumerStatefulWidget {
@@ -22,15 +23,8 @@ class OrderScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderScreenState extends ConsumerState<OrderScreen> {
-  Settle? _from;
-  Settle? _to;
-
-  @override
-  void initState() {
-    super.initState();
-    _from = widget.initialFrom;
-    _to = widget.initialTo;
-  }
+  Place? _from;
+  Place? _to;
   final _fromDetail = TextEditingController();
   final _toDetail = TextEditingController();
   final _comment = TextEditingController();
@@ -45,6 +39,17 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialFrom != null) {
+      _from = Place(address: widget.initialFrom!.label, key: widget.initialFrom!.key);
+    }
+    if (widget.initialTo != null) {
+      _to = Place(address: widget.initialTo!.label, key: widget.initialTo!.key);
+    }
+  }
+
+  @override
   void dispose() {
     _fromDetail.dispose();
     _toDetail.dispose();
@@ -55,22 +60,36 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
   int? get _price => Tariffs.price(_from?.key, _to?.key);
 
-  String _compose(Settle? s, TextEditingController detail) {
-    if (s == null) return '';
+  String _compose(Place? pl, TextEditingController detail) {
+    if (pl == null) return '';
     final d = detail.text.trim();
-    return d.isEmpty ? s.label : '${s.label}, $d';
+    return d.isEmpty ? pl.address : '${pl.address}, $d';
+  }
+
+  Future<void> _pickList(bool isFrom) async {
+    final s = await pickSettlement(context, isFrom ? 'Откуда едем' : 'Куда едем');
+    if (s == null) return;
+    setState(() {
+      final pl = Place(address: s.label, key: s.key);
+      if (isFrom) { _from = pl; } else { _to = pl; }
+    });
+  }
+
+  Future<void> _pickMap(bool isFrom) async {
+    final pl = await Navigator.of(context).push<Place>(MaterialPageRoute(
+      builder: (_) => MapPickerScreen(title: isFrom ? 'Откуда' : 'Куда'),
+    ));
+    if (pl == null) return;
+    setState(() {
+      final withKey = Place(address: pl.address, key: Tariffs.matchKey(pl.address), lat: pl.lat, lon: pl.lon);
+      if (isFrom) { _from = withKey; } else { _to = withKey; }
+    });
   }
 
   Future<void> _pickWhen() async {
     final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 14)),
-      initialDate: now,
-    );
-    if (date == null) return;
-    if (!mounted) return;
+    final date = await showDatePicker(context: context, firstDate: now, lastDate: now.add(const Duration(days: 14)), initialDate: now);
+    if (date == null || !mounted) return;
     final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(now.add(const Duration(minutes: 30))));
     if (time == null) return;
     setState(() {
@@ -83,7 +102,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     FocusScope.of(context).unfocus();
     if (_from == null) { setState(() => _error = 'Выберите, откуда ехать'); return; }
     if (_to == null) { setState(() => _error = 'Выберите, куда ехать'); return; }
-    if (_from!.key == _to!.key) { setState(() => _error = 'Откуда и куда совпадают'); return; }
+    if (_from!.key != null && _from!.key == _to!.key) { setState(() => _error = 'Откуда и куда совпадают'); return; }
     final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 10) { setState(() => _error = 'Введите номер телефона'); return; }
     if (!_consent) { setState(() => _error = 'Подтвердите согласие на обработку данных'); return; }
@@ -94,6 +113,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       'phone': _phone.text.trim(),
       'from_address': _compose(_from, _fromDetail),
       'to_address': _compose(_to, _toDetail),
+      'from_lat': _from!.lat,
+      'from_lon': _from!.lon,
+      'to_lat': _to!.lat,
+      'to_lon': _to!.lon,
       'comment': _comment.text.trim(),
       'payment': _pay == 'Перевод' ? 'transfer' : 'cash',
       'ride_type': _type == 'Попутно' ? 'shared' : 'individual',
@@ -101,7 +124,6 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       'fcm_token': await PushService.instance.ensureToken(),
     };
     if (_when == 'Ко времени' && _scheduledAt != null) {
-      // на сервере время отображается +5ч, поэтому шлём local-5ч
       body['scheduled_at'] = _scheduledAt!.subtract(const Duration(hours: 5)).toIso8601String();
     }
 
@@ -110,14 +132,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     if (res.ok && res.orderId != null && res.token != null) {
       await History.add(MyOrder(
         id: res.orderId!, token: res.token!,
-        fromLabel: _from!.label, toLabel: _to!.label,
+        fromLabel: _from!.address, toLabel: _to!.address,
         price: _price, ts: DateTime.now().millisecondsSinceEpoch,
       ));
       if (!mounted) return;
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => OrderStatusScreen(
           orderId: res.orderId!, token: res.token!,
-          fromLabel: _from!.label, toLabel: _to!.label,
+          fromLabel: _from!.address, toLabel: _to!.address,
           price: _price, noDriversOnline: res.noDriversOnline,
         ),
       ));
@@ -138,23 +160,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           AppCard(
             child: Column(
               children: [
-                SettlePicker(
-                  label: 'ОТКУДА', value: _from, dotColor: C.good,
-                  onTap: () async {
-                    final s = await pickSettlement(context, 'Откуда едем');
-                    if (s != null) setState(() => _from = s);
-                  },
-                ),
+                _placeRow(label: 'ОТКУДА', place: _from, dot: C.good, isFrom: true),
                 const SizedBox(height: 8),
                 TextField(controller: _fromDetail, decoration: const InputDecoration(hintText: 'Точный адрес / ориентир (необязательно)')),
                 const SizedBox(height: 16),
-                SettlePicker(
-                  label: 'КУДА', value: _to, dotColor: C.danger,
-                  onTap: () async {
-                    final s = await pickSettlement(context, 'Куда едем');
-                    if (s != null) setState(() => _to = s);
-                  },
-                ),
+                _placeRow(label: 'КУДА', place: _to, dot: C.danger, isFrom: false),
                 const SizedBox(height: 8),
                 TextField(controller: _toDetail, decoration: const InputDecoration(hintText: 'Точный адрес / ориентир (необязательно)')),
               ],
@@ -168,11 +178,9 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _label('Когда', p),
-                Row(children: [
-                  Expanded(child: Segmented(options: const ['Сейчас', 'Ко времени'], value: _when, onChanged: (v) {
-                    if (v == 'Ко времени') { _pickWhen(); } else { setState(() { _when = 'Сейчас'; _scheduledAt = null; }); }
-                  })),
-                ]),
+                Segmented(options: const ['Сейчас', 'Ко времени'], value: _when, onChanged: (v) {
+                  if (v == 'Ко времени') { _pickWhen(); } else { setState(() { _when = 'Сейчас'; _scheduledAt = null; }); }
+                }),
                 if (_when == 'Ко времени' && _scheduledAt != null)
                   Padding(padding: const EdgeInsets.only(top: 8), child: Text(
                     'На ${_scheduledAt!.day.toString().padLeft(2,'0')}.${_scheduledAt!.month.toString().padLeft(2,'0')} '
@@ -231,10 +239,33 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     );
   }
 
+  Widget _placeRow({required String label, required Place? place, required Color dot, required bool isFrom}) {
+    final p = palette(context);
+    return Row(
+      children: [
+        Expanded(child: SettlePicker(label: label, display: place?.address, dotColor: dot, onTap: () => _pickList(isFrom))),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 52, height: 58,
+          child: ElevatedButton(
+            onPressed: () => _pickMap(isFrom),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              backgroundColor: p.surface2,
+              foregroundColor: p.accent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Icon(Icons.map_outlined),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _label(String t, AppPalette p) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(t.toUpperCase(),
-            style: TextStyle(fontSize: 12, letterSpacing: 1, fontWeight: FontWeight.w700, color: p.text3)),
+        child: Text(t.toUpperCase(), style: TextStyle(fontSize: 12, letterSpacing: 1, fontWeight: FontWeight.w700, color: p.text3)),
       );
 
   Widget _priceCard(AppPalette p) {

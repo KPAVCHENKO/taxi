@@ -105,13 +105,13 @@ class Segmented extends StatelessWidget {
 /// Поле «выбрать населённый пункт» (открывает список).
 class SettlePicker extends StatelessWidget {
   final String label;
-  final Settle? value;
+  final String? display;
   final VoidCallback onTap;
   final Color dotColor;
   const SettlePicker({
     super.key,
     required this.label,
-    required this.value,
+    required this.display,
     required this.onTap,
     required this.dotColor,
   });
@@ -137,11 +137,12 @@ class SettlePicker extends StatelessWidget {
                 children: [
                   Text(label, style: TextStyle(fontSize: 12, color: p.text3, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
-                  Text(value?.label ?? 'Выберите населённый пункт',
+                  Text(display ?? 'Выберите населённый пункт',
+                      maxLines: 2, overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
-                          color: value == null ? p.text3 : p.text)),
+                          color: display == null ? p.text3 : p.text)),
                 ],
               ),
             ),

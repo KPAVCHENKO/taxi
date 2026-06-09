@@ -42,6 +42,18 @@ class Tariffs {
     }
   }
 
+  /// Найти ключ населённого пункта в произвольном адресе (для точки с карты).
+  static String? matchKey(String address) {
+    final a = address.toLowerCase();
+    for (final k in intercity.keys) {
+      if (a.contains(k)) return k;
+    }
+    for (final k in local.keys) {
+      if (a.contains(k)) return k;
+    }
+    return null;
+  }
+
   /// Цена по ключам населённых пунктов. null — «уточнит диспетчер».
   static int? price(String? fromKey, String? toKey) {
     if (fromKey == null || toKey == null) return null;
