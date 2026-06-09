@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Выбор точки на карте</title>
+  <style>
+    html, body { margin: 0; height: 100%; font-family: -apple-system, 'Segoe UI', sans-serif; background: #FBFAF7; }
+    #map { position: absolute; inset: 0; }
+    #pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); font-size: 42px; z-index: 5; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.3)); }
+    #geo { position: absolute; right: 14px; bottom: 150px; z-index: 6; width: 50px; height: 50px; border-radius: 25px; border: none; background: #fff; font-size: 22px; box-shadow: 0 4px 16px rgba(0,0,0,.2); cursor: pointer; }
+    #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 6; }
+    #addr { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 14px; color: #16140F; box-shadow: 0 4px 16px rgba(0,0,0,.15); min-height: 20px; line-height: 1.35; }
+    #done { width: 100%; padding: 16px; border: none; border-radius: 14px; background: #E8A317; color: #1A1710; font-size: 18px; font-weight: 800; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="pin">📍</div>
+  <button id="geo" title="Моё местоположение">🎯</button>
+  <div id="bar">
+    <div id="addr">Двигайте карту, чтобы выбрать точку…</div>
+    <button id="done">Готово</button>
+  </div>
+
+  <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_key }}&lang=ru_RU"></script>
+  <script>
+    var map, lastAddr = '', lastC = [{{ geo_lat }}, {{ geo_lon }}];
+    ymaps.ready(function () {
+      map = new ymaps.Map('map', { center: lastC, zoom: 13, controls: ['zoomControl'] });
+      var t;
+      map.events.add('boundschange', function () { clearTimeout(t); t = setTimeout(revgeo, 450); });
+      revgeo();
+    });
+    function revgeo() {
+      if (!map) return;
+      var c = map.getCenter(); lastC = c;
+      var el = document.getElementById('addr');
+      el.textContent = 'Определяем адрес…';
+      ymaps.geocode(c, { results: 1 }).then(function (res) {
+        var o = res.geoObjects.get(0);
+        lastAddr = o ? o.getAddressLine() : (c[0].toFixed(5) + ', ' + c[1].toFixed(5));
+        el.textContent = lastAddr;
+      }, function () {
+        lastAddr = c[0].toFixed(5) + ', ' + c[1].toFixed(5);
+        el.textContent = lastAddr;
+      });
+    }
+    document.getElementById('geo').onclick = function () {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (p) {
+          if (map) map.setCenter([p.coords.latitude, p.coords.longitude], 16);
+        });
+      }
+    };
+    document.getElementById('done').onclick = function () {
+      var payload = JSON.stringify({ address: lastAddr, lat: lastC[0], lon: lastC[1] });
+      if (window.FlutterPicker && window.FlutterPicker.postMessage) {
+        window.FlutterPicker.postMessage(payload);
+      } else {
+        alert('Выбрано: ' + lastAddr);
+      }
+    };
+  </script>
+</body>
+</html>

@@ -773,6 +773,15 @@ def api_reviews():
     return jsonify({'reviews': [{'name': r.name, 'text': r.text} for r in revs]})
 
 
+@app.route('/map-picker')
+def map_picker():
+    """Страница выбора точки на карте Яндекса (встраивается в WebView приложения)."""
+    resp = make_response(render_template('map_picker.html',
+        yandex_maps_key=YANDEX_MAPS_KEY, geo_lat=GEO_LAT, geo_lon=GEO_LON))
+    resp.headers['X-Frame-Options'] = 'ALLOWALL'
+    return resp
+
+
 # ── Telegram webhook ──────────────────────────────────────────────────────────
 @app.route('/webhook/<token>', methods=['POST'])
 def telegram_webhook(token):
