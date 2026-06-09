@@ -10,6 +10,7 @@ import '../../state/orders_controller.dart';
 import '../../state/providers.dart';
 import '../history/history_screen.dart';
 import '../instructions/instructions_screen.dart';
+import '../settings/settings_screen.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -22,12 +23,14 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _balanceCard(ui.data.balance, ui.data.todayEarnings, ui.data.completedCount),
+          _statsCard(ui.data),
           const SizedBox(height: 20),
           _tile(context, Icons.history, 'История поездок',
               () => _push(context, const HistoryScreen())),
           _tile(context, Icons.shield_outlined, 'Надёжная работа',
               () => _push(context, const InstructionsScreen())),
+          _tile(context, Icons.volume_up_outlined, 'Звук и вибрация',
+              () => _push(context, const SettingsScreen())),
           _tile(context, Icons.system_update, 'Проверить обновление',
               () => runUpdateCheck(context, manual: true)),
           const SizedBox(height: 20),
@@ -80,19 +83,33 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _balanceCard(int balance, int today, int completed) {
+  Widget _statsCard(dynamic d) {
+    final rating = d.rating == null ? '—' : '⭐ ${d.rating}';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _stat('$balance ₽', 'Баланс', AppColors.green),
-          _stat('$today ₽', 'Сегодня', AppColors.accent),
-          _stat('$completed', 'Поездок', AppColors.blue),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _stat('${d.balance} ₽', 'Баланс', AppColors.green),
+              _stat('${d.todayEarnings} ₽', 'Сегодня', AppColors.accent),
+              _stat('${d.completedCount}', 'Поездок', AppColors.blue),
+            ],
+          ),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider(color: Color(0x14FFFFFF), height: 1)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _stat('${d.weekEarnings} ₽', 'Неделя', AppColors.text),
+              _stat('${d.monthEarnings} ₽', 'Месяц', AppColors.text),
+              _stat(rating, 'Рейтинг', AppColors.accent),
+            ],
+          ),
         ],
       ),
     );

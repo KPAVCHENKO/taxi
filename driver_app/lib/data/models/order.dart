@@ -14,6 +14,8 @@ class TaxiOrder {
   final String? scheduledAt; // отформатированная строка ('дд.мм ЧЧ:ММ') или ISO
   final String? createdAt;
   final bool intercity;
+  final double? fromLat, fromLon, toLat, toLon;
+  final bool arrived;
 
   const TaxiOrder({
     required this.id,
@@ -29,6 +31,11 @@ class TaxiOrder {
     this.scheduledAt,
     this.createdAt,
     this.intercity = false,
+    this.fromLat,
+    this.fromLon,
+    this.toLat,
+    this.toLon,
+    this.arrived = false,
   });
 
   factory TaxiOrder.fromJson(Map<String, dynamic> j) {
@@ -46,6 +53,9 @@ class TaxiOrder {
       scheduledAt: _emptyToNull(j['scheduled_at']),
       createdAt: _emptyToNull(j['created_at']),
       intercity: j['intercity'] == true || j['intercity'] == 'true',
+      fromLat: _asDouble(j['from_lat']), fromLon: _asDouble(j['from_lon']),
+      toLat: _asDouble(j['to_lat']), toLon: _asDouble(j['to_lon']),
+      arrived: j['arrived'] == true,
     );
   }
 
@@ -65,6 +75,8 @@ class TaxiOrder {
       scheduledAt: _emptyToNull(d['scheduled_at']),
       createdAt: null,
       intercity: d['intercity'] == 'true' || d['intercity'] == true,
+      fromLat: _asDouble(d['from_lat']), fromLon: _asDouble(d['from_lon']),
+      toLat: _asDouble(d['to_lat']), toLon: _asDouble(d['to_lon']),
     );
   }
 

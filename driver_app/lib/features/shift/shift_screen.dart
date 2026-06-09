@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/theme.dart';
 import '../../core/fgs/shift_service.dart';
+import '../../core/nav/navigation.dart';
 import '../../data/models/order.dart';
 import '../../state/orders_controller.dart';
 import '../../widgets/order_card.dart';
@@ -134,19 +135,52 @@ class _ActiveOrder extends ConsumerWidget {
       order: order,
       trailing: Column(
         children: [
-          SizedBox(
-            height: 56,
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _call(order.phone),
-              icon: const Icon(Icons.phone, color: AppColors.green),
-              label: const Text('Позвонить пассажиру',
-                  style: TextStyle(fontSize: 17, color: AppColors.green)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppColors.green.withOpacity(0.4)),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigation.route(
+                        lat: order.fromLat, lon: order.fromLon, address: order.fromAddress),
+                    icon: const Icon(Icons.navigation, color: AppColors.blue),
+                    label: const Text('Маршрут', style: TextStyle(fontSize: 16, color: AppColors.blue)),
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.blue.withOpacity(0.4))),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _call(order.phone),
+                    icon: const Icon(Icons.phone, color: AppColors.green),
+                    label: const Text('Позвонить', style: TextStyle(fontSize: 16, color: AppColors.green)),
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.green.withOpacity(0.4))),
+                  ),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 10),
+          if (!order.arrived)
+            SizedBox(
+              height: 52, width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.surface2, foregroundColor: AppColors.accent),
+                onPressed: () => _arrived(context, ref),
+                icon: const Icon(Icons.place),
+                label: const Text('Я на месте', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: const Text('✓ Пассажир уведомлён, что вы на месте',
+                  style: TextStyle(color: AppColors.green)),
+            ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -188,6 +222,14 @@ class _ActiveOrder extends ConsumerWidget {
   Future<void> _call(String phone) async {
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  Future<void> _arrived(BuildContext context, WidgetRef ref) async {
+    final r = await ref.read(ordersControllerProvider.notifier).markArrived(order.id);
+    if (context.mounted && r.ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Пассажир уведомлён, что вы на месте')));
+    }
   }
 
   Future<void> _completeSheet(BuildContext context, WidgetRef ref) async {

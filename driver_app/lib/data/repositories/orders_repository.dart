@@ -31,6 +31,9 @@ class OrdersRepository {
   Future<ActionResult> cancel(int orderId) =>
       _post('/driver/order/$orderId/cancel');
 
+  Future<ActionResult> arrived(int orderId) =>
+      _post('/driver/order/$orderId/arrived');
+
   Future<ActionResult> setOnline(bool online) =>
       _post('/driver/status', data: {'online': online});
 

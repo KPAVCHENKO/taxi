@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibration/vibration.dart';
 
 import '../../config/config.dart';
 import '../../config/theme.dart';
 import '../../core/push/notifications.dart';
+import '../../core/storage/prefs.dart';
 import '../../data/models/order.dart';
 import '../../state/orders_controller.dart';
 import '../../state/providers.dart';
@@ -38,19 +40,29 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen> {
   }
 
   Future<void> _startAlarm() async {
-    try {
-      if (await Vibration.hasVibrator()) {
-        // repeat: 0 — повторять весь паттерн с начала (непрерывно), пока не отменим
-        Vibration.vibrate(pattern: [0, 600, 400, 600, 400, 800], repeat: 0);
-      }
-    } catch (_) {}
+    if (Prefs.vibration) {
+      try {
+        if (await Vibration.hasVibrator()) {
+          Vibration.vibrate(pattern: [0, 600, 400, 600, 400, 800], repeat: 0);
+        }
+      } catch (_) {}
+    }
+    if (Prefs.sound) {
+      try {
+        FlutterRingtonePlayer().play(
+          android: AndroidSounds.notification,
+          looping: true,
+          asAlarm: true,
+          volume: 1.0,
+        );
+      } catch (_) {}
+    }
   }
 
   void _stopAlarm() {
     _timer?.cancel();
-    try {
-      Vibration.cancel();
-    } catch (_) {}
+    try { Vibration.cancel(); } catch (_) {}
+    try { FlutterRingtonePlayer().stop(); } catch (_) {}
   }
 
   Future<void> _accept() async {

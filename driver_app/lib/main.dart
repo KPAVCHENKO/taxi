@@ -8,6 +8,7 @@ import 'core/fgs/shift_service.dart';
 import 'core/network/dio_client.dart';
 import 'core/push/notifications.dart';
 import 'core/push/push_service.dart';
+import 'core/storage/prefs.dart';
 import 'core/storage/token_storage.dart';
 import 'state/providers.dart';
 
@@ -19,6 +20,7 @@ Future<void> main() async {
 
   await Notifications.instance.init();
   await ShiftService.init();
+  await Prefs.load();
 
   final container = ProviderContainer();
 

@@ -155,6 +155,12 @@ class OrdersController extends StateNotifier<OrdersUi> {
     return r;
   }
 
+  Future<ActionResult> markArrived(int orderId) async {
+    final r = await _repo.arrived(orderId);
+    await refresh(silent: true);
+    return r;
+  }
+
   void dismissIncoming(int orderId) {
     final s = {..._ref.read(dismissedOrderIdsProvider), orderId};
     _ref.read(dismissedOrderIdsProvider.notifier).state = s;

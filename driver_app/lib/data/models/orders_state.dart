@@ -7,7 +7,11 @@ class OrdersState {
   final List<TaxiOrder> history;
   final int balance;
   final int todayEarnings;
+  final int weekEarnings;
+  final int monthEarnings;
   final int completedCount;
+  final double? rating;
+  final int ratingCount;
   final bool isOnline;
   final int chatUnreadGroup;
   final int chatUnreadDirect;
@@ -18,7 +22,11 @@ class OrdersState {
     this.history = const [],
     this.balance = 0,
     this.todayEarnings = 0,
+    this.weekEarnings = 0,
+    this.monthEarnings = 0,
     this.completedCount = 0,
+    this.rating,
+    this.ratingCount = 0,
     this.isOnline = false,
     this.chatUnreadGroup = 0,
     this.chatUnreadDirect = 0,
@@ -39,7 +47,11 @@ class OrdersState {
       history: parseList(j['history']),
       balance: _i(j['balance']),
       todayEarnings: _i(j['today_earnings']),
+      weekEarnings: _i(j['week_earnings']),
+      monthEarnings: _i(j['month_earnings']),
       completedCount: _i(j['completed_count']),
+      rating: (j['rating'] is num) ? (j['rating'] as num).toDouble() : null,
+      ratingCount: _i(j['rating_count']),
       isOnline: j['is_online'] == true,
       chatUnreadGroup: _i(j['chat_unread_group']),
       chatUnreadDirect: _i(j['chat_unread_direct']),
@@ -52,7 +64,11 @@ class OrdersState {
         history: history,
         balance: balance,
         todayEarnings: todayEarnings,
+        weekEarnings: weekEarnings,
+        monthEarnings: monthEarnings,
         completedCount: completedCount,
+        rating: rating,
+        ratingCount: ratingCount,
         isOnline: isOnline ?? this.isOnline,
         chatUnreadGroup: chatUnreadGroup,
         chatUnreadDirect: chatUnreadDirect,
