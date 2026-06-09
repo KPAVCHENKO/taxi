@@ -1564,6 +1564,85 @@ def _notify_client(order, title, body):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# ЧАТ ЗАКАЗА: пассажир ↔ водитель (на время активного заказа)
+# ══════════════════════════════════════════════════════════════════════════════
+def _order_chat_list(order_id, after=0):
+    q = ChatMessage.query.filter_by(room=f'order:{order_id}')
+    if after:
+        q = q.filter(ChatMessage.id > after)
+    return [{'id': m.id, 'sender': m.sender, 'body': m.body,
+             'ts': (m.created_at or datetime.utcnow()).isoformat() + 'Z'}
+            for m in q.order_by(ChatMessage.id.asc()).limit(200).all()]
+
+
+def _notify_driver_chat(order, body):
+    """Сообщение пассажира → водителю (в приложение и/или Telegram)."""
+    if not order or not order.driver_telegram_id:
+        return
+    drv = Driver.query.filter_by(telegram_id=order.driver_telegram_id).first()
+    if drv:
+        try:
+            _send_fcm_to_driver(drv.id, title='💬 Сообщение от пассажира', body=body,
+                                tag='chat', data={'type': 'order_chat', 'order_id': order.id,
+                                                  'title': '💬 Сообщение от пассажира', 'body': body})
+        except Exception:
+            pass
+    try:
+        telegram_bot.send_message(order.driver_telegram_id,
+                                  f'💬 <b>Пассажир (заказ #{order.id}):</b>\n{body}')
+    except Exception:
+        pass
+
+
+@app.route('/order/<int:order_id>/chat')
+def order_chat_get(order_id):
+    order = Order.query.get_or_404(order_id)
+    if not order.cancel_token or request.args.get('token', '') != order.cancel_token:
+        return jsonify({'error': 'forbidden'}), 403
+    return jsonify({'messages': _order_chat_list(order_id, request.args.get('after', 0, type=int)),
+                    'driver_name': order.driver_name})
+
+
+@app.route('/order/<int:order_id>/chat', methods=['POST'])
+def order_chat_post(order_id):
+    order = Order.query.get_or_404(order_id)
+    data = request.get_json(silent=True) or {}
+    if not order.cancel_token or data.get('token', '') != order.cancel_token:
+        return jsonify({'error': 'forbidden'}), 403
+    body = (data.get('body', '') or '').strip()[:500]
+    if not body:
+        return jsonify({'error': 'empty'}), 400
+    m = ChatMessage(room=f'order:{order_id}', sender='client', author_name='Пассажир', body=body)
+    db.session.add(m)
+    db.session.commit()
+    _notify_driver_chat(order, body)
+    return jsonify({'ok': True, 'id': m.id})
+
+
+@app.route('/driver/order/<int:order_id>/chat')
+@driver_required
+def driver_order_chat_get(order_id):
+    return jsonify({'messages': _order_chat_list(order_id, request.args.get('after', 0, type=int))})
+
+
+@app.route('/driver/order/<int:order_id>/chat', methods=['POST'])
+@driver_required
+def driver_order_chat_post(order_id):
+    order = Order.query.get_or_404(order_id)
+    driver = _get_driver_session()
+    data = request.get_json(silent=True) or {}
+    body = (data.get('body', '') or '').strip()[:500]
+    if not body:
+        return jsonify({'error': 'empty'}), 400
+    m = ChatMessage(room=f'order:{order_id}', sender='driver',
+                    author_name=(driver.name if driver else 'Водитель'), body=body)
+    db.session.add(m)
+    db.session.commit()
+    _notify_client(order, '💬 Сообщение от водителя', body)
+    return jsonify({'ok': True, 'id': m.id})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # ВСТРОЕННЫЙ ЧАТ (общий + личные с водителями)
 # ══════════════════════════════════════════════════════════════════════════════
 def _msg_dict(m):

@@ -340,7 +340,24 @@ def handle_update(update):
                 f'Сюда же придёт «водитель на месте» и «поездка завершена».',
                 {'remove_keyboard': True})
             return
-        msg_text = (message.get('text', '') or '').strip().lower()
+        raw_text = (message.get('text', '') or '').strip()
+        # Свободный текст от пассажира с активным заказом → сообщение водителю (чат)
+        if raw_text and not raw_text.startswith('/') and chat_id not in _pending:
+            o = (Order.query.filter_by(tg_chat_id=chat_id, status='accepted')
+                 .order_by(Order.id.desc()).first())
+            if o:
+                from models import ChatMessage as _CM
+                db.session.add(_CM(room=f'order:{o.id}', sender='client',
+                                   author_name='Пассажир', body=raw_text[:500]))
+                db.session.commit()
+                try:
+                    import app as _app2
+                    _app2._notify_driver_chat(o, raw_text[:500])
+                except Exception:
+                    pass
+                send_message(chat_id, '✉️ Передал водителю.')
+                return
+        msg_text = raw_text.lower()
         if msg_text.startswith('/start') or msg_text.startswith('/balance') or msg_text.startswith('/баланс'):
             driver = _Driver.query.filter_by(telegram_id=chat_id).first()
             if driver:
