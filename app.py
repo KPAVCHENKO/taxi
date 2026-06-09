@@ -267,8 +267,8 @@ GEO_LON = os.environ.get('GEO_LON', '69.2206')
 # Актуальные версии собранных APK (поднимать при каждой новой сборке).
 # Сервер отдаёт max(этой константы, значения из админки) — приложения у которых
 # код версии меньше, увидят обновление, даже если в админке версию не меняли.
-LATEST_DRIVER_VERSION = 7
-LATEST_CLIENT_VERSION = 5
+LATEST_DRIVER_VERSION = 8
+LATEST_CLIENT_VERSION = 6
 
 def legal_ctx():
     return dict(
@@ -3150,6 +3150,39 @@ def admin_analytics():
         completed_month=completed_month, cancelled_month=cancelled_month,
         rev_today=rev(day), rev_week=rev(week), rev_month=rev(month),
         hours=hours, hours_max=hours_max, top_dest=top_dest, drv_stats=drv_stats)
+
+
+@app.route('/admin/export')
+@admin_required
+def admin_export():
+    """Ручной бэкап: ключевые данные (заказы, водители+балансы, тарифы, отзывы) в JSON."""
+    def _o(o):
+        return {
+            'id': o.id, 'phone': o.phone, 'from': o.from_address, 'to': o.to_address,
+            'status': o.status, 'price': o.estimated_price, 'rating': o.rating,
+            'driver': o.driver_name, 'driver_tid': o.driver_telegram_id,
+            'payment': o.payment, 'ride_type': o.ride_type,
+            'created_at': o.created_at.isoformat() if o.created_at else None,
+            'scheduled_at': o.scheduled_at.isoformat() if o.scheduled_at else None,
+        }
+    data = {
+        'exported_at': datetime.utcnow().isoformat(),
+        'drivers': [{'id': d.id, 'name': d.name, 'phone': d.phone, 'telegram_id': d.telegram_id,
+                     'balance': d.balance, 'car_model': d.car_model, 'car_color': d.car_color,
+                     'car_plate': d.car_plate, 'active': d.active, 'driver_pin': d.driver_pin,
+                     'route_type': d.route_type} for d in Driver.query.all()],
+        'tariffs': [{'destination': t.destination, 'price': t.price,
+                     'round_trip_price': t.round_trip_price, 'intercity': t.intercity}
+                    for t in Tariff.query.all()],
+        'orders': [_o(o) for o in Order.query.order_by(Order.id.desc()).limit(5000).all()],
+        'reviews': [{'name': r.name, 'text': r.text, 'type': r.type, 'approved': r.approved}
+                    for r in Review.query.all()],
+    }
+    resp = make_response(_json_mod.dumps(data, ensure_ascii=False, indent=2))
+    resp.headers['Content-Type'] = 'application/json; charset=utf-8'
+    resp.headers['Content-Disposition'] = \
+        f'attachment; filename=backup-{datetime.utcnow().strftime("%Y%m%d-%H%M")}.json'
+    return resp
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
