@@ -63,7 +63,7 @@ try:
                                               online_only=True, tag='order')
                     _send_fcm_to_drivers('🚖 Заказ ждёт водителя!',
                                          f'{o.from_address} → {o.to_address}', '/driver/',
-                                         online_only=True, tag='order')
+                                         online_only=True, tag='order', data=_order_fcm_data(o))
                     _send_push_to_all('⏳ Заказ ещё не принят',
                                       f'#{o.id}: {o.from_address} → {o.to_address}', '/admin/dispatcher', tag='order')
                 except Exception as _re:
@@ -580,7 +580,8 @@ def create_order():
         _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
     # Водителям пушим только тем, кто «в сети» (оффлайн не беспокоим)
     _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
-    _send_fcm_to_drivers('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
+    _send_fcm_to_drivers('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}',
+                         online_only=True, tag='order', data=_order_fcm_data(order))
 
     return jsonify({
         'success': True,
@@ -616,9 +617,14 @@ def client_cancel_order(order_id):
             _send_push_to_one_driver(_did, '❌ Заказ отменён клиентом',
                                      f'{order.from_address} → {order.to_address}', '/driver/', tag='order')
             _send_fcm_to_driver(_did, '❌ Заказ отменён клиентом',
-                                f'{order.from_address} → {order.to_address}', '/driver/', tag='order')
+                                f'{order.from_address} → {order.to_address}', '/driver/', tag='order',
+                                data={'type': 'order_cancelled', 'order_id': order.id})
         except Exception:
             pass
+    else:
+        # заказ ещё никто не принял — закрыть экран звонка у всех онлайн
+        _send_fcm_to_drivers(online_only=True, tag='order',
+                             data={'type': 'order_cancelled', 'order_id': order.id})
     return jsonify({'ok': True, 'status': 'cancelled'})
 
 
@@ -1299,48 +1305,81 @@ def _fcm_access_token():
         print(f'[FCM] token error: {e}')
         return None, None
 
-def _send_fcm_to_driver(driver_id, title, body, url='/driver/', tag='kt'):
-    """Отправить FCM-уведомление на все устройства водителя. No-op, если FCM не настроен."""
+def _fcm_post(tokens, data_dict):
+    """Отправить data-only high-priority сообщение. tokens: список (token_id, token)."""
     access, proj = _fcm_access_token()
-    if not access:
+    if not access or not tokens:
+        return
+    import requests as _rq
+    endpoint = f'https://fcm.googleapis.com/v1/projects/{proj}/messages:send'
+    payload_data = {k: ('' if v is None else str(v)) for k, v in data_dict.items()}
+    dead = []
+    for tid, tok in tokens:
+        msg = {'message': {'token': tok, 'data': payload_data,
+                           'android': {'priority': 'high'}}}
+        try:
+            r = _rq.post(endpoint, json=msg, headers={'Authorization': f'Bearer {access}'}, timeout=10)
+            if r.status_code in (400, 403, 404) and any(
+                    k in r.text for k in ('UNREGISTERED', 'INVALID_ARGUMENT', 'NOT_FOUND')):
+                dead.append(tid)
+        except Exception as e:
+            print(f'[FCM] send error: {e}')
+    if dead:
+        for did in dead:
+            DriverFcmToken.query.filter_by(id=did).delete()
+        db.session.commit()
+
+def _send_fcm_to_driver(driver_id, title='', body='', url='/driver/', tag='kt', data=None):
+    """FCM на все устройства одного водителя. No-op, если FCM не настроен."""
+    if not _fcm_config()[0]:
         return
     toks = DriverFcmToken.query.filter_by(driver_id=driver_id).all()
     if not toks:
         return
-    import requests as _rq
-    endpoint = f'https://fcm.googleapis.com/v1/projects/{proj}/messages:send'
-    dead = []
-    for t in toks:
-        msg = {'message': {
-            'token': t.token,
-            'data': {'title': title, 'body': body, 'url': url, 'tag': tag},
-            'android': {
-                'priority': 'high',
-                'notification': {'title': title, 'body': body, 'tag': tag,
-                                 'sound': 'default', 'notification_priority': 'PRIORITY_MAX',
-                                 'icon': 'notif_icon'},
-            },
-        }}
-        try:
-            r = _rq.post(endpoint, json=msg, headers={'Authorization': f'Bearer {access}'}, timeout=10)
-            if r.status_code in (400, 403, 404) and ('UNREGISTERED' in r.text or 'INVALID_ARGUMENT' in r.text):
-                dead.append(t.id)
-        except Exception as e:
-            print(f'[FCM] send error: {e}')
-    for did in dead:
-        DriverFcmToken.query.filter_by(id=did).delete()
-    if dead:
-        db.session.commit()
+    d = {'title': title, 'body': body, 'url': url, 'tag': tag}
+    if data:
+        d.update(data)
+    _fcm_post([(t.id, t.token) for t in toks], d)
 
-def _send_fcm_to_drivers(title, body, url='/driver/', online_only=False, tag='kt'):
-    """FCM всем активным водителям (или только тем, кто на смене)."""
+def _send_fcm_to_drivers(title='', body='', url='/driver/', online_only=False, tag='kt',
+                         data=None, exclude_driver_id=None):
+    """FCM всем активным водителям (или только тем, кто на смене), кроме exclude_driver_id."""
     if not _fcm_config()[0]:
         return
     q = Driver.query.filter_by(active=True)
     if online_only:
         q = q.filter_by(is_online=True)
-    for d in q.all():
-        _send_fcm_to_driver(d.id, title, body, url, tag)
+    ids = [dr.id for dr in q.all() if dr.id != exclude_driver_id]
+    if not ids:
+        return
+    toks = DriverFcmToken.query.filter(DriverFcmToken.driver_id.in_(ids)).all()
+    d = {'title': title, 'body': body, 'url': url, 'tag': tag}
+    if data:
+        d.update(data)
+    _fcm_post([(t.id, t.token) for t in toks], d)
+
+def _order_fcm_data(order):
+    """data-payload типа new_order со всеми полями (значения — строки на стороне FCM)."""
+    try:
+        is_ic = telegram_bot._is_intercity(order) if hasattr(telegram_bot, '_is_intercity') else False
+    except Exception:
+        is_ic = False
+    return {
+        'type': 'new_order',
+        'order_id': order.id,
+        'from_address': order.from_address,
+        'to_address': order.to_address,
+        'estimated_price': order.estimated_price,
+        'distance_km': order.distance_km,
+        'duration_min': order.duration_min,
+        'payment': order.payment,
+        'ride_type': order.ride_type,
+        'intercity': 'true' if is_ic else 'false',
+        'scheduled_at': order.scheduled_at.isoformat() if order.scheduled_at else '',
+        'comment': order.comment or '',
+        'phone': order.phone,
+        'ring_timeout': 60,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1439,10 +1478,12 @@ def admin_chat_send():
     try:
         if room == 'group':
             _send_push_to_driver_subs('💬 Общий чат', body[:120], '/driver/?tab=chat', tag='chat')
-            _send_fcm_to_drivers('💬 Общий чат', body[:120], '/driver/?tab=chat', tag='chat')
+            _send_fcm_to_drivers('💬 Общий чат', body[:120], '/driver/?tab=chat', tag='chat',
+                                 data={'type': 'chat', 'room': 'group'})
         elif driver_id:
             _send_push_to_one_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat', tag='chat')
-            _send_fcm_to_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat', tag='chat')
+            _send_fcm_to_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat', tag='chat',
+                                data={'type': 'chat', 'room': f'd{driver_id}'})
     except Exception as _e:
         print(f'[CHAT-PUSH] {_e}')
 
@@ -2490,6 +2531,9 @@ def driver_accept_order(order_id):
         return jsonify({'error': 'Заказ уже принят другим водителем'}), 409
     _log('status_changed', actor=driver.name, order_id=order.id,
          details='Принят водителем через приложение')
+    # Закрыть экран входящего заказа у остальных онлайн-водителей
+    _send_fcm_to_drivers(online_only=True, tag='order', exclude_driver_id=driver.id,
+                         data={'type': 'order_taken', 'order_id': order.id})
     return jsonify({'ok': True})
 
 
@@ -2641,7 +2685,8 @@ def driver_chat_send():
             _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat', tag='chat')
             for other in Driver.query.filter(Driver.active == True, Driver.id != driver.id).all():
                 _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat', tag='chat')
-                _send_fcm_to_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat', tag='chat')
+                _send_fcm_to_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat', tag='chat',
+                                    data={'type': 'chat', 'room': 'group'})
         else:
             _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat', tag='chat')
     except Exception as _e:
@@ -2717,6 +2762,7 @@ def driver_push_test():
 
 # ── FCM: регистрация токена приложения ────────────────────────────────────────
 @app.route('/driver/fcm/register', methods=['POST'])
+@app.route('/driver/api/fcm-token', methods=['POST'])   # алиас для приложения
 @driver_required
 def driver_fcm_register():
     driver = _get_driver_session()
@@ -2733,6 +2779,17 @@ def driver_fcm_register():
         db.session.add(DriverFcmToken(driver_id=driver.id, token=token, platform=platform))
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@app.route('/driver/regulations/accept', methods=['POST'])
+@driver_required
+def driver_regulations_accept():
+    """Принятие регламента из приложения (JSON)."""
+    driver = _get_driver_session()
+    driver.regulations_accepted = True
+    driver.regulations_accepted_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'ok': True, 'regulations_accepted': True})
 
 
 @app.route('/driver/fcm/unregister', methods=['POST'])
