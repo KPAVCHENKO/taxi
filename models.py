@@ -23,6 +23,7 @@ class Order(db.Model):
     status             = db.Column(db.String(20),   default='new')    # new | accepted | completed | cancelled
     cancel_token       = db.Column(db.String(40),   nullable=True)    # для отмены заказа клиентом без аккаунта
     client_fcm_token   = db.Column(db.Text,         nullable=True)    # FCM-токен приложения пассажира (push статуса)
+    tg_chat_id         = db.Column(db.String(40),   nullable=True)    # chat_id, если заказ оформлен через Telegram-бота
     driver_telegram_id = db.Column(db.String(50),   nullable=True)
     driver_name        = db.Column(db.String(100),  nullable=True)
     message_ids        = db.Column(db.Text,         nullable=True)    # JSON {telegram_id: message_id}

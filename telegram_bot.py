@@ -238,7 +238,13 @@ _SETTLE = [
     ('челюскинцев', 'Челюскинцев'), ('викторовка', 'Викторовка'), ('долматово', 'Долматово'),
     ('ишим', 'Ишим (межгород)'), ('петропавловск', 'Петропавловск (межгород)'),
 ]
-_pending = {}  # chat_id -> {'from':key, 'to':key}
+# Межгород — между Казанским и Ишим/Петропавловск (без пагинации, 3 пункта)
+_IC = [('казанское', 'Казанское'), ('ишим', 'Ишим'), ('петропавловск', 'Петропавловск')]
+# Местные (Казанский район) — без межгорода, показываем страницами
+_LOCAL = [s for s in _SETTLE if s[0] not in _PRICE_IC]
+_PER = 8  # населённых пунктов на страницу
+
+_pending = {}  # chat_id -> {'kind','from','to'}
 
 def _settle_label(key):
     for k, l in _SETTLE:
@@ -261,15 +267,30 @@ def _calc_price(fk, tk):
         return None
     return _PRICE_LOCAL.get(dest)
 
-def _settle_kb(prefix):
+def _ic_kb(prefix, exclude=None):
+    rows = [[{'text': l, 'callback_data': f'{prefix}{k}'}] for k, l in _IC if k != exclude]
+    return {'inline_keyboard': rows}
+
+def _page_kb(items, sel_prefix, nav_prefix, page):
+    """Клавиатура выбора с пагинацией (по 2 в ряд + навигация)."""
+    total = max(1, (len(items) + _PER - 1) // _PER)
+    page = max(0, min(page, total - 1))
     rows, row = [], []
-    for key, label in _SETTLE:
-        row.append({'text': label, 'callback_data': f'{prefix}{key}'})
+    for key, label in items[page * _PER:(page + 1) * _PER]:
+        row.append({'text': label, 'callback_data': f'{sel_prefix}{key}'})
         if len(row) == 2:
             rows.append(row)
             row = []
     if row:
         rows.append(row)
+    nav = []
+    if page > 0:
+        nav.append({'text': '◀ Назад', 'callback_data': f'{nav_prefix}{page-1}'})
+    nav.append({'text': f'{page+1}/{total}', 'callback_data': 'c_noop'})
+    if page < total - 1:
+        nav.append({'text': 'Вперёд ▶', 'callback_data': f'{nav_prefix}{page+1}'})
+    if len(nav) > 1:
+        rows.append(nav)
     return {'inline_keyboard': rows}
 
 
@@ -291,7 +312,7 @@ def handle_update(update):
             o = Order(phone=phone, from_address=_settle_label(fk), to_address=_settle_label(tk),
                       payment='cash', ride_type='individual',
                       estimated_price=_calc_price(fk, tk), status='new',
-                      cancel_token=_sec.token_urlsafe(16))
+                      cancel_token=_sec.token_urlsafe(16), tg_chat_id=chat_id)
             db.session.add(o)
             db.session.commit()
             try:
@@ -311,8 +332,12 @@ def handle_update(update):
             price = _calc_price(fk, tk)
             ptxt = f'\n💰 Стоимость: <b>{price} ₽</b>' if price else '\n💰 Цену уточнит диспетчер'
             send_message(chat_id,
-                f'✅ <b>Заказ принят!</b>\n📍 {_settle_label(fk)} → 🏁 {_settle_label(tk)}{ptxt}\n\n'
-                'Диспетчер свяжется с вами. Спасибо!',
+                f'✅ <b>Заказ оформлен!</b>\n\n'
+                f'📍 Откуда: <b>{_settle_label(fk)}</b>\n'
+                f'🏁 Куда: <b>{_settle_label(tk)}</b>{ptxt}\n'
+                f'📞 Телефон: {phone}\n\n'
+                f'🔎 Ищем водителя. Как только заказ примут — пришлём, кто и на чём приедет. '
+                f'Сюда же придёт «водитель на месте» и «поездка завершена».',
                 {'remove_keyboard': True})
             return
         msg_text = (message.get('text', '') or '').strip().lower()
@@ -363,24 +388,65 @@ def handle_update(update):
     msg_id       = msg.get('message_id')
 
     # ── Пассажирский заказ ────────────────────────────────────────────────────
+    _FROM_Q = '📍 <b>Откуда едем?</b>'
+    if data == 'c_noop':
+        answer_callback_query(cq_id)
+        return
     if data == 'c_order':
         answer_callback_query(cq_id)
-        send_message(msg_chat_id, '📍 <b>Откуда едем?</b>', _settle_kb('c_from:'))
+        _pending[msg_chat_id] = {}
+        send_message(msg_chat_id,
+            '🚕 <b>Новый заказ</b>\n\nКуда поедем?',
+            {'inline_keyboard': [
+                [{'text': '🏘 По Казанскому району', 'callback_data': 'c_kind:local'}],
+                [{'text': '🌆 Межгород — Ишим / Петропавловск', 'callback_data': 'c_kind:ic'}],
+            ]})
+        return
+    if data.startswith('c_kind:'):
+        kind = data.split(':', 1)[1]
+        _pending.setdefault(msg_chat_id, {})['kind'] = kind
+        answer_callback_query(cq_id)
+        kb = _ic_kb('c_from:') if kind == 'ic' else _page_kb(_LOCAL, 'c_from:', 'c_fromp:', 0)
+        edit_message_text(msg_chat_id, msg_id, _FROM_Q, kb)
+        return
+    if data.startswith('c_fromp:'):
+        answer_callback_query(cq_id)
+        try: page = int(data.split(':', 1)[1])
+        except ValueError: page = 0
+        edit_message_text(msg_chat_id, msg_id, _FROM_Q, _page_kb(_LOCAL, 'c_from:', 'c_fromp:', page))
         return
     if data.startswith('c_from:'):
-        _pending.setdefault(msg_chat_id, {})['from'] = data.split(':', 1)[1]
+        st = _pending.setdefault(msg_chat_id, {})
+        st['from'] = data.split(':', 1)[1]
         answer_callback_query(cq_id)
-        send_message(msg_chat_id, '🏁 <b>Куда едем?</b>', _settle_kb('c_to:'))
+        to_q = f'📍 Откуда: <b>{_settle_label(st["from"])}</b>\n\n🏁 <b>Куда едем?</b>'
+        if st.get('kind') == 'ic':
+            kb = _ic_kb('c_to:', exclude=st['from'])
+        else:
+            kb = _page_kb([s for s in _LOCAL if s[0] != st['from']], 'c_to:', 'c_top:', 0)
+        edit_message_text(msg_chat_id, msg_id, to_q, kb)
+        return
+    if data.startswith('c_top:'):
+        answer_callback_query(cq_id)
+        st = _pending.get(msg_chat_id, {})
+        try: page = int(data.split(':', 1)[1])
+        except ValueError: page = 0
+        to_q = f'📍 Откуда: <b>{_settle_label(st.get("from"))}</b>\n\n🏁 <b>Куда едем?</b>'
+        kb = _page_kb([s for s in _LOCAL if s[0] != st.get('from')], 'c_to:', 'c_top:', page)
+        edit_message_text(msg_chat_id, msg_id, to_q, kb)
         return
     if data.startswith('c_to:'):
         st = _pending.setdefault(msg_chat_id, {})
         st['to'] = data.split(':', 1)[1]
         answer_callback_query(cq_id)
         _pr = _calc_price(st.get('from'), st.get('to'))
-        _ptxt = f'\n💰 Стоимость: <b>{_pr} ₽</b>' if _pr else '\n💰 Цену уточнит диспетчер'
+        _ptxt = f'\n💰 Примерно: <b>{_pr} ₽</b>' if _pr else '\n💰 Цену уточнит диспетчер'
+        edit_message_text(msg_chat_id, msg_id,
+            f'🚕 <b>Ваш заказ</b>\n\n'
+            f'📍 Откуда: <b>{_settle_label(st.get("from"))}</b>\n'
+            f'🏁 Куда: <b>{_settle_label(st.get("to"))}</b>{_ptxt}')
         send_message(msg_chat_id,
-            f'📍 {_settle_label(st.get("from"))} → 🏁 {_settle_label(st.get("to"))}{_ptxt}\n\n'
-            'Нажмите кнопку, чтобы отправить номер телефона 👇',
+            '👇 Остался один шаг — отправьте номер телефона кнопкой ниже.',
             {'keyboard': [[{'text': '📱 Отправить мой номер', 'request_contact': True}]],
              'resize_keyboard': True, 'one_time_keyboard': True})
         return
@@ -475,6 +541,27 @@ def handle_update(update):
         notify_drivers(order)
         return
 
+    # ── Arrived (driver is at pickup) ─────────────────────────────────────────
+    if action == 'arrived':
+        if order.driver_telegram_id != driver_tid:
+            answer_callback_query(cq_id, '⚠️ Этот заказ не ваш', show_alert=True)
+            return
+        if order.status != 'accepted':
+            answer_callback_query(cq_id, '⚠️ Заказ уже не активен', show_alert=True)
+            return
+        try:
+            order.driver_arrived = True
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        answer_callback_query(cq_id, '✅ Пассажир уведомлён, что вы на месте')
+        try:
+            import app as _app
+            _app._notify_client(order, '🚗 Водитель на месте', 'Ваше такси подъехало')
+        except Exception as _e:
+            print(f'[TG-ARRIVED-NOTIFY] {_e}')
+        return
+
     # ── Complete (driver marks order done) ────────────────────────────────────
     if action == 'complete':
         if order.driver_telegram_id != driver_tid:
@@ -502,6 +589,12 @@ def handle_update(update):
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+        try:
+            import app as _app
+            _app._notify_client(order, '🏁 Поездка завершена', 'Спасибо, что выбрали нас! 🙂')
+        except Exception as _e:
+            print(f'[TG-COMPLETE-NOTIFY] {_e}')
 
         answer_callback_query(cq_id, '✅ Заказ завершён! Спасибо.')
         if msg_id:
@@ -580,6 +673,7 @@ def handle_update(update):
 
     cancel_markup = {
         'inline_keyboard': [
+            [{'text': '🚗 Я на месте', 'callback_data': f'arrived:{order.id}'}],
             [{'text': '✅ Завершил заказ', 'callback_data': f'complete:{order.id}'}],
             [{'text': '❌ Отменить заказ', 'callback_data': f'cancel:{order.id}'}],
         ]
@@ -587,6 +681,15 @@ def handle_update(update):
 
     if msg_id:
         edit_message_text(msg_chat_id, msg_id, accepted_text, cancel_markup)
+
+    # Уведомить пассажира (приложение/Telegram), что заказ принят
+    try:
+        import app as _app
+        _car2 = (' · ' + _drv.car_info) if (_drv and _drv.car_info) else ''
+        _ph2 = ('\n📞 ' + _drv.phone) if (_drv and getattr(_drv, 'phone', None)) else ''
+        _app._notify_client(order, '✅ Водитель принял заказ', f'{driver_name}{_car2}{_ph2}')
+    except Exception as _e:
+        print(f'[TG-ACCEPT-NOTIFY] {_e}')
 
     # Notify other drivers
     if order.message_ids:

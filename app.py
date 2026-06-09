@@ -363,6 +363,7 @@ with app.app_context():
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS online_at TIMESTAMP",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS chat_seen_group TIMESTAMP",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS chat_seen_direct TIMESTAMP",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tg_chat_id VARCHAR(40)",
     ]
     for _sql in _migrations:
         try:
@@ -1543,16 +1544,23 @@ def _driver_rating(tids):
 
 
 def _notify_client(order, title, body):
-    """Push пассажиру о смене статуса его заказа."""
-    if not order or not getattr(order, 'client_fcm_token', None):
+    """Уведомление пассажиру о смене статуса заказа — в приложение (FCM) и/или Telegram."""
+    if not order:
         return
-    _fcm_send_one(order.client_fcm_token, {
-        'type': 'order_status',
-        'order_id': order.id,
-        'status': order.status,
-        'title': title,
-        'body': body,
-    })
+    if getattr(order, 'client_fcm_token', None):
+        _fcm_send_one(order.client_fcm_token, {
+            'type': 'order_status',
+            'order_id': order.id,
+            'status': order.status,
+            'title': title,
+            'body': body,
+        })
+    # Заказ из Telegram-бота — пишем прямо в чат пользователю
+    if getattr(order, 'tg_chat_id', None):
+        try:
+            telegram_bot.send_message(order.tg_chat_id, f'<b>{title}</b>\n{body}')
+        except Exception as _e:
+            print(f'[TG-NOTIFY] {_e}')
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -2729,8 +2737,9 @@ def driver_accept_order(order_id):
                          data={'type': 'order_taken', 'order_id': order.id})
     # Уведомить пассажира
     order.status = 'accepted'
-    _notify_client(order, '✅ Водитель принял заказ',
-                   driver.name + (' · ' + driver.car_info if driver.car_info else ''))
+    _car = (' · ' + driver.car_info) if driver.car_info else ''
+    _ph = ('\n📞 ' + driver.phone) if getattr(driver, 'phone', None) else ''
+    _notify_client(order, '✅ Водитель принял заказ', f'{driver.name}{_car}{_ph}')
     return jsonify({'ok': True})
 
 
