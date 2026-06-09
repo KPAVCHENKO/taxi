@@ -337,6 +337,8 @@ with app.app_context():
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_token VARCHAR(40)",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_fcm_token TEXT",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS rating INTEGER",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_arrived BOOLEAN DEFAULT FALSE",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS driver_pin VARCHAR(20)",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted BOOLEAN DEFAULT FALSE",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted_at TIMESTAMP",
@@ -602,6 +604,8 @@ def client_order_status(order_id):
         return jsonify({'error': 'forbidden'}), 403
     driver_name = order.driver_name
     car_info = None
+    driver_phone = None
+    driver_rating = None
     if order.driver_telegram_id:
         d = Driver.query.filter_by(telegram_id=order.driver_telegram_id).first()
         if not d and order.driver_telegram_id.startswith('app:'):
@@ -612,16 +616,44 @@ def client_order_status(order_id):
         if d:
             driver_name = d.name
             car_info = d.car_info
+            driver_phone = d.phone
+            _tids = [t for t in [d.telegram_id, f'app:{d.id}'] if t]
+            driver_rating = _driver_rating(_tids)[0]
     return jsonify({
         'status': order.status,
         'status_label': order.status_label,
         'driver_name': driver_name,
+        'driver_phone': driver_phone,
+        'driver_rating': driver_rating,
         'car_info': car_info,
+        'arrived': bool(order.driver_arrived),
+        'rating': order.rating,
         'price': order.estimated_price,
         'from_address': order.from_address,
         'to_address': order.to_address,
         'created_at': (order.created_at + timedelta(hours=5)).strftime('%d.%m %H:%M') if order.created_at else None,
     })
+
+
+@app.route('/order/<int:order_id>/rate', methods=['POST'])
+def client_rate_order(order_id):
+    """Пассажир оценивает завершённую поездку (1..5) по cancel_token."""
+    data = request.get_json(silent=True) or {}
+    token = str(data.get('token', '')).strip()
+    try:
+        rating = int(data.get('rating', 0))
+    except (ValueError, TypeError):
+        rating = 0
+    order = Order.query.get_or_404(order_id)
+    if not order.cancel_token or token != order.cancel_token:
+        return jsonify({'error': 'Нет доступа'}), 403
+    if order.status != 'completed':
+        return jsonify({'error': 'Оценить можно только завершённую поездку'}), 400
+    if rating < 1 or rating > 5:
+        return jsonify({'error': 'Оценка от 1 до 5'}), 400
+    order.rating = rating
+    db.session.commit()
+    return jsonify({'ok': True})
 
 
 @app.route('/order/<int:order_id>/cancel', methods=['POST'])
@@ -1445,6 +1477,17 @@ def _fcm_send_one(token, data_dict):
                  headers={'Authorization': f'Bearer {access}'}, timeout=10)
     except Exception as e:
         print(f'[FCM-CLIENT] {e}')
+
+def _driver_rating(tids):
+    """(средняя оценка 1..5, число оценок) по завершённым заказам водителя."""
+    if not tids:
+        return (None, 0)
+    ratings = [o.rating for o in Order.query.filter(
+        Order.driver_telegram_id.in_(tids), Order.rating.isnot(None)).all() if o.rating]
+    if not ratings:
+        return (None, 0)
+    return (round(sum(ratings) / len(ratings), 1), len(ratings))
+
 
 def _notify_client(order, title, body):
     """Push пассажиру о смене статуса его заказа."""
@@ -2520,6 +2563,8 @@ def driver_api_orders():
             'scheduled_at': (o.scheduled_at + timedelta(hours=5)).strftime('%d.%m %H:%M') if o.scheduled_at else None,
             'created_at': (o.created_at + timedelta(hours=5)).strftime('%H:%M'),
             'intercity': is_ic,
+            'from_lat': o.from_lat, 'from_lon': o.from_lon,
+            'to_lat': o.to_lat, 'to_lon': o.to_lon,
         })
     # current accepted order for this driver
     my_id = driver.telegram_id or f'app:{driver.id}'
@@ -2541,6 +2586,9 @@ def driver_api_orders():
             'distance_km': my_order.distance_km,
             'duration_min': my_order.duration_min,
             'scheduled_at': (my_order.scheduled_at + timedelta(hours=5)).strftime('%d.%m %H:%M') if my_order.scheduled_at else None,
+            'from_lat': my_order.from_lat, 'from_lon': my_order.from_lon,
+            'to_lat': my_order.to_lat, 'to_lon': my_order.to_lon,
+            'arrived': bool(my_order.driver_arrived),
         }
     # history: last 15 completed orders
     history = Order.query.filter(
@@ -2570,6 +2618,15 @@ def driver_api_orders():
         Order.status == 'completed',
         Order.created_at >= _today_utc,
     ).scalar() or 0
+    _week_utc  = _now - timedelta(days=7)
+    _month_utc = _now - timedelta(days=30)
+    week_earnings = db.session.query(db.func.sum(Order.estimated_price)).filter(
+        Order.driver_telegram_id.in_(_my_tids), Order.status == 'completed',
+        Order.created_at >= _week_utc).scalar() or 0
+    month_earnings = db.session.query(db.func.sum(Order.estimated_price)).filter(
+        Order.driver_telegram_id.in_(_my_tids), Order.status == 'completed',
+        Order.created_at >= _month_utc).scalar() or 0
+    _rating, _rating_count = _driver_rating(_my_tids)
     _unread_group, _unread_direct = _driver_chat_unread(driver)
     return jsonify({
         'new_orders': result,
@@ -2578,6 +2635,10 @@ def driver_api_orders():
         'balance': driver.balance or 0,
         'completed_count': completed_count,
         'today_earnings': today_earnings,
+        'week_earnings': week_earnings,
+        'month_earnings': month_earnings,
+        'rating': _rating,
+        'rating_count': _rating_count,
         'driver_name': driver.name,
         'is_online': bool(driver.is_online),
         'chat_unread_group': _unread_group,
@@ -2671,6 +2732,21 @@ def driver_cancel_order(order_id):
         telegram_bot.notify_drivers(order)
     except Exception:
         pass
+    return jsonify({'ok': True})
+
+
+@app.route('/driver/order/<int:order_id>/arrived', methods=['POST'])
+@driver_required
+def driver_arrived(order_id):
+    """Водитель нажал «Я на месте» — пуш пассажиру."""
+    driver = _get_driver_session()
+    order = Order.query.get_or_404(order_id)
+    my_tid = [driver.telegram_id, f'app:{driver.id}'] if driver.telegram_id else [f'app:{driver.id}']
+    if order.driver_telegram_id not in my_tid:
+        return jsonify({'error': 'Это не ваш заказ'}), 403
+    order.driver_arrived = True
+    db.session.commit()
+    _notify_client(order, '🚗 Водитель на месте', 'Ваше такси подъехало')
     return jsonify({'ok': True})
 
 
@@ -2959,6 +3035,57 @@ def admin_app_version():
         client_notes=get_setting('client_update_notes', ''),
         client_mandatory=(get_setting('client_update_mandatory', '0') == '1'),
     )
+
+
+@app.route('/admin/analytics')
+@admin_required
+def admin_analytics():
+    """Аналитика: заказы, выручка, маршруты, часы пик, по водителям."""
+    from collections import Counter
+    now = datetime.utcnow()
+    day, week, month = now - timedelta(days=1), now - timedelta(days=7), now - timedelta(days=30)
+
+    def rev(since):
+        return db.session.query(db.func.sum(Order.estimated_price)).filter(
+            Order.status == 'completed', Order.created_at >= since).scalar() or 0
+
+    orders_today = Order.query.filter(Order.created_at >= day).count()
+    orders_week  = Order.query.filter(Order.created_at >= week).count()
+    orders_month = Order.query.filter(Order.created_at >= month).count()
+    completed_month = Order.query.filter(Order.status == 'completed', Order.created_at >= month).count()
+    cancelled_month = Order.query.filter(Order.status == 'cancelled', Order.created_at >= month).count()
+
+    month_orders = Order.query.filter(Order.created_at >= month).all()
+    hours = [0] * 24
+    dest = Counter()
+    for o in month_orders:
+        hours[(o.created_at + timedelta(hours=5)).hour] += 1
+        if o.to_address:
+            dest[o.to_address.split(',')[0].strip()] += 1
+    hours_max = max(hours) or 1
+    top_dest = dest.most_common(10)
+
+    drv_stats = []
+    for d in Driver.query.all():
+        tids = [t for t in [d.telegram_id, f'app:{d.id}'] if t]
+        if not tids:
+            continue
+        comp = Order.query.filter(Order.driver_telegram_id.in_(tids),
+                                  Order.status == 'completed', Order.created_at >= month).count()
+        drev = db.session.query(db.func.sum(Order.estimated_price)).filter(
+            Order.driver_telegram_id.in_(tids), Order.status == 'completed',
+            Order.created_at >= month).scalar() or 0
+        if comp or drev:
+            rating, rc = _driver_rating(tids)
+            drv_stats.append({'name': d.name, 'completed': comp, 'revenue': drev,
+                              'rating': rating, 'rating_count': rc})
+    drv_stats.sort(key=lambda x: -x['revenue'])
+
+    return render_template('admin_analytics.html',
+        orders_today=orders_today, orders_week=orders_week, orders_month=orders_month,
+        completed_month=completed_month, cancelled_month=cancelled_month,
+        rev_today=rev(day), rev_week=rev(week), rev_month=rev(month),
+        hours=hours, hours_max=hours_max, top_dest=top_dest, drv_stats=drv_stats)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

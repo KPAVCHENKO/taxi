@@ -1,0 +1,76 @@
+{% extends 'admin_base.html' %}
+{% block title %}Аналитика{% endblock %}
+{% block page_title %}Аналитика{% endblock %}
+
+{% block content %}
+<style>
+  .an-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
+  .an-cell { background:#1a1d2e; border-radius:14px; padding:18px; }
+  .an-val { font-size:26px; font-weight:800; color:#e2e8f0; }
+  .an-lbl { font-size:12px; color:#64748b; margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+  .an-card { background:#1a1d2e; border-radius:16px; padding:20px; margin-bottom:20px; }
+  .an-card h3 { font-size:16px; margin:0 0 16px; color:#e2e8f0; }
+  .bars { display:flex; align-items:flex-end; gap:3px; height:140px; }
+  .bar { flex:1; background:linear-gradient(180deg,#f5b800,#e0a800); border-radius:3px 3px 0 0; min-height:2px; position:relative; }
+  .bar span { position:absolute; bottom:-18px; left:0; right:0; text-align:center; font-size:9px; color:#64748b; }
+  table.an { width:100%; border-collapse:collapse; }
+  table.an td, table.an th { padding:10px 8px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; color:#cbd5e1; }
+  table.an th { color:#64748b; font-size:12px; text-transform:uppercase; }
+  .num { text-align:right; color:#e2e8f0; font-weight:700; }
+</style>
+
+<div class="an-grid">
+  <div class="an-cell"><div class="an-val">{{ orders_today }}</div><div class="an-lbl">Заказов за сутки</div></div>
+  <div class="an-cell"><div class="an-val">{{ orders_week }}</div><div class="an-lbl">За неделю</div></div>
+  <div class="an-cell"><div class="an-val">{{ orders_month }}</div><div class="an-lbl">За месяц</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ rev_month }} ₽</div><div class="an-lbl">Выручка за месяц</div></div>
+</div>
+
+<div class="an-grid">
+  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ rev_today }} ₽</div><div class="an-lbl">Выручка за сутки</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ rev_week }} ₽</div><div class="an-lbl">За неделю</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#7dd3fc;">{{ completed_month }}</div><div class="an-lbl">Выполнено (мес.)</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#f87171;">{{ cancelled_month }}</div><div class="an-lbl">Отменено (мес.)</div></div>
+</div>
+
+<div class="an-card">
+  <h3>⏰ Часы пик (за 30 дней, время Тюмень)</h3>
+  <div class="bars">
+    {% for h in range(24) %}
+      <div class="bar" style="height:{{ (hours[h] / hours_max * 100) | round(0, 'floor') }}%;" title="{{ h }}:00 — {{ hours[h] }}">
+        {% if h % 3 == 0 %}<span>{{ h }}</span>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <div style="height:20px;"></div>
+</div>
+
+<div class="an-card">
+  <h3>📍 Популярные направления (за 30 дней)</h3>
+  {% if top_dest %}
+  <table class="an">
+    <tr><th>Куда</th><th class="num">Заказов</th></tr>
+    {% for name, c in top_dest %}
+      <tr><td>{{ name }}</td><td class="num">{{ c }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<div style="color:#64748b;">Пока нет данных</div>{% endif %}
+</div>
+
+<div class="an-card">
+  <h3>🏆 Водители (за 30 дней)</h3>
+  {% if drv_stats %}
+  <table class="an">
+    <tr><th>Водитель</th><th class="num">Поездок</th><th class="num">Выручка</th><th class="num">Рейтинг</th></tr>
+    {% for d in drv_stats %}
+      <tr>
+        <td>{{ d.name }}</td>
+        <td class="num">{{ d.completed }}</td>
+        <td class="num">{{ d.revenue }} ₽</td>
+        <td class="num">{% if d.rating %}⭐ {{ d.rating }} <span style="color:#64748b;font-weight:400;">({{ d.rating_count }})</span>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% else %}<div style="color:#64748b;">Пока нет данных</div>{% endif %}
+</div>
+{% endblock %}

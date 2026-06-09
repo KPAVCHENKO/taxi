@@ -29,6 +29,8 @@ class Order(db.Model):
     distance_km        = db.Column(db.Float,        nullable=True)    # road distance in km
     duration_min       = db.Column(db.Integer,      nullable=True)    # estimated travel time in min
     reminder_sent      = db.Column(db.Boolean,      default=False)    # scheduled reminder sent
+    rating             = db.Column(db.Integer,      nullable=True)    # оценка поездки пассажиром 1..5
+    driver_arrived     = db.Column(db.Boolean,      default=False)    # водитель нажал «Я на месте»
     created_at         = db.Column(db.DateTime,     default=datetime.utcnow)
 
     @property

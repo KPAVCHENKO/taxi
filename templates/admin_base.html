@@ -252,6 +252,9 @@
     <a href="{{ url_for('admin_vapid_setup') }}" class="{{ 'active' if request.endpoint == 'admin_vapid_setup' else '' }}">
       <span class="nav-icon">🔔</span> <span>Push</span>
     </a>
+    <a href="{{ url_for('admin_analytics') }}" class="{{ 'active' if request.endpoint == 'admin_analytics' else '' }}">
+      <span class="nav-icon">📈</span> <span>Аналитика</span>
+    </a>
     <a href="{{ url_for('admin_app_version') }}" class="{{ 'active' if request.endpoint == 'admin_app_version' else '' }}">
       <span class="nav-icon">📲</span> <span>Приложение</span>
     </a>
