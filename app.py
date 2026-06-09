@@ -15,25 +15,6 @@ import telegram_bot
 
 app = Flask(__name__)
 
-# ── Правила: кому и когда «толкать» заказ водителям ───────────────────────────
-def _order_due_now(o, now=None):
-    """Немедленный заказ — да; плановый — только если до него ≤40 мин."""
-    now = now or datetime.utcnow()
-    if not o.scheduled_at:
-        return True
-    return o.scheduled_at <= now + timedelta(minutes=40)
-
-def _should_ping_order(o, now=None):
-    """Стоит ли сейчас (повторно) пушить по этому новому заказу — без вечного спама."""
-    now = now or datetime.utcnow()
-    if o.status != 'new':
-        return False
-    if o.scheduled_at:
-        # окно: за 40 мин до назначенного времени и до 30 мин после
-        return (o.scheduled_at - timedelta(minutes=40)) <= now <= (o.scheduled_at + timedelta(minutes=30))
-    # немедленный: со 2-й по 45-ю минуту (дальше не долбим)
-    return timedelta(minutes=2) <= (now - o.created_at) <= timedelta(minutes=45)
-
 # ── APScheduler (плановые напоминания) ────────────────────────────────────────
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -62,19 +43,23 @@ try:
                     db.session.rollback()
 
     def _renotify_new_orders():
-        """Повторно пушим непринятые заказы — но только онлайн-водителям и только пока заказ актуален."""
+        """Повторно пушим непринятые заказы — только онлайн-водителям (как раньше по времени)."""
         with app.app_context():
             now = datetime.utcnow()
-            orders = Order.query.filter(Order.status == 'new').all()
+            lo  = now - timedelta(minutes=15)
+            hi  = now - timedelta(minutes=2)
+            orders = Order.query.filter(
+                Order.status == 'new',
+                Order.created_at >= lo,
+                Order.created_at <= hi,
+            ).all()
             for o in orders:
-                if not _should_ping_order(o, now):
-                    continue
                 try:
                     _send_push_to_driver_subs('🚖 Заказ ждёт водителя!',
                                               f'{o.from_address} → {o.to_address}', '/driver/',
-                                              online_only=True)
+                                              online_only=True, tag='order')
                     _send_push_to_all('⏳ Заказ ещё не принят',
-                                      f'#{o.id}: {o.from_address} → {o.to_address}', '/admin/dispatcher')
+                                      f'#{o.id}: {o.from_address} → {o.to_address}', '/admin/dispatcher', tag='order')
                 except Exception as _re:
                     print(f'[renotify] error order {o.id}: {_re}')
 
@@ -374,7 +359,7 @@ def _log(action, actor='admin', order_id=None, details=None):
         print(f'[LOG] {e}')
 
 
-def _send_push_to_all(title, body, url='/admin/dispatcher'):
+def _send_push_to_all(title, body, url='/admin/dispatcher', tag='kt'):
     """Send a Web Push notification to all subscribed clients."""
     _pub, _priv, _email = current_vapid()
     if not _priv or not _pub:
@@ -390,7 +375,7 @@ def _send_push_to_all(title, body, url='/admin/dispatcher'):
                         'endpoint': sub.endpoint,
                         'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
                     },
-                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
+                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url, 'tag': tag}),
                     vapid_private_key=_priv,
                     vapid_claims={'sub': _email},
                     ttl=600,
@@ -547,10 +532,9 @@ def create_order():
          details=f'{from_address} → {to_address}')
     telegram_bot.notify_drivers(order)
     import max_bot as _max_bot; _max_bot.notify_drivers(order)
-    _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher')
-    # Водителям пушим только онлайн и только если заказ актуален сейчас (плановый на потом — не дёргаем)
-    if _order_due_now(order):
-        _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True)
+    _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
+    # Водителям пушим только тем, кто «в сети» (оффлайн не беспокоим)
+    _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
 
     return jsonify({'success': True, 'order_id': order.id})
 
@@ -595,12 +579,15 @@ self.addEventListener('push', e => {{
   const title = data.title || 'Казанское Такси';
   const body  = data.body  || 'Новое уведомление';
   const url   = data.url   || '/admin/dispatcher';
+  const tag   = data.tag   || 'kt';
   e.waitUntil(
     self.registration.showNotification(title, {{
       body,
       icon: '/static/img/notif-icon.png',
       badge: '/static/img/badge.png',
       data: {{ url }},
+      tag,
+      renotify: true,
       vibrate: [200, 100, 200],
       requireInteraction: false,
     }})
@@ -1124,7 +1111,7 @@ def admin_reset():
 
 
 # ── Driver push notifications ─────────────────────────────────────────────────
-def _send_push_to_driver_subs(title, body, url='/driver/', online_only=False):
+def _send_push_to_driver_subs(title, body, url='/driver/', online_only=False, tag='kt'):
     """Send Web Push to subscribed driver browsers. online_only=True — только водителям «в сети»."""
     _pub, _priv, _email = current_vapid()
     if not _priv or not _pub:
@@ -1143,7 +1130,7 @@ def _send_push_to_driver_subs(title, body, url='/driver/', online_only=False):
                         'endpoint': sub.endpoint,
                         'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
                     },
-                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
+                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url, 'tag': tag}),
                     vapid_private_key=_priv,
                     vapid_claims={'sub': _email},
                     ttl=600,
@@ -1162,7 +1149,7 @@ def _send_push_to_driver_subs(title, body, url='/driver/', online_only=False):
         print(f'[DRIVER-PUSH] {e}')
 
 
-def _send_push_to_one_driver(driver_id, title, body, url='/driver/'):
+def _send_push_to_one_driver(driver_id, title, body, url='/driver/', tag='kt'):
     """Send Web Push only to a specific driver's subscribed browsers."""
     _pub, _priv, _email = current_vapid()
     if not _priv or not _pub:
@@ -1178,7 +1165,7 @@ def _send_push_to_one_driver(driver_id, title, body, url='/driver/'):
                         'endpoint': sub.endpoint,
                         'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
                     },
-                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url}),
+                    data=_json_mod.dumps({'title': title, 'body': body, 'url': url, 'tag': tag}),
                     vapid_private_key=_priv,
                     vapid_claims={'sub': _email},
                     ttl=600,
@@ -1292,9 +1279,9 @@ def admin_chat_send():
     # Push водителям
     try:
         if room == 'group':
-            _send_push_to_driver_subs('💬 Общий чат', body[:120], '/driver/?tab=chat')
+            _send_push_to_driver_subs('💬 Общий чат', body[:120], '/driver/?tab=chat', tag='chat')
         elif driver_id:
-            _send_push_to_one_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat')
+            _send_push_to_one_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat', tag='chat')
     except Exception as _e:
         print(f'[CHAT-PUSH] {_e}')
 
@@ -2416,11 +2403,11 @@ def driver_chat_send():
     # Push диспетчеру (+ другим водителям в общем чате)
     try:
         if room == 'group':
-            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
+            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat', tag='chat')
             for other in Driver.query.filter(Driver.active == True, Driver.id != driver.id).all():
-                _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat')
+                _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat', tag='chat')
         else:
-            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat')
+            _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat', tag='chat')
     except Exception as _e:
         print(f'[CHAT-PUSH] {_e}')
 

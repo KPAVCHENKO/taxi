@@ -1,4 +1,4 @@
-const CACHE = 'driver-app-v3';
+const CACHE = 'driver-app-v4';
 
 // Файлы оболочки приложения — кэшируются при установке
 const SHELL = [
@@ -65,6 +65,8 @@ self.addEventListener('push', e => {
     badge:             '/static/img/badge.png',
     vibrate:           [300, 100, 300, 100, 300],
     requireInteraction: true,
+    tag:               data.tag || 'kt',     // одинаковый тег → одно уведомление, а не куча
+    renotify:          true,                 // обновление снова всплывает сверху
     data:              { url: data.url || '/driver/' },
     actions: [
       { action: 'open', title: '📋 Открыть' },

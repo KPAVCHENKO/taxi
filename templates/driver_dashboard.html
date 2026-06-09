@@ -471,6 +471,9 @@
       display: block;
       text-align: center;
     }
+    /* ── Онлайн-статус ── */
+    @keyframes goOnlineGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.55); } 50% { box-shadow: 0 0 0 12px rgba(52,211,153,0); } }
+    #online-banner.offline #online-banner-btn { animation: goOnlineGlow 1.5s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -509,6 +512,15 @@
     <div class="bal-val" id="bal-new">...</div>
     <div class="bal-label">Новых</div>
   </div>
+</div>
+
+<!-- Онлайн-статус (главный переключатель смены) -->
+<div id="online-banner" style="display:flex; align-items:center; justify-content:space-between;
+     gap:12px; padding:14px 16px; transition:background 0.2s;">
+  <div id="online-banner-text" style="font-size:15px; font-weight:700; line-height:1.3;"></div>
+  <button id="online-banner-btn" onclick="toggleOnline()"
+          style="flex-shrink:0; padding:11px 18px; border:none; border-radius:12px;
+                 font-size:15px; font-weight:800; cursor:pointer; white-space:nowrap;"></button>
 </div>
 
 <!-- Push notification banner -->
@@ -824,17 +836,41 @@ let _isOnline = false;
 function updateOnlineBtn(online) {
   _isOnline = online;
   const btn = document.getElementById('btn-online-toggle');
-  if (!btn) return;
-  if (online) {
-    btn.textContent = '🟢 В сети';
-    btn.style.background = 'rgba(52,211,153,0.2)';
-    btn.style.color = '#34d399';
-    btn.style.border = '1.5px solid rgba(52,211,153,0.4)';
-  } else {
-    btn.textContent = '⚫ Не в сети';
-    btn.style.background = 'rgba(100,116,139,0.15)';
-    btn.style.color = '#64748b';
-    btn.style.border = '1.5px solid rgba(100,116,139,0.3)';
+  if (btn) {
+    if (online) {
+      btn.textContent = '🟢 В сети';
+      btn.style.background = 'rgba(52,211,153,0.2)';
+      btn.style.color = '#34d399';
+      btn.style.border = '1.5px solid rgba(52,211,153,0.4)';
+    } else {
+      btn.textContent = '⚫ Не в сети';
+      btn.style.background = 'rgba(100,116,139,0.15)';
+      btn.style.color = '#64748b';
+      btn.style.border = '1.5px solid rgba(100,116,139,0.3)';
+    }
+  }
+  // Главный баннер смены — заметный
+  const banner = document.getElementById('online-banner');
+  const bText  = document.getElementById('online-banner-text');
+  const bBtn   = document.getElementById('online-banner-btn');
+  if (banner && bText && bBtn) {
+    if (online) {
+      banner.classList.remove('offline');
+      banner.style.background = 'rgba(52,211,153,0.10)';
+      banner.style.borderBottom = '1px solid rgba(52,211,153,0.25)';
+      bText.innerHTML = '🟢 <span style="color:#34d399;">Вы на смене</span> — заказы приходят';
+      bBtn.textContent = 'Завершить смену';
+      bBtn.style.background = 'rgba(100,116,139,0.18)';
+      bBtn.style.color = '#94a3b8';
+    } else {
+      banner.classList.add('offline');
+      banner.style.background = 'rgba(239,68,68,0.12)';
+      banner.style.borderBottom = '1px solid rgba(239,68,68,0.3)';
+      bText.innerHTML = '⚫ <span style="color:#f87171;">Вы не на смене</span> — заказы НЕ приходят';
+      bBtn.textContent = '🟢 Выйти на смену';
+      bBtn.style.background = 'linear-gradient(135deg,#34d399,#10b981)';
+      bBtn.style.color = '#06281d';
+    }
   }
 }
 
@@ -892,7 +928,7 @@ function showOrderNotification(title, body) {
       badge:             '/static/img/badge.png',
       vibrate:           [400, 100, 400, 100, 600],
       requireInteraction: true,
-      tag:               'new-order',
+      tag:               'order',
       renotify:          true,
       data:              { url: '/driver/' },
     }).catch(() => {});
@@ -905,7 +941,7 @@ function showOrderNotification(title, body) {
         body,
         icon: '/static/img/notif-icon.png',
         requireInteraction: true,
-        tag: 'new-order',
+        tag: 'order',
         renotify: true,
       });
     } catch(e) {}
