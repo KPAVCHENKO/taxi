@@ -1,4 +1,3 @@
-import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -25,10 +24,10 @@ class InstructionsScreen extends StatelessWidget {
             await Permission.ignoreBatteryOptimizations.request();
           }),
           _actionButton('🔔 Настройки уведомлений', () {
-            AppSettings.openAppSettings(type: AppSettingsType.notification);
+            openAppSettings();
           }),
           _actionButton('⚙️ Настройки приложения', () {
-            AppSettings.openAppSettings();
+            openAppSettings();
           }),
           const SizedBox(height: 24),
           _brand('Samsung (One UI)', const [

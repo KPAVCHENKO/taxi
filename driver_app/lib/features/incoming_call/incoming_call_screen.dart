@@ -39,7 +39,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen> {
 
   Future<void> _startAlarm() async {
     try {
-      if (await Vibration.hasVibrator() ?? false) {
+      if (await Vibration.hasVibrator()) {
         // repeat: 0 — повторять весь паттерн с начала (непрерывно), пока не отменим
         Vibration.vibrate(pattern: [0, 600, 400, 600, 400, 800], repeat: 0);
       }

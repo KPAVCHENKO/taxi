@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/order.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../state/orders_controller.dart';
-import '../../state/providers.dart';
 import 'notifications.dart';
 
 /// Фоновый обработчик FCM (отдельный isolate). Для data-only new_order

@@ -15,7 +15,7 @@ void startShiftCallback() {
 
 class _ShiftTaskHandler extends TaskHandler {
   @override
-  void onStart(DateTime timestamp, TaskStarter starter) {}
+  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {}
 
   @override
   void onRepeatEvent(DateTime timestamp) {
@@ -35,8 +35,8 @@ class ShiftService {
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: AppConfig.channelShift,
         channelName: AppConfig.channelShiftName,
-        channelImportance: NotificationChannelImportance.low,
-        priority: NotificationPriority.low,
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
       ),
       iosNotificationOptions: const IOSNotificationOptions(),
       foregroundTaskOptions: ForegroundTaskOptions(

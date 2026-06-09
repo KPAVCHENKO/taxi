@@ -31,7 +31,6 @@ dependencies:
 
   # Разрешения и настройки
   permission_handler: ^11.3.1
-  app_settings: ^5.1.1
 
   # Прочее
   connectivity_plus: ^6.0.5
