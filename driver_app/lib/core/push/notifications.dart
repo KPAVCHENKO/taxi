@@ -76,7 +76,7 @@ class Notifications {
     await _plugin.show(
       _orderNotifId,
       '🚖 Новый заказ',
-      '${order.fromAddress} → ${order.toAddress}',
+      Addr.route(order.fromAddress, order.toAddress),
       NotificationDetails(android: details),
       payload: 'order:${order.id}',
     );

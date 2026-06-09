@@ -8,7 +8,7 @@ class AppConfig {
 
   /// Код версии этой сборки. Поднимайте вместе с versionCode в build.gradle —
   /// приложение сверяет его с /api/driver/app-version и предлагает обновиться.
-  static const int appVersionCode = 1;
+  static const int appVersionCode = 2;
 
   // ── Тайминги ───────────────────────────────────────────────────────────────
   /// Таймер кольца на экране входящего заказа.
@@ -68,4 +68,42 @@ class Labels {
         return raw ?? '';
     }
   }
+}
+
+/// Короткое название из длинного адреса: «Тюменская область, Казанский
+/// муниципальный округ, село Ильинка» → «Ильинка» (с улицей, если указана).
+class Addr {
+  Addr._();
+
+  static const _noise = [
+    'область', 'район', 'муниципальн', 'округ', 'край',
+    'республика', 'городское поселение', 'сельское поселение', 'россия', 'рф'
+  ];
+  static const _types = [
+    'село ', 'деревня ', 'посёлок ', 'поселок ', 'город ', 'станица ',
+    'хутор ', 'аул ', 'пгт ', 'с. ', 'д. ', 'п. ', 'г. ', 'ст. ', 'х. '
+  ];
+
+  static String short(String full) {
+    if (full.trim().isEmpty) return full;
+    final parts =
+        full.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    var kept = parts.where((p) {
+      final low = p.toLowerCase();
+      return !_noise.any((n) => low.contains(n));
+    }).toList();
+    if (kept.isEmpty) kept = [parts.last];
+    // убрать слова-типы («село», «деревня» …) в начале части
+    kept = kept.map((p) {
+      final low = p.toLowerCase();
+      for (final t in _types) {
+        if (low.startsWith(t)) return p.substring(t.length).trim();
+      }
+      return p;
+    }).toList();
+    return kept.join(', ');
+  }
+
+  /// «Казанское → Ильинка»
+  static String route(String from, String to) => '${short(from)} → ${short(to)}';
 }

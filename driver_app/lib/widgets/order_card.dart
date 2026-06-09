@@ -43,6 +43,8 @@ class OrderCard extends StatelessWidget {
                 _badge('💳 Перевод', AppColors.blue),
               if (order.scheduledAt != null)
                 _badge('🗓 ${order.scheduledAt}', AppColors.accent),
+              if (order.createdAt != null)
+                _badge('🕐 ${order.createdAt}', AppColors.textFaint),
             ],
           ),
           const SizedBox(height: 14),
