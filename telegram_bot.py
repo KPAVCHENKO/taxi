@@ -298,6 +298,16 @@ def handle_update(update):
                 notify_drivers(o)
             except Exception:
                 pass
+            # Пуш в приложения водителей (web + FCM), как у обычного заказа
+            try:
+                import app as _app
+                _body = f'{o.from_address} → {o.to_address}'
+                _app._send_push_to_all('🚖 Новый заказ', _body, '/admin/dispatcher', tag='order')
+                _app._send_push_to_driver_subs('🚖 Новый заказ!', _body, online_only=True, tag='order')
+                _app._send_fcm_to_drivers('🚖 Новый заказ!', _body, online_only=True,
+                                          tag='order', data=_app._order_fcm_data(o))
+            except Exception as _e:
+                print(f'[TG-ORDER-PUSH] {_e}')
             price = _calc_price(fk, tk)
             ptxt = f'\n💰 Стоимость: <b>{price} ₽</b>' if price else '\n💰 Цену уточнит диспетчер'
             send_message(chat_id,
