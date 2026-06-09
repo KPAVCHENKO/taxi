@@ -66,8 +66,10 @@ class Notifications {
       priority: Priority.max,
       category: AndroidNotificationCategory.call,
       fullScreenIntent: true,
-      ongoing: true,
-      autoCancel: false,
+      ongoing: false,        // можно смахнуть рукой
+      autoCancel: true,      // исчезает по тапу
+      // авто-исчезновение, даже если событие «заказ забрали» не дошло — не зависнет
+      timeoutAfter: (AppConfig.ringTimeoutSeconds + 10) * 1000,
       playSound: true,
       enableVibration: true,
       visibility: NotificationVisibility.public,
