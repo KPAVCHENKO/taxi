@@ -168,3 +168,14 @@ class DriverPushSubscription(db.Model):
     p256dh     = db.Column(db.Text,    nullable=False)
     auth       = db.Column(db.Text,    nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class DriverFcmToken(db.Model):
+    """FCM-токен нативного приложения водителя (надёжный фон через Firebase)."""
+    __tablename__ = 'driver_fcm_tokens'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    driver_id  = db.Column(db.Integer, nullable=False, index=True)
+    token      = db.Column(db.Text,    unique=True, nullable=False)
+    platform   = db.Column(db.String(20), default='android')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

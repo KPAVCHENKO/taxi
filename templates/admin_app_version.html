@@ -1,0 +1,95 @@
+{% extends 'admin_base.html' %}
+{% block title %}Приложение водителя{% endblock %}
+{% block page_title %}Приложение водителя — версия и push (FCM){% endblock %}
+
+{% block content %}
+
+{% if saved %}
+<div class="card" style="margin-bottom:24px; border-top:3px solid #34d399;">
+  <div class="card-header">✅ Сохранено</div>
+  <div style="padding:16px 20px; color:#cbd5e1; font-size:14px;">
+    Настройки обновлены. Приложения водителей увидят их при следующей проверке.
+  </div>
+</div>
+{% endif %}
+
+<!-- Самообновление -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">📲 Версия приложения (самообновление без Google Play)</div>
+  <div style="padding:20px;">
+    <p style="color:#94a3b8; font-size:14px; margin-bottom:18px; line-height:1.6;">
+      Когда выложишь новый APK — подними здесь <strong style="color:#e2e8f0;">код версии</strong>.
+      Приложение сверяет его со своим и предлагает обновиться.
+    </p>
+    <form method="POST">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div>
+          <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Код версии (число) *</label>
+          <input type="number" name="version_code" value="{{ version_code }}" min="1" required
+                 style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                        border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Название версии</label>
+          <input type="text" name="version_name" value="{{ version_name }}" placeholder="1.0.0"
+                 style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                        border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Ссылка на APK</label>
+        <input type="text" name="apk_url" value="{{ apk_url }}" placeholder="/download/driver"
+               style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                      border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Что нового (текст обновления)</label>
+        <textarea name="notes" rows="2" placeholder="Исправлены ошибки, ускорена работа…"
+               style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                      border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">{{ notes }}</textarea>
+      </div>
+      <label style="display:flex; align-items:center; gap:10px; margin-bottom:20px; cursor:pointer; color:#cbd5e1; font-size:14px;">
+        <input type="checkbox" name="mandatory" {% if mandatory %}checked{% endif %} style="width:18px; height:18px;">
+        Обязательное обновление (без него нельзя пользоваться)
+      </label>
+
+      <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0 22px;">
+
+      <div class="card-header" style="padding:0; margin-bottom:8px; background:none;">🔔 Firebase Cloud Messaging (надёжный push)</div>
+      <p style="color:#94a3b8; font-size:13px; margin-bottom:16px; line-height:1.6;">
+        Статус: {% if fcm_configured %}<span style="color:#34d399;">✅ Настроен</span>{% else %}<span style="color:#f87171;">⚪ Не настроен</span>{% endif %}
+        · Токенов устройств: <strong style="color:#e2e8f0;">{{ fcm_token_count }}</strong><br>
+        Заполняется, когда будет готово приложение: из Firebase Console → Project settings →
+        Service accounts → «Generate new private key» (JSON).
+      </p>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">Firebase Project ID</label>
+        <input type="text" name="fcm_project_id" value="{{ fcm_project_id }}" placeholder="my-taxi-app"
+               style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                      border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#e2e8f0; font-size:15px;">
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:13px; color:#64748b; margin-bottom:6px;">
+          Service Account JSON {% if fcm_configured %}<span style="color:#34d399;">(уже сохранён — вставь новый, чтобы заменить)</span>{% endif %}
+        </label>
+        <textarea name="fcm_service_account" rows="4" placeholder='{ "type": "service_account", ... }'
+               style="width:100%; padding:11px 14px; background:rgba(255,255,255,0.05);
+                      border:1px solid rgba(255,255,255,0.12); border-radius:9px; color:#fbbf24;
+                      font-size:12px; font-family:monospace;"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary-sm" style="font-size:15px; padding:11px 22px;">Сохранить</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Эндпоинты для приложения</div>
+  <div style="padding:20px; color:#94a3b8; font-size:13px; line-height:2; font-family:monospace;">
+    GET&nbsp; /api/driver/app-version<br>
+    POST /api/driver/login&nbsp; {phone, pin} → token<br>
+    POST /driver/fcm/register&nbsp; {token, platform}<br>
+    POST /driver/fcm/unregister {token}
+  </div>
+</div>
+{% endblock %}

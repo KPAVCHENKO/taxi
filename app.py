@@ -13,7 +13,7 @@ from flask import (
 )
 from flask_migrate import Migrate
 from sqlalchemy import text
-from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription, ChatMessage, Setting
+from models import db, Order, Driver, Review, Tariff, DispatchLog, DriverApplication, PushSubscription, DriverPushSubscription, ChatMessage, Setting, DriverFcmToken
 import telegram_bot
 
 app = Flask(__name__)
@@ -61,6 +61,9 @@ try:
                     _send_push_to_driver_subs('🚖 Заказ ждёт водителя!',
                                               f'{o.from_address} → {o.to_address}', '/driver/',
                                               online_only=True, tag='order')
+                    _send_fcm_to_drivers('🚖 Заказ ждёт водителя!',
+                                         f'{o.from_address} → {o.to_address}', '/driver/',
+                                         online_only=True, tag='order')
                     _send_push_to_all('⏳ Заказ ещё не принят',
                                       f'#{o.id}: {o.from_address} → {o.to_address}', '/admin/dispatcher', tag='order')
                 except Exception as _re:
@@ -577,6 +580,7 @@ def create_order():
         _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
     # Водителям пушим только тем, кто «в сети» (оффлайн не беспокоим)
     _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
+    _send_fcm_to_drivers('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
 
     return jsonify({
         'success': True,
@@ -611,6 +615,8 @@ def client_cancel_order(order_id):
             _did = int(order.driver_telegram_id.split(':')[1])
             _send_push_to_one_driver(_did, '❌ Заказ отменён клиентом',
                                      f'{order.from_address} → {order.to_address}', '/driver/', tag='order')
+            _send_fcm_to_driver(_did, '❌ Заказ отменён клиентом',
+                                f'{order.from_address} → {order.to_address}', '/driver/', tag='order')
         except Exception:
             pass
     return jsonify({'ok': True, 'status': 'cancelled'})
@@ -1018,7 +1024,8 @@ def update_order_status(order_id):
         if new_status == 'new' and old_status in ('accepted', 'completed'):
             try:
                 telegram_bot.notify_drivers(order)
-                _send_push_to_driver_subs('🔄 Заказ снова свободен', f'{order.from_address} → {order.to_address}', online_only=True)
+                _send_push_to_driver_subs('🔄 Заказ снова свободен', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
+                _send_fcm_to_drivers('🔄 Заказ снова свободен', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
             except Exception as _e:
                 print(f'[notify] re-notify error: {_e}')
 
@@ -1261,6 +1268,81 @@ def _send_push_to_one_driver(driver_id, title, body, url='/driver/', tag='kt'):
         print(f'[DRIVER-PUSH-ONE] {e}')
 
 
+# ── FCM (Firebase) — надёжный фон для нативного приложения водителя ────────────
+_FCM_TOKEN_CACHE = {'access_token': None, 'exp': 0.0}
+
+def _fcm_config():
+    """JSON сервис-аккаунта Firebase и project_id (из настроек БД или окружения)."""
+    raw  = get_setting('fcm_service_account', '') or os.environ.get('FCM_SERVICE_ACCOUNT_JSON', '')
+    proj = get_setting('fcm_project_id', '')      or os.environ.get('FCM_PROJECT_ID', '')
+    return raw, proj
+
+def _fcm_access_token():
+    """OAuth2 access token для FCM HTTP v1 (кэшируется). None — если FCM не настроен."""
+    raw, proj = _fcm_config()
+    if not raw or not proj:
+        return None, None
+    now = time.time()
+    if _FCM_TOKEN_CACHE['access_token'] and _FCM_TOKEN_CACHE['exp'] - 60 > now:
+        return _FCM_TOKEN_CACHE['access_token'], proj
+    try:
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import Request as _GReq
+        info  = _json_mod.loads(raw)
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=['https://www.googleapis.com/auth/firebase.messaging'])
+        creds.refresh(_GReq())
+        _FCM_TOKEN_CACHE['access_token'] = creds.token
+        _FCM_TOKEN_CACHE['exp'] = creds.expiry.timestamp() if creds.expiry else now + 3000
+        return creds.token, proj
+    except Exception as e:
+        print(f'[FCM] token error: {e}')
+        return None, None
+
+def _send_fcm_to_driver(driver_id, title, body, url='/driver/', tag='kt'):
+    """Отправить FCM-уведомление на все устройства водителя. No-op, если FCM не настроен."""
+    access, proj = _fcm_access_token()
+    if not access:
+        return
+    toks = DriverFcmToken.query.filter_by(driver_id=driver_id).all()
+    if not toks:
+        return
+    import requests as _rq
+    endpoint = f'https://fcm.googleapis.com/v1/projects/{proj}/messages:send'
+    dead = []
+    for t in toks:
+        msg = {'message': {
+            'token': t.token,
+            'data': {'title': title, 'body': body, 'url': url, 'tag': tag},
+            'android': {
+                'priority': 'high',
+                'notification': {'title': title, 'body': body, 'tag': tag,
+                                 'sound': 'default', 'notification_priority': 'PRIORITY_MAX',
+                                 'icon': 'notif_icon'},
+            },
+        }}
+        try:
+            r = _rq.post(endpoint, json=msg, headers={'Authorization': f'Bearer {access}'}, timeout=10)
+            if r.status_code in (400, 403, 404) and ('UNREGISTERED' in r.text or 'INVALID_ARGUMENT' in r.text):
+                dead.append(t.id)
+        except Exception as e:
+            print(f'[FCM] send error: {e}')
+    for did in dead:
+        DriverFcmToken.query.filter_by(id=did).delete()
+    if dead:
+        db.session.commit()
+
+def _send_fcm_to_drivers(title, body, url='/driver/', online_only=False, tag='kt'):
+    """FCM всем активным водителям (или только тем, кто на смене)."""
+    if not _fcm_config()[0]:
+        return
+    q = Driver.query.filter_by(active=True)
+    if online_only:
+        q = q.filter_by(is_online=True)
+    for d in q.all():
+        _send_fcm_to_driver(d.id, title, body, url, tag)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ВСТРОЕННЫЙ ЧАТ (общий + личные с водителями)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1357,8 +1439,10 @@ def admin_chat_send():
     try:
         if room == 'group':
             _send_push_to_driver_subs('💬 Общий чат', body[:120], '/driver/?tab=chat', tag='chat')
+            _send_fcm_to_drivers('💬 Общий чат', body[:120], '/driver/?tab=chat', tag='chat')
         elif driver_id:
             _send_push_to_one_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat', tag='chat')
+            _send_fcm_to_driver(driver_id, '💬 Диспетчер', body[:120], '/driver/?tab=chat', tag='chat')
     except Exception as _e:
         print(f'[CHAT-PUSH] {_e}')
 
@@ -2557,6 +2641,7 @@ def driver_chat_send():
             _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat', tag='chat')
             for other in Driver.query.filter(Driver.active == True, Driver.id != driver.id).all():
                 _send_push_to_one_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat', tag='chat')
+                _send_fcm_to_driver(other.id, f'💬 {driver.name} (общий)', body[:120], '/driver/?tab=chat', tag='chat')
         else:
             _send_push_to_all(f'💬 {driver.name}', body[:120], '/admin/chat', tag='chat')
     except Exception as _e:
@@ -2628,6 +2713,84 @@ def driver_push_test():
         'removed': len(dead), 'email': VAPID_EMAIL,
         'errors': uniq[:3],
     })
+
+
+# ── FCM: регистрация токена приложения ────────────────────────────────────────
+@app.route('/driver/fcm/register', methods=['POST'])
+@driver_required
+def driver_fcm_register():
+    driver = _get_driver_session()
+    data = request.get_json(silent=True) or {}
+    token = str(data.get('token', '')).strip()
+    platform = str(data.get('platform', 'android')).strip()[:20] or 'android'
+    if not token:
+        return jsonify({'ok': False, 'error': 'no token'}), 400
+    existing = DriverFcmToken.query.filter_by(token=token).first()
+    if existing:
+        existing.driver_id = driver.id
+        existing.platform  = platform
+    else:
+        db.session.add(DriverFcmToken(driver_id=driver.id, token=token, platform=platform))
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@app.route('/driver/fcm/unregister', methods=['POST'])
+@driver_required
+def driver_fcm_unregister():
+    data = request.get_json(silent=True) or {}
+    token = str(data.get('token', '')).strip()
+    if token:
+        DriverFcmToken.query.filter_by(token=token).delete()
+        db.session.commit()
+    return jsonify({'ok': True})
+
+
+# ── Версия приложения (самообновление без Google Play) ────────────────────────
+@app.route('/api/driver/app-version')
+def api_driver_app_version():
+    """Приложение сверяет version_code; если серверный больше — предлагает обновиться."""
+    try:
+        vc = int(get_setting('app_version_code', '1') or '1')
+    except (ValueError, TypeError):
+        vc = 1
+    return jsonify({
+        'version_code': vc,
+        'version_name': get_setting('app_version_name', '1.0.0'),
+        'url':          get_setting('app_apk_url', '/download/driver'),
+        'notes':        get_setting('app_update_notes', ''),
+        'mandatory':    (get_setting('app_update_mandatory', '0') == '1'),
+    })
+
+
+@app.route('/admin/app-version', methods=['GET', 'POST'])
+@admin_required
+def admin_app_version():
+    saved = False
+    if request.method == 'POST':
+        set_setting('app_version_code', str(request.form.get('version_code', '1')).strip() or '1')
+        set_setting('app_version_name', (request.form.get('version_name', '1.0.0') or '1.0.0').strip())
+        set_setting('app_apk_url', (request.form.get('apk_url', '/download/driver') or '/download/driver').strip())
+        set_setting('app_update_notes', (request.form.get('notes', '') or '').strip())
+        set_setting('app_update_mandatory', '1' if request.form.get('mandatory') else '0')
+        set_setting('fcm_project_id', (request.form.get('fcm_project_id', '') or '').strip())
+        _fcm_raw = (request.form.get('fcm_service_account', '') or '').strip()
+        if _fcm_raw:
+            set_setting('fcm_service_account', _fcm_raw)
+        _FCM_TOKEN_CACHE['access_token'] = None   # сбросить кэш OAuth-токена
+        saved = True
+    raw, proj = _fcm_config()
+    return render_template('admin_app_version.html',
+        saved=saved,
+        version_code=get_setting('app_version_code', '1'),
+        version_name=get_setting('app_version_name', '1.0.0'),
+        apk_url=get_setting('app_apk_url', '/download/driver'),
+        notes=get_setting('app_update_notes', ''),
+        mandatory=(get_setting('app_update_mandatory', '0') == '1'),
+        fcm_project_id=proj,
+        fcm_configured=bool(raw and proj),
+        fcm_token_count=DriverFcmToken.query.count(),
+    )
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
