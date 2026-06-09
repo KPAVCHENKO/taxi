@@ -7,12 +7,12 @@ class AppConfig {
   static const String yandexTermsUrl = 'https://yandex.ru/legal/maps_api/';
 
   /// Код версии сборки (сверяется с /api/client/app-version).
-  static const int appVersionCode = 4;
+  static const int appVersionCode = 5;
 
   /// Поллинг статуса заказа, пока открыт экран статуса.
   static const Duration statusPoll = Duration(seconds: 10);
 
-  static const String channelStatus = 'order_status';
+  static const String channelStatus = 'order_status_v2';
   static const String channelStatusName = 'Статус заказа';
 }
 

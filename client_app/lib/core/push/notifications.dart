@@ -19,7 +19,9 @@ class Notifications {
       AppConfig.channelStatus,
       AppConfig.channelStatusName,
       description: 'Статус вашего заказа такси',
-      importance: Importance.high,
+      importance: Importance.max, // всплывающее (heads-up) уведомление
+      playSound: true,
+      enableVibration: true,
     ));
     _inited = true;
   }
@@ -34,9 +36,14 @@ class Notifications {
     const details = AndroidNotificationDetails(
       AppConfig.channelStatus,
       AppConfig.channelStatusName,
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,   // всплывает сверху экрана
+      priority: Priority.max,
+      category: AndroidNotificationCategory.message,
+      playSound: true,
+      enableVibration: true,
+      ticker: 'Статус заказа',
       icon: '@mipmap/ic_launcher',
+      styleInformation: BigTextStyleInformation(''),
     );
     await _plugin.show(
       7001,
