@@ -37,6 +37,7 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
   OrderStatus? _st;
   Timer? _poll;
   bool _cancelling = false;
+  int? _myRating; // что поставил локально
 
   @override
   void initState() {
@@ -55,12 +56,18 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
 
   Future<void> _refresh() async {
     final s = await ref.read(apiProvider).getStatus(widget.orderId, widget.token);
-    if (mounted && s != null) setState(() => _st = s);
+    if (mounted && s != null) {
+      setState(() {
+        _st = s;
+        _myRating ??= s.rating;
+      });
+    }
   }
 
-  Future<void> _call() async {
-    final uri = Uri.parse('tel:${AppConfig.dispatcherPhone}');
-    try { await launchUrl(uri, mode: LaunchMode.externalApplication); } catch (_) {}
+  Future<void> _callPhone(String phone) async {
+    try {
+      await launchUrl(Uri.parse('tel:$phone'), mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 
   Future<void> _cancel() async {
@@ -83,11 +90,20 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
     if (done) _refresh();
   }
 
+  Future<void> _rate(int stars) async {
+    setState(() => _myRating = stars);
+    final ok = await ref.read(apiProvider).rate(widget.orderId, widget.token, stars);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Не удалось отправить оценку')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = palette(context);
-    final status = _st?.status ?? 'new';
-    final stepData = _stepFor(status);
+    final st = _st;
+    final status = st?.status ?? 'new';
+    final step = _stepFor(status, st);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ваш заказ')),
@@ -98,20 +114,13 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  Container(width: 12, height: 12, decoration: const BoxDecoration(color: C.good, shape: BoxShape.circle)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(widget.fromLabel, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: p.text))),
-                ]),
+                _routeRow(C.good, widget.fromLabel, p),
                 Padding(padding: const EdgeInsets.only(left: 5, top: 4, bottom: 4), child: Container(width: 2, height: 16, color: p.surface3)),
-                Row(children: [
-                  Container(width: 12, height: 12, decoration: const BoxDecoration(color: C.danger, shape: BoxShape.circle)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(widget.toLabel, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: p.text))),
-                ]),
-                const SizedBox(height: 12),
-                if ((_st?.price ?? widget.price) != null)
-                  Text('${_st?.price ?? widget.price} ₽', style: heading(size: 24, color: p.text)),
+                _routeRow(C.danger, widget.toLabel, p),
+                if ((st?.price ?? widget.price) != null) ...[
+                  const SizedBox(height: 12),
+                  Text('${st?.price ?? widget.price} ₽', style: heading(size: 24, color: p.text)),
+                ],
               ],
             ),
           ),
@@ -119,13 +128,28 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
           AppCard(
             child: Column(
               children: [
-                Text(stepData.$1, style: const TextStyle(fontSize: 44)),
+                Text(step.$1, style: const TextStyle(fontSize: 44)),
                 const SizedBox(height: 8),
-                Text(stepData.$2, style: heading(size: 20, color: p.text), textAlign: TextAlign.center),
-                if (status == 'accepted' && _st?.driverName != null) ...[
-                  const SizedBox(height: 8),
-                  Text(_st!.driverName!, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: p.text)),
-                  if (_st?.carInfo != null) Text(_st!.carInfo!, style: TextStyle(color: p.text2)),
+                Text(step.$2, style: heading(size: 20, color: p.text), textAlign: TextAlign.center),
+                if (status == 'accepted' && st?.driverName != null) ...[
+                  const SizedBox(height: 10),
+                  Text(st!.driverName!, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: p.text)),
+                  if (st.carInfo != null) Text(st.carInfo!, style: TextStyle(color: p.text2)),
+                  if (st.driverRating != null)
+                    Padding(padding: const EdgeInsets.only(top: 2), child: Text('⭐ ${st.driverRating}', style: TextStyle(color: p.accent, fontWeight: FontWeight.w700))),
+                  if (st.driverPhone != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 50,
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _callPhone(st.driverPhone!),
+                        icon: Icon(Icons.phone, color: C.good),
+                        label: const Text('Позвонить водителю', style: TextStyle(fontSize: 16, color: C.good)),
+                        style: OutlinedButton.styleFrom(side: BorderSide(color: C.good.withValues(alpha: 0.5))),
+                      ),
+                    ),
+                  ],
                 ],
                 if (status == 'new' && widget.noDriversOnline) ...[
                   const SizedBox(height: 10),
@@ -135,12 +159,41 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
               ],
             ),
           ),
+
+          // Оценка завершённой поездки
+          if (status == 'completed') ...[
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                children: [
+                  Text(_myRating == null ? 'Оцените поездку' : 'Спасибо за оценку!',
+                      style: heading(size: 18, color: p.text)),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int s = 1; s <= 5; s++)
+                        IconButton(
+                          iconSize: 38,
+                          onPressed: _myRating == null ? () => _rate(s) : null,
+                          icon: Icon(
+                            (_myRating ?? 0) >= s ? Icons.star : Icons.star_border,
+                            color: p.accent,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 16),
           SizedBox(
             height: 56,
             child: OutlinedButton.icon(
-              onPressed: _call,
-              icon: Icon(Icons.phone, color: p.accent),
+              onPressed: () => _callPhone(AppConfig.dispatcherPhone),
+              icon: Icon(Icons.support_agent, color: p.accent),
               label: Text('Позвонить диспетчеру', style: TextStyle(color: p.accent, fontSize: 16)),
               style: OutlinedButton.styleFrom(side: BorderSide(color: p.accent.withValues(alpha: 0.5))),
             ),
@@ -161,12 +214,20 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
     );
   }
 
-  (String, String) _stepFor(String status) {
+  Widget _routeRow(Color dot, String text, AppPalette p) => Row(
+        children: [
+          Container(width: 12, height: 12, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: p.text))),
+        ],
+      );
+
+  (String, String) _stepFor(String status, OrderStatus? st) {
     switch (status) {
       case 'accepted':
-        return ('✅', 'Водитель принял заказ');
+        return st?.arrived == true ? ('🚗', 'Водитель на месте') : ('✅', 'Водитель принял заказ');
       case 'completed':
-        return ('🏁', 'Поездка завершена. Спасибо!');
+        return ('🏁', 'Поездка завершена');
       case 'cancelled':
         return ('❌', 'Заказ отменён');
       default:

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/config.dart';
 import '../../config/theme.dart';
 import '../../core/update/update_service.dart';
+import '../../state/theme_provider.dart';
 import '../../widgets/ui.dart';
 
 class AboutScreen extends ConsumerWidget {
@@ -26,6 +27,21 @@ class AboutScreen extends ConsumerWidget {
                 Text('Казанское Такси', style: heading(size: 20, color: p.text)),
                 const SizedBox(height: 4),
                 Text('Такси по Казанскому району', style: TextStyle(color: p.text3)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Тема оформления', style: TextStyle(fontWeight: FontWeight.w800, color: p.text)),
+                const SizedBox(height: 12),
+                Segmented(
+                  options: const ['Светлая', 'Тёмная', 'Авто'],
+                  value: _modeLabel(ref.watch(themeModeProvider)),
+                  onChanged: (v) => ref.read(themeModeProvider.notifier).set(_labelMode(v)),
+                ),
               ],
             ),
           ),
@@ -60,5 +76,27 @@ class AboutScreen extends ConsumerWidget {
 
   Future<void> _open(String url) async {
     try { await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication); } catch (_) {}
+  }
+}
+
+String _modeLabel(ThemeMode m) {
+  switch (m) {
+    case ThemeMode.dark:
+      return 'Тёмная';
+    case ThemeMode.system:
+      return 'Авто';
+    case ThemeMode.light:
+      return 'Светлая';
+  }
+}
+
+ThemeMode _labelMode(String v) {
+  switch (v) {
+    case 'Тёмная':
+      return ThemeMode.dark;
+    case 'Авто':
+      return ThemeMode.system;
+    default:
+      return ThemeMode.light;
   }
 }

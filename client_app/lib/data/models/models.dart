@@ -36,7 +36,11 @@ class OrderStatus {
   final String status; // new | accepted | completed | cancelled
   final String statusLabel;
   final String? driverName;
+  final String? driverPhone;
+  final double? driverRating;
   final String? carInfo;
+  final bool arrived;
+  final int? rating; // оценка пассажира, если уже поставлена
   final int? price;
   final String fromAddress;
   final String toAddress;
@@ -45,7 +49,11 @@ class OrderStatus {
     required this.status,
     required this.statusLabel,
     this.driverName,
+    this.driverPhone,
+    this.driverRating,
     this.carInfo,
+    this.arrived = false,
+    this.rating,
     this.price,
     this.fromAddress = '',
     this.toAddress = '',
@@ -55,7 +63,11 @@ class OrderStatus {
         status: (j['status'] ?? 'new').toString(),
         statusLabel: (j['status_label'] ?? '').toString(),
         driverName: _s(j['driver_name']),
+        driverPhone: _s(j['driver_phone']),
+        driverRating: (j['driver_rating'] is num) ? (j['driver_rating'] as num).toDouble() : null,
         carInfo: _s(j['car_info']),
+        arrived: j['arrived'] == true,
+        rating: j['rating'] is int ? j['rating'] as int : int.tryParse('${j['rating']}'),
         price: j['price'] is int ? j['price'] as int : int.tryParse('${j['price']}'),
         fromAddress: (j['from_address'] ?? '').toString(),
         toAddress: (j['to_address'] ?? '').toString(),

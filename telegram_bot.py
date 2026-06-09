@@ -212,6 +212,67 @@ def send_scheduled_reminder(order):
     send_message(order.driver_telegram_id, text, markup)
 
 
+# ── Пассажирский заказ через бота ─────────────────────────────────────────────
+_PRICE_LOCAL = {
+    'казанское': 150, 'новоселезнево': 200, 'шадринка': 300, 'яровское': 300,
+    'большие ярки': 300, 'малые ярки': 400, 'гагарье': 500, 'сладчанка': 500,
+    'боровлянка': 600, 'дальнетравное': 600, 'ильинка': 700, 'кугаево': 700,
+    'чирки': 700, 'огнево': 800, 'дубынка': 900, 'заречка': 900, 'смирное': 900,
+    'афонькино': 1000, 'пешнево': 1000, 'копотилово': 1000, 'ченчерь': 1000,
+    'ельцово': 1000, 'коротаевка': 1100, 'грачи': 1200, 'паленка': 1200,
+    'новогеоргиевка': 1500, 'новоалександровка': 1500, 'челюскинцев': 1500,
+    'викторовка': 1800, 'долматово': 1800,
+}
+_PRICE_IC = {'ишим': 2000, 'петропавловск': 5000}
+_HUB = 'казанское'
+_SETTLE = [
+    ('казанское', 'Казанское'), ('новоселезнево', 'Новоселезнёво'), ('шадринка', 'Шадринка'),
+    ('яровское', 'Яровское'), ('большие ярки', 'Большие Ярки'), ('малые ярки', 'Малые Ярки'),
+    ('гагарье', 'Гагарье'), ('сладчанка', 'Сладчанка'), ('боровлянка', 'Боровлянка'),
+    ('дальнетравное', 'Дальнетравное'), ('ильинка', 'Ильинка'), ('кугаево', 'Кугаево'),
+    ('чирки', 'Чирки'), ('огнево', 'Огнёво'), ('дубынка', 'Дубынка'), ('заречка', 'Заречка'),
+    ('смирное', 'Смирное'), ('афонькино', 'Афонькино'), ('пешнево', 'Пешнёво'),
+    ('копотилово', 'Копотилово'), ('ченчерь', 'Ченчерь'), ('ельцово', 'Ельцово'),
+    ('коротаевка', 'Коротаевка'), ('грачи', 'Грачи'), ('паленка', 'Палёнка'),
+    ('новогеоргиевка', 'Новогеоргиевка'), ('новоалександровка', 'Новоалександровка'),
+    ('челюскинцев', 'Челюскинцев'), ('викторовка', 'Викторовка'), ('долматово', 'Долматово'),
+    ('ишим', 'Ишим (межгород)'), ('петропавловск', 'Петропавловск (межгород)'),
+]
+_pending = {}  # chat_id -> {'from':key, 'to':key}
+
+def _settle_label(key):
+    for k, l in _SETTLE:
+        if k == key:
+            return l
+    return key or ''
+
+def _calc_price(fk, tk):
+    if not fk or not tk:
+        return None
+    if fk in _PRICE_IC:
+        return _PRICE_IC[fk]
+    if tk in _PRICE_IC:
+        return _PRICE_IC[tk]
+    if fk == _HUB:
+        dest = tk
+    elif tk == _HUB:
+        dest = fk
+    else:
+        return None
+    return _PRICE_LOCAL.get(dest)
+
+def _settle_kb(prefix):
+    rows, row = [], []
+    for key, label in _SETTLE:
+        row.append({'text': label, 'callback_data': f'{prefix}{key}'})
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return {'inline_keyboard': rows}
+
+
 def handle_update(update):
     """Process incoming Telegram update (webhook)."""
     from models import db, Order, Driver as _Driver, DispatchLog
@@ -220,6 +281,30 @@ def handle_update(update):
     message = update.get('message')
     if message:
         chat_id  = str(message.get('chat', {}).get('id', ''))
+        # Пассажир прислал контакт — создаём заказ
+        contact = message.get('contact')
+        if contact and chat_id in _pending and _pending[chat_id].get('to'):
+            st = _pending.pop(chat_id)
+            phone = contact.get('phone_number', '')
+            fk, tk = st.get('from'), st.get('to')
+            import secrets as _sec
+            o = Order(phone=phone, from_address=_settle_label(fk), to_address=_settle_label(tk),
+                      payment='cash', ride_type='individual',
+                      estimated_price=_calc_price(fk, tk), status='new',
+                      cancel_token=_sec.token_urlsafe(16))
+            db.session.add(o)
+            db.session.commit()
+            try:
+                notify_drivers(o)
+            except Exception:
+                pass
+            price = _calc_price(fk, tk)
+            ptxt = f'\n💰 Стоимость: <b>{price} ₽</b>' if price else '\n💰 Цену уточнит диспетчер'
+            send_message(chat_id,
+                f'✅ <b>Заказ принят!</b>\n📍 {_settle_label(fk)} → 🏁 {_settle_label(tk)}{ptxt}\n\n'
+                'Диспетчер свяжется с вами. Спасибо!',
+                {'remove_keyboard': True})
+            return
         msg_text = (message.get('text', '') or '').strip().lower()
         if msg_text.startswith('/start') or msg_text.startswith('/balance') or msg_text.startswith('/баланс'):
             driver = _Driver.query.filter_by(telegram_id=chat_id).first()
@@ -245,9 +330,10 @@ def handle_update(update):
                 )
             else:
                 send_message(chat_id,
-                    '⚠️ Вы не зарегистрированы как водитель.\n'
-                    'Обратитесь к диспетчеру для добавления.'
-                )
+                    '🚕 <b>Казанское Такси</b>\n\n'
+                    'Закажите такси прямо здесь: выберите откуда и куда, оставьте номер — '
+                    'диспетчер свяжется с вами.',
+                    {'inline_keyboard': [[{'text': '🚕 Заказать такси', 'callback_data': 'c_order'}]]})
         return
 
     callback = update.get('callback_query')
@@ -265,6 +351,29 @@ def handle_update(update):
     msg          = callback.get('message', {})
     msg_chat_id  = str(msg.get('chat', {}).get('id', ''))
     msg_id       = msg.get('message_id')
+
+    # ── Пассажирский заказ ────────────────────────────────────────────────────
+    if data == 'c_order':
+        answer_callback_query(cq_id)
+        send_message(msg_chat_id, '📍 <b>Откуда едем?</b>', _settle_kb('c_from:'))
+        return
+    if data.startswith('c_from:'):
+        _pending.setdefault(msg_chat_id, {})['from'] = data.split(':', 1)[1]
+        answer_callback_query(cq_id)
+        send_message(msg_chat_id, '🏁 <b>Куда едем?</b>', _settle_kb('c_to:'))
+        return
+    if data.startswith('c_to:'):
+        st = _pending.setdefault(msg_chat_id, {})
+        st['to'] = data.split(':', 1)[1]
+        answer_callback_query(cq_id)
+        _pr = _calc_price(st.get('from'), st.get('to'))
+        _ptxt = f'\n💰 Стоимость: <b>{_pr} ₽</b>' if _pr else '\n💰 Цену уточнит диспетчер'
+        send_message(msg_chat_id,
+            f'📍 {_settle_label(st.get("from"))} → 🏁 {_settle_label(st.get("to"))}{_ptxt}\n\n'
+            'Нажмите кнопку, чтобы отправить номер телефона 👇',
+            {'keyboard': [[{'text': '📱 Отправить мой номер', 'request_contact': True}]],
+             'resize_keyboard': True, 'one_time_keyboard': True})
+        return
 
     if ':' not in data:
         return

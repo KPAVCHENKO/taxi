@@ -64,6 +64,16 @@ class Api {
     }
   }
 
+  Future<bool> rate(int orderId, String token, int rating) async {
+    try {
+      final r = await _dio.post('/order/$orderId/rate',
+          data: {'token': token, 'rating': rating});
+      return r.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<List<Review>> getReviews() async {
     try {
       final r = await _dio.get('/api/reviews');

@@ -7,6 +7,7 @@ import '../../config/tariffs.dart';
 import '../../config/theme.dart';
 import '../../core/push/push_service.dart';
 import '../../data/models/models.dart';
+import '../../data/repositories/favorites.dart';
 import '../../data/repositories/history.dart';
 import '../../state/providers.dart';
 import '../../widgets/ui.dart';
@@ -35,8 +36,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   String _type = 'Индивидуально';
   String _pay = 'Наличные';
   bool _consent = false;
+  bool _forOther = false;
   bool _busy = false;
   String? _error;
+  List<FavPlace> _favs = [];
 
   @override
   void initState() {
@@ -47,6 +50,45 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     if (widget.initialTo != null) {
       _to = Place(address: widget.initialTo!.label, key: widget.initialTo!.key);
     }
+    _loadFavs();
+  }
+
+  Future<void> _loadFavs() async {
+    final f = await Favorites.load();
+    if (mounted) setState(() => _favs = f);
+  }
+
+  void _useFav(FavPlace f) {
+    final pl = Place(address: f.address, key: f.key, lat: f.lat, lon: f.lon);
+    setState(() {
+      if (_from == null) { _from = pl; } else { _to = pl; }
+    });
+  }
+
+  Future<void> _addFav() async {
+    final s = await pickSettlement(context, 'Сохранить адрес');
+    if (s == null || !mounted) return;
+    final ctrl = TextEditingController();
+    final label = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: palette(ctx).surface,
+        title: const Text('Название'),
+        content: TextField(controller: ctrl, decoration: const InputDecoration(hintText: 'Дом, Работа…')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+          TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Сохранить')),
+        ],
+      ),
+    );
+    if (label == null || label.isEmpty) return;
+    await Favorites.add(FavPlace(label: label, address: s.label, key: s.key));
+    _loadFavs();
+  }
+
+  Future<void> _delFav(int i) async {
+    await Favorites.removeAt(i);
+    _loadFavs();
   }
 
   @override
@@ -157,6 +199,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _favRow(p),
           AppCard(
             child: Column(
               children: [
@@ -203,7 +246,18 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _label('Ваш телефон', p),
+                GestureDetector(
+                  onTap: () => setState(() => _forOther = !_forOther),
+                  child: Row(children: [
+                    Icon(_forOther ? Icons.check_box : Icons.check_box_outline_blank,
+                        color: _forOther ? p.accent : p.text3, size: 22),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Заказываю не себе — укажу телефон пассажира',
+                        style: TextStyle(color: p.text2, fontSize: 13))),
+                  ]),
+                ),
+                const SizedBox(height: 12),
+                _label(_forOther ? 'Телефон пассажира' : 'Ваш телефон', p),
                 TextField(
                   controller: _phone,
                   keyboardType: TextInputType.phone,
@@ -235,6 +289,55 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           CtaButton(label: 'Заказать такси', busy: _busy, onPressed: _submit),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  Widget _favRow(AppPalette p) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: SizedBox(
+        height: 40,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            for (int i = 0; i < _favs.length; i++) ...[
+              GestureDetector(
+                onTap: () => _useFav(_favs[i]),
+                onLongPress: () => _delFav(i),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: p.surface2,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: p.surface3),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.star, size: 16, color: p.accent),
+                    const SizedBox(width: 6),
+                    Text(_favs[i].label, style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              ),
+            ],
+            GestureDetector(
+              onTap: _addFav,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: p.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(children: [
+                  Icon(Icons.add, size: 16, color: p.accent),
+                  const SizedBox(width: 4),
+                  Text('Адрес', style: TextStyle(color: p.accent, fontWeight: FontWeight.w700)),
+                ]),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
