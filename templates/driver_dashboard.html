@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Приложение водителя — Такси Казанское</title>
   <meta name="theme-color" content="#0f1117" />
-  <link rel="manifest" href="/static/driver-manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -1397,24 +1396,21 @@ window.addEventListener('appinstalled', function(){ const b=document.getElementB
 function maybeShowInstall(){
   const b = document.getElementById('install-banner'); if(!b) return;
   if(isStandalone()){ b.style.display='none'; return; }
-  if(_deferredInstall){
-    b.style.display='flex';
-    document.getElementById('install-btn').style.display='';
-    document.getElementById('install-hint').textContent='быстрый доступ и надёжные уведомления';
-  } else if(isIOS()){
+  if(isIOS()){
+    // iOS — нативного приложения нет, предлагаем добавить на экран
     b.style.display='flex';
     document.getElementById('install-btn').style.display='none';
     document.getElementById('install-hint').innerHTML='нажмите «Поделиться» → «На экран «Домой»» — иначе на iPhone уведомления не приходят';
   } else {
-    b.style.display='none';
+    // Android/ПК — ведём на нативное приложение (надёжные уведомления)
+    b.style.display='flex';
+    const btn=document.getElementById('install-btn');
+    btn.style.display=''; btn.textContent='Скачать';
+    document.getElementById('install-hint').innerHTML='нативное приложение — заказы приходят даже при закрытом телефоне';
   }
 }
-async function doInstall(){
-  if(!_deferredInstall) return;
-  _deferredInstall.prompt();
-  try{ await _deferredInstall.userChoice; }catch(e){}
-  _deferredInstall = null;
-  const b = document.getElementById('install-banner'); if(b) b.style.display='none';
+function doInstall(){
+  window.location.href='/download/driver';
 }
 
 async function enablePush() {

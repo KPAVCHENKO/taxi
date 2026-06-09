@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Вход — Такси Казанское</title>
-  <link rel="manifest" href="/static/driver-manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -111,6 +110,36 @@
       margin-top: 18px;
       line-height: 1.6;
     }
+    .get-app { margin-bottom: 20px; }
+    .get-app-btn {
+      display: block;
+      text-decoration: none;
+      text-align: center;
+      padding: 16px;
+      background: linear-gradient(135deg, #34d399, #10b981);
+      color: #06281d;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(16,185,129,0.3);
+    }
+    .get-app-note {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .get-app-ios {
+      background: rgba(125,211,252,0.08);
+      border: 1px solid rgba(125,211,252,0.2);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 14px;
+      color: #7dd3fc;
+      text-align: center;
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +149,8 @@
     <div class="logo-title">Казанское Такси</div>
     <div class="logo-sub">Приложение для водителей</div>
   </div>
+
+  <div id="getApp" class="get-app"></div>
 
   <div class="card">
     <div class="card-title">Вход в систему</div>
@@ -154,5 +185,23 @@
     </div>
   </div>
 </div>
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var el = document.getElementById('getApp');
+  if (!el || standalone) return;
+  if (isAndroid) {
+    el.innerHTML = '<a href="/download/driver" class="get-app-btn">📲 Скачать приложение</a>'
+      + '<div class="get-app-note">Уведомления о заказах приходят надёжно даже при закрытом телефоне. После скачивания откройте файл и разрешите установку.</div>';
+  } else if (isIOS) {
+    el.innerHTML = '<div class="get-app-ios">📱 На iPhone: откройте этот сайт в <b>Safari</b> → «Поделиться» → «На экран «Домой»</div>';
+  }
+})();
+// Не даём браузеру предлагать установку лёгкой PWA — на Android ведём на нативное приложение
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); });
+</script>
 </body>
 </html>
