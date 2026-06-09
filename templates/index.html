@@ -1188,6 +1188,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     <p id="popupText">Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.</p>
     <div class="popup-eta"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Диспетчер скоро свяжется с вами</div>
     <a href="tel:+79630608419" id="popupCall" class="btn btn-primary btn-block btn-lg">Позвонить диспетчеру</a>
+    <button class="btn btn-ghost btn-block" id="popupCancel" style="margin-top:10px;display:none;color:#d23b3b;">Отменить заказ</button>
     <button class="btn btn-ghost btn-block" id="popupOk" style="margin-top:10px">Хорошо</button>
   </div>
 </div>
@@ -1469,7 +1470,11 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
       });
       var data=await res.json().catch(function(){return {};});
       if(res.ok && data.success){
-        openPopup();
+        if(data.cancel_token && data.order_id){
+          lastOrder={id:data.order_id, token:data.cancel_token, ts:Date.now()};
+          try{ localStorage.setItem('kt_last_order', JSON.stringify(lastOrder)); }catch(_){}
+        }
+        openPopup(!!data.no_drivers_online);
         form.reset();
         if(_consentEl && localStorage.getItem('kt_consent')==='1') _consentEl.checked=true;
         clearChips();
@@ -1498,18 +1503,55 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
 
   /* ---------- POPUP ---------- */
   var popup=document.getElementById('popup');
-  function openPopup(){
+  var lastOrder=null;
+  try{ lastOrder=JSON.parse(localStorage.getItem('kt_last_order')||'null'); }catch(_){ lastOrder=null; }
+  if(lastOrder && (!lastOrder.ts || Date.now()-lastOrder.ts > 3600000)){ lastOrder=null; try{localStorage.removeItem('kt_last_order');}catch(_){} }
+  function openPopup(noDrivers){
     document.querySelector('.popup-card h3').textContent='Заказ принят!';
     document.querySelector('.popup-eta').style.display='';
     var _c=document.getElementById('popupCall');if(_c)_c.style.display='';
     var t=document.getElementById('popupText');
-    if(state.from&&state.to){t.textContent='Маршрут «'+state.from+' → '+state.to+'» принят. Диспетчер перезвонит, чтобы подтвердить цену и время подачи.';}
-    else{t.textContent='Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.';}
+    if(noDrivers){
+      t.textContent='Заказ принят, но сейчас никто из водителей не на смене. Диспетчер увидит заказ и перезвонит вам — лучше также позвоните нам.';
+    } else if(state.from&&state.to){
+      t.textContent='Маршрут «'+state.from+' → '+state.to+'» принят. Диспетчер перезвонит, чтобы подтвердить цену и время подачи.';
+    } else {
+      t.textContent='Диспетчер перезвонит в течение пары минут, чтобы подтвердить цену и время подачи.';
+    }
+    var pc=document.getElementById('popupCancel');
+    if(pc) pc.style.display = lastOrder ? '' : 'none';
     popup.classList.add('show');document.body.style.overflow='hidden';
   }
   function closePopup(){popup.classList.remove('show');document.body.style.overflow='';}
+  async function cancelMyOrder(){
+    if(!lastOrder){closePopup();return;}
+    var pc=document.getElementById('popupCancel');
+    if(pc){pc.disabled=true;pc.textContent='Отменяем…';}
+    try{
+      var r=await fetch('/order/'+lastOrder.id+'/cancel',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({token:lastOrder.token})
+      });
+      var d=await r.json().catch(function(){return {};});
+      if(r.ok && d.ok){
+        document.querySelector('.popup-card h3').textContent='Заказ отменён';
+        document.getElementById('popupText').textContent='Ваш заказ отменён. Если передумали — оформите новый.';
+        document.querySelector('.popup-eta').style.display='none';
+        var _c=document.getElementById('popupCall');if(_c)_c.style.display='none';
+        lastOrder=null; try{localStorage.removeItem('kt_last_order');}catch(_){}
+        if(pc)pc.style.display='none';
+      }else{
+        if(pc){pc.disabled=false;pc.textContent='Отменить заказ';}
+        alert((d&&d.error)?d.error:'Не удалось отменить. Позвоните диспетчеру.');
+      }
+    }catch(e){
+      if(pc){pc.disabled=false;pc.textContent='Отменить заказ';}
+      alert('Нет связи. Позвоните диспетчеру.');
+    }
+  }
   document.getElementById('popupClose').addEventListener('click',closePopup);
   document.getElementById('popupOk').addEventListener('click',closePopup);
+  (function(){var pc=document.getElementById('popupCancel');if(pc)pc.addEventListener('click',cancelMyOrder);})();
   document.getElementById('popupVeil').addEventListener('click',closePopup);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){closePopup();closeMM();}});
 
@@ -1572,6 +1614,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
         document.querySelector('.popup-card h3').textContent='Отправлено!';
         document.querySelector('.popup-eta').style.display='none';
         var _c=document.getElementById('popupCall');if(_c)_c.style.display='none';
+        var _pc=document.getElementById('popupCancel');if(_pc)_pc.style.display='none';
         popup.classList.add('show');document.body.style.overflow='hidden';
         reviewForm.reset();rating=5;paintStars(5);
       }else{

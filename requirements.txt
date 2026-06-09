@@ -8,3 +8,4 @@ python-dotenv==1.0.1
 pg8000==1.31.2
 pywebpush==2.0.0
 APScheduler==3.10.4
+PyJWT==2.9.0

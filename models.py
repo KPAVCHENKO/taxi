@@ -20,7 +20,8 @@ class Order(db.Model):
     ride_type          = db.Column(db.String(20),   default='individual')  # individual | shared
     estimated_price    = db.Column(db.Integer,      nullable=True)
     scheduled_at       = db.Column(db.DateTime,     nullable=True)
-    status             = db.Column(db.String(20),   default='new')    # new | accepted | completed
+    status             = db.Column(db.String(20),   default='new')    # new | accepted | completed | cancelled
+    cancel_token       = db.Column(db.String(40),   nullable=True)    # для отмены заказа клиентом без аккаунта
     driver_telegram_id = db.Column(db.String(50),   nullable=True)
     driver_name        = db.Column(db.String(100),  nullable=True)
     message_ids        = db.Column(db.Text,         nullable=True)    # JSON {telegram_id: message_id}
@@ -31,8 +32,8 @@ class Order(db.Model):
 
     @property
     def status_label(self):
-        return {'new': 'Новый', 'accepted': 'Принят', 'completed': 'Завершён'}.get(
-            self.status, self.status)
+        return {'new': 'Новый', 'accepted': 'Принят', 'completed': 'Завершён',
+                'cancelled': 'Отменён'}.get(self.status, self.status)
 
     @property
     def has_coords(self):

@@ -1,8 +1,11 @@
 import os
 import time
 import json as _json_mod
+import secrets as _secrets
 from datetime import datetime, timedelta
 from functools import wraps
+
+import jwt as _jwt   # PyJWT — токены для нативного приложения водителя
 
 from flask import (
     Flask, render_template, request, jsonify,
@@ -63,8 +66,33 @@ try:
                 except Exception as _re:
                     print(f'[renotify] error order {o.id}: {_re}')
 
+    def _auto_offline_drivers():
+        """Снимаем со смены тех, кто забыл выключиться: после конца графика +2ч (или 14ч онлайна)."""
+        with app.app_context():
+            now = datetime.utcnow()
+            for d in Driver.query.filter_by(is_online=True).all():
+                if not d.online_at:
+                    continue
+                # длительность смены из графика (work_from→work_to), иначе 12ч
+                shift_sec = 12 * 3600
+                try:
+                    if d.work_from and d.work_to:
+                        fh, fm = map(int, d.work_from.split(':'))
+                        th, tm = map(int, d.work_to.split(':'))
+                        dur = (th * 60 + tm) - (fh * 60 + fm)
+                        if dur <= 0:
+                            dur += 24 * 60          # смена через полночь
+                        shift_sec = dur * 60
+                except Exception:
+                    pass
+                if (now - d.online_at).total_seconds() > shift_sec + 2 * 3600:
+                    d.is_online = False
+                    d.online_at = None
+            db.session.commit()
+
     _scheduler.add_job(_check_reminders, 'interval', minutes=10, id='reminders')
     _scheduler.add_job(_renotify_new_orders, 'interval', minutes=3, id='renotify')
+    _scheduler.add_job(_auto_offline_drivers, 'interval', minutes=20, id='autooffline')
     _scheduler.start()
 except Exception as _sched_err:
     print(f'[APScheduler] not started: {_sched_err}')
@@ -304,6 +332,7 @@ with app.app_context():
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS distance_km FLOAT",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS duration_min INTEGER",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_token VARCHAR(40)",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS driver_pin VARCHAR(20)",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted BOOLEAN DEFAULT FALSE",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS regulations_accepted_at TIMESTAMP",
@@ -482,6 +511,11 @@ def create_order():
     if not to_address:
         return jsonify({'error': 'Укажите куда ехать'}), 400
 
+    # Антиспам: не больше 5 заказов с одного телефона за 10 минут
+    _spam_cutoff = datetime.utcnow() - timedelta(minutes=10)
+    if Order.query.filter(Order.phone == phone, Order.created_at >= _spam_cutoff).count() >= 5:
+        return jsonify({'error': 'Слишком много заказов подряд. Позвоните диспетчеру: +7 963 060-84-19'}), 429
+
     # Защита от двойной отправки — тот же телефон + маршрут за последние 2 минуты
     _recent_cutoff = datetime.utcnow() - timedelta(minutes=2)
     _dup = Order.query.filter(
@@ -524,6 +558,7 @@ def create_order():
         estimated_price=estimated_price, scheduled_at=scheduled_at,
         distance_km=_float_or_none('distance_km'),
         duration_min=_int_or_none('duration_min'),
+        cancel_token=_secrets.token_urlsafe(16),
     )
     db.session.add(order)
     db.session.commit()
@@ -532,11 +567,53 @@ def create_order():
          details=f'{from_address} → {to_address}')
     telegram_bot.notify_drivers(order)
     import max_bot as _max_bot; _max_bot.notify_drivers(order)
-    _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
+
+    # Сколько водителей сейчас на смене
+    online_count = Driver.query.filter_by(active=True, is_online=True).count()
+    if online_count == 0:
+        _send_push_to_all('⚠️ Заказ, но никто не на смене!',
+                          f'#{order.id}: {order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
+    else:
+        _send_push_to_all('🚖 Новый заказ', f'{order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
     # Водителям пушим только тем, кто «в сети» (оффлайн не беспокоим)
     _send_push_to_driver_subs('🚖 Новый заказ!', f'{order.from_address} → {order.to_address}', online_only=True, tag='order')
 
-    return jsonify({'success': True, 'order_id': order.id})
+    return jsonify({
+        'success': True,
+        'order_id': order.id,
+        'cancel_token': order.cancel_token,
+        'no_drivers_online': online_count == 0,
+    })
+
+
+@app.route('/order/<int:order_id>/cancel', methods=['POST'])
+def client_cancel_order(order_id):
+    """Клиент отменяет свой заказ по токену (без аккаунта)."""
+    data  = request.get_json(silent=True) or {}
+    token = str(data.get('token', '')).strip()
+    order = Order.query.get_or_404(order_id)
+    if not order.cancel_token or token != order.cancel_token:
+        return jsonify({'error': 'Нет доступа к заказу'}), 403
+    if order.status == 'completed':
+        return jsonify({'error': 'Заказ уже выполнен'}), 400
+    if order.status == 'cancelled':
+        return jsonify({'ok': True, 'status': 'cancelled'})
+    was_accepted = order.status == 'accepted'
+    order.status = 'cancelled'
+    db.session.commit()
+    _log('order_cancelled', actor='client', order_id=order.id,
+         details=f'{order.from_address} → {order.to_address}')
+    # Уведомить диспетчера (и водителя, если уже принял)
+    _send_push_to_all('❌ Клиент отменил заказ',
+                      f'#{order.id}: {order.from_address} → {order.to_address}', '/admin/dispatcher', tag='order')
+    if was_accepted and order.driver_telegram_id and order.driver_telegram_id.startswith('app:'):
+        try:
+            _did = int(order.driver_telegram_id.split(':')[1])
+            _send_push_to_one_driver(_did, '❌ Заказ отменён клиентом',
+                                     f'{order.from_address} → {order.to_address}', '/driver/', tag='order')
+        except Exception:
+            pass
+    return jsonify({'ok': True, 'status': 'cancelled'})
 
 
 @app.route('/sw.js')
@@ -2050,8 +2127,44 @@ def admin_dispatcher_guide():
 
 
 # ── Driver app ───────────────────────────────────────────────────────────────
+def _make_driver_token(driver):
+    """JWT для нативного приложения (живёт 60 дней)."""
+    payload = {
+        'driver_id': driver.id,
+        'iat': datetime.utcnow(),
+        'exp': datetime.utcnow() + timedelta(days=60),
+    }
+    return _jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+
+
+def _driver_from_token():
+    """Достаём водителя по Bearer-токену из заголовка Authorization, если он есть."""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return None
+    try:
+        data = _jwt.decode(auth[7:].strip(), app.config['SECRET_KEY'], algorithms=['HS256'])
+    except Exception:
+        return None
+    d = Driver.query.get(data.get('driver_id'))
+    return d if (d and d.active) else None
+
+
+def _wants_json():
+    """Запрос ждёт JSON (API/приложение), а не HTML-редирект."""
+    p = request.path or ''
+    if request.headers.get('Authorization', '').startswith('Bearer '):
+        return True
+    if p.startswith(('/driver/api', '/driver/order', '/driver/push', '/driver/status', '/api/')):
+        return True
+    return 'application/json' in request.headers.get('Accept', '')
+
+
 def _get_driver_session():
-    """Return Driver object for current session or None."""
+    """Водитель из Bearer-токена (приложение) или из cookie-сессии (веб)."""
+    d = _driver_from_token()
+    if d:
+        return d
     driver_id = session.get('driver_id')
     if not driver_id:
         return None
@@ -2063,6 +2176,8 @@ def driver_required(f):
     def decorated(*args, **kwargs):
         driver = _get_driver_session()
         if not driver or not driver.active:
+            if _wants_json():
+                return jsonify({'error': 'unauthorized'}), 401
             session.pop('driver_id', None)
             return redirect(url_for('driver_login'))
         return f(*args, **kwargs)
@@ -2128,6 +2243,39 @@ def driver_login():
 def driver_logout():
     session.pop('driver_id', None)
     return redirect(url_for('driver_login'))
+
+
+@app.route('/api/driver/login', methods=['POST'])
+def api_driver_login():
+    """Логин для нативного приложения: телефон+PIN → JWT-токен."""
+    data = request.get_json(silent=True) or request.form
+    phone_in = str(data.get('phone', '')).strip()
+    pin_in   = str(data.get('pin', '')).strip()
+
+    candidates = []
+    if phone_in:
+        norm_in = _phone_digits(phone_in)
+        for d in Driver.query.filter_by(active=True).all():
+            if d.phone and (d.phone == phone_in or _phone_digits(d.phone) == norm_in):
+                candidates.append(d)
+    if not candidates:
+        return jsonify({'error': 'Водитель с таким номером не найден'}), 404
+
+    matched = next((d for d in candidates if d.driver_pin and d.driver_pin.strip() == pin_in), None)
+    if not matched:
+        return jsonify({'error': 'Неверный PIN'}), 401
+
+    return jsonify({
+        'token': _make_driver_token(matched),
+        'regulations_accepted': bool(matched.regulations_accepted),
+        'driver': {
+            'id': matched.id,
+            'name': matched.name,
+            'phone': matched.phone,
+            'balance': matched.balance or 0,
+            'is_online': bool(matched.is_online),
+        },
+    })
 
 
 @app.route('/driver/regulations', methods=['GET', 'POST'])
@@ -2239,22 +2387,25 @@ def driver_api_orders():
 @driver_required
 def driver_accept_order(order_id):
     driver = _get_driver_session()
+    if not driver.is_online:
+        return jsonify({'error': 'Вы не на смене — нажмите «Выйти на смену», чтобы принимать заказы'}), 403
     order = Order.query.get_or_404(order_id)
-    if order.status != 'new':
-        return jsonify({'error': 'Заказ уже принят другим водителем'}), 409
     # Check if driver already has an accepted order
     my_tid = [driver.telegram_id, f'app:{driver.id}'] if driver.telegram_id else [f'app:{driver.id}']
     existing = Order.query.filter(Order.driver_telegram_id.in_(my_tid), Order.status == 'accepted').first()
     if existing:
         return jsonify({'error': 'У вас уже есть активный заказ'}), 409
     tid = driver.telegram_id or f'app:{driver.id}'
-    order.status             = 'accepted'
-    order.driver_telegram_id = tid
-    order.driver_name        = driver.name
-    order.reminder_sent      = False
+    # Атомарно: занимаем заказ только если он всё ещё 'new' (защита от гонки двух водителей)
+    updated = Order.query.filter_by(id=order_id, status='new').update(
+        {'status': 'accepted', 'driver_telegram_id': tid,
+         'driver_name': driver.name, 'reminder_sent': False},
+        synchronize_session=False)
     db.session.commit()
+    if not updated:
+        return jsonify({'error': 'Заказ уже принят другим водителем'}), 409
     _log('status_changed', actor=driver.name, order_id=order.id,
-         details=f'Принят водителем через приложение')
+         details='Принят водителем через приложение')
     return jsonify({'ok': True})
 
 
