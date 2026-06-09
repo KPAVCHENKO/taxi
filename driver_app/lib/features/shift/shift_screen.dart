@@ -141,8 +141,7 @@ class _ActiveOrder extends ConsumerWidget {
                 child: SizedBox(
                   height: 56,
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigation.route(
-                        lat: order.fromLat, lon: order.fromLon, address: order.fromAddress),
+                    onPressed: () => _navMenu(context),
                     icon: const Icon(Icons.navigation, color: AppColors.blue),
                     label: const Text('Маршрут', style: TextStyle(fontSize: 16, color: AppColors.blue)),
                     style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.blue.withOpacity(0.4))),
@@ -230,6 +229,45 @@ class _ActiveOrder extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Пассажир уведомлён, что вы на месте')));
     }
+  }
+
+  Future<void> _navMenu(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            const Text('Куда построить маршрут?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text)),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.person_pin_circle, color: AppColors.green),
+              title: const Text('К пассажиру (забрать)', style: TextStyle(color: AppColors.text)),
+              subtitle: Text(order.fromAddress, style: const TextStyle(color: AppColors.textFaint)),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigation.route(lat: order.fromLat, lon: order.fromLon, address: order.fromAddress);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag, color: AppColors.red),
+              title: const Text('До места назначения', style: TextStyle(color: AppColors.text)),
+              subtitle: Text(order.toAddress, style: const TextStyle(color: AppColors.textFaint)),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigation.route(lat: order.toLat, lon: order.toLon, address: order.toAddress);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _completeSheet(BuildContext context, WidgetRef ref) async {
