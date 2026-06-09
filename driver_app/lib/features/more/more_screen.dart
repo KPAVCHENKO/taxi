@@ -5,6 +5,7 @@ import '../../config/theme.dart';
 import '../../core/fgs/shift_service.dart';
 import '../../core/push/push_service.dart';
 import '../../core/storage/token_storage.dart';
+import '../../core/update/update_service.dart';
 import '../../state/orders_controller.dart';
 import '../../state/providers.dart';
 import '../history/history_screen.dart';
@@ -27,6 +28,8 @@ class MoreScreen extends ConsumerWidget {
               () => _push(context, const HistoryScreen())),
           _tile(context, Icons.shield_outlined, 'Надёжная работа',
               () => _push(context, const InstructionsScreen())),
+          _tile(context, Icons.system_update, 'Проверить обновление',
+              () => runUpdateCheck(context, manual: true)),
           const SizedBox(height: 20),
           const Text('Профиль', style: TextStyle(color: AppColors.textFaint)),
           const SizedBox(height: 8),

@@ -21,6 +21,18 @@
 
     <!-- БЕЗ разрешений геолокации — GPS не используется -->
 
+    <!-- Видимость внешних приложений (Android 11+): браузер для обновления и звонилка -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+    </queries>
+
     <application
         android:label="Казанское Такси"
         android:name="${applicationName}"

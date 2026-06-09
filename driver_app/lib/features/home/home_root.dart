@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:url_launcher/url_launcher.dart';
-
 import '../../config/theme.dart';
 import '../../core/fgs/shift_service.dart';
 import '../../core/update/update_service.dart';
@@ -38,32 +36,7 @@ class _HomeRootState extends ConsumerState<HomeRoot> with WidgetsBindingObserver
   }
 
   Future<void> _checkUpdate() async {
-    final info = await UpdateService().check();
-    if (info == null || !mounted) return;
-    await showDialog(
-      context: context,
-      barrierDismissible: !info.mandatory,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Доступно обновление'),
-        content: Text(info.notes.isEmpty
-            ? 'Вышла новая версия приложения.'
-            : info.notes),
-        actions: [
-          if (!info.mandatory)
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Позже')),
-          ElevatedButton(
-            onPressed: () async {
-              final uri = Uri.parse(info.absoluteUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: const Text('Обновить'),
-          ),
-        ],
-      ),
-    );
+    if (mounted) await runUpdateCheck(context);
   }
 
   @override

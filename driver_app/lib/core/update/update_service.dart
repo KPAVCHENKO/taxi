@@ -1,4 +1,9 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../config/config.dart';
+import '../../config/theme.dart';
 import '../network/dio_client.dart';
 
 class UpdateInfo {
@@ -13,12 +18,11 @@ class UpdateInfo {
     required this.mandatory,
   });
 
-  /// Абсолютный URL для скачивания APK.
   String get absoluteUrl =>
       url.startsWith('http') ? url : '${AppConfig.baseUrl}$url';
 }
 
-/// Самообновление без Google Play: сверяем код версии с сервером.
+/// Самообновление без Google Play.
 class UpdateService {
   Future<UpdateInfo?> check() async {
     try {
@@ -38,4 +42,77 @@ class UpdateService {
     } catch (_) {}
     return null;
   }
+}
+
+const _kSnoozedKey = 'update_snoozed_version';
+
+/// Открыть страницу загрузки APK (браузер). Без блокирующего canLaunchUrl.
+Future<void> _openDownload(BuildContext context, String url) async {
+  final uri = Uri.parse(url);
+  bool ok = false;
+  try {
+    ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {}
+  if (!ok) {
+    try {
+      ok = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } catch (_) {}
+  }
+  if (!ok && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Не удалось открыть загрузку. Откройте сайт вручную.')),
+    );
+  }
+}
+
+/// Проверка обновления + диалог. manual=true — вызвано вручную из настроек
+/// (показывает «у вас последняя версия» и игнорирует «отложено»).
+Future<void> runUpdateCheck(BuildContext context, {bool manual = false}) async {
+  final info = await UpdateService().check();
+  if (!context.mounted) return;
+
+  if (info == null) {
+    if (manual) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('У вас последняя версия')),
+      );
+    }
+    return;
+  }
+
+  // авто-режим: не надоедать, если эту версию уже отложили (кроме обязательной)
+  if (!manual && !info.mandatory) {
+    final prefs = await SharedPreferences.getInstance();
+    final snoozed = prefs.getInt(_kSnoozedKey) ?? 0;
+    if (info.versionCode <= snoozed) return;
+    if (!context.mounted) return;
+  }
+
+  await showDialog(
+    context: context,
+    barrierDismissible: !info.mandatory,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.surface,
+      title: const Text('Доступно обновление'),
+      content: Text(info.notes.isEmpty ? 'Вышла новая версия приложения.' : info.notes),
+      actions: [
+        if (!info.mandatory)
+          TextButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setInt(_kSnoozedKey, info.versionCode);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Позже'),
+          ),
+        ElevatedButton(
+          onPressed: () async {
+            if (ctx.mounted) Navigator.pop(ctx);
+            await _openDownload(context, info.absoluteUrl);
+          },
+          child: const Text('Обновить'),
+        ),
+      ],
+    ),
+  );
 }
