@@ -21,6 +21,7 @@ class Order(db.Model):
     estimated_price    = db.Column(db.Integer,      nullable=True)
     scheduled_at       = db.Column(db.DateTime,     nullable=True)
     status             = db.Column(db.String(20),   default='new')    # new | accepted | completed | cancelled
+    completed_at       = db.Column(db.DateTime,     nullable=True)    # фактическое время завершения поездки
     cancel_token       = db.Column(db.String(40),   nullable=True)    # для отмены заказа клиентом без аккаунта
     client_fcm_token   = db.Column(db.Text,         nullable=True)    # FCM-токен приложения пассажира (push статуса)
     tg_chat_id         = db.Column(db.String(40),   nullable=True)    # chat_id, если заказ оформлен через Telegram-бота
@@ -56,6 +57,7 @@ class Driver(db.Model):
     car_plate   = db.Column(db.String(20),  nullable=True)
     active      = db.Column(db.Boolean, default=True)
     balance     = db.Column(db.Integer, default=0)
+    commission_due = db.Column(db.Integer, default=0)  # долг водителя по комиссии (₽)
     # График и маршруты
     work_from   = db.Column(db.String(10),  nullable=True)
     work_to     = db.Column(db.String(10),  nullable=True)

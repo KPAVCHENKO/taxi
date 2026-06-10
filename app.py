@@ -364,6 +364,8 @@ with app.app_context():
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS chat_seen_group TIMESTAMP",
         "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS chat_seen_direct TIMESTAMP",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tg_chat_id VARCHAR(40)",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP",
+        "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS commission_due INTEGER DEFAULT 0",
     ]
     for _sql in _migrations:
         try:
@@ -1157,6 +1159,8 @@ def update_order_status(order_id):
             order.driver_name = None
             order.reminder_sent = False
 
+        if new_status == 'completed' and old_status != 'completed':
+            order.completed_at = datetime.utcnow()
         # начисляем заработок водителю при подтверждении завершения
         if new_status == 'completed' and old_status != 'completed' and order.driver_telegram_id:
             # Если диспетчер передал фактическую цену — используем её
@@ -1169,15 +1173,20 @@ def update_order_status(order_id):
                 order.estimated_price = actual
             if amount > 0:
                 tid = order.driver_telegram_id
-                driver = (Driver.query.filter_by(telegram_id=tid).first()
-                          if not tid.startswith('max:') else
-                          Driver.query.filter_by(max_id=tid[4:]).first())
+                if tid.startswith('max:'):
+                    driver = Driver.query.filter_by(max_id=tid[4:]).first()
+                elif tid.startswith('app:'):
+                    try:
+                        driver = Driver.query.get(int(tid[4:]))
+                    except (ValueError, TypeError):
+                        driver = None
+                else:
+                    driver = Driver.query.filter_by(telegram_id=tid).first()
                 if driver:
-                    commission = INTERCITY_COMMISSION if telegram_bot._is_intercity(order) else 0
-                    driver.balance = (driver.balance or 0) + amount - commission
-                    if commission:
-                        _log('commission', actor='system', order_id=order.id,
-                             details=f'Комиссия межгород: -{commission} ₽ ({driver.name})')
+                    driver.balance = (driver.balance or 0) + amount
+                    _register_completion(order, driver, amount)
+                    _log('commission', actor='system', order_id=order.id,
+                         details=f'Комиссия в долг: {int(round(amount * COMMISSION_RATE))} ₽ ({driver.name})')
 
         db.session.commit()
         _log('status_changed', actor='admin', order_id=order.id,
@@ -1564,6 +1573,15 @@ def _driver_rating(tids):
     return (round(sum(ratings) / len(ratings), 1), len(ratings))
 
 
+def _register_completion(order, driver, amount):
+    """Единый учёт завершения поездки: время завершения + долг водителя по комиссии.
+    Заработок (balance) копится полностью; комиссия НЕ списывается с баланса,
+    а накапливается отдельно в commission_due — её админ принимает «Принять оплату»."""
+    order.completed_at = datetime.utcnow()
+    if driver and amount:
+        driver.commission_due = (driver.commission_due or 0) + int(round(amount * COMMISSION_RATE))
+
+
 def _notify_client(order, title, body):
     """Уведомление пассажиру о смене статуса заказа — в приложение (FCM) и/или Telegram."""
     if not order:
@@ -1850,6 +1868,23 @@ def admin_drivers():
     return render_template('admin_drivers.html', drivers=drivers, driver_stats=driver_stats)
 
 
+@app.route('/admin/drivers/<int:driver_id>/commission', methods=['POST'])
+@admin_required
+def admin_driver_commission(driver_id):
+    """Принять оплату комиссии от водителя: долг уменьшается, заработок не трогаем."""
+    d = Driver.query.get_or_404(driver_id)
+    try:
+        amount = int(request.form.get('amount', '') or 0)
+    except (ValueError, TypeError):
+        amount = 0
+    if amount > 0:
+        d.commission_due = (d.commission_due or 0) - amount
+        db.session.commit()
+        _log('commission_paid', actor='admin',
+             details=f'{d.name}: принята оплата комиссии {amount} ₽, остаток долга {d.commission_due} ₽')
+    return redirect(request.referrer or url_for('admin_drivers'))
+
+
 @app.route('/admin/drivers/<int:driver_id>/stats')
 @admin_required
 def driver_stats_page(driver_id):
@@ -1998,7 +2033,7 @@ def admin_tariffs():
     local     = Tariff.query.filter_by(intercity=False).order_by(Tariff.price).all()
     intercity = Tariff.query.filter_by(intercity=True).order_by(Tariff.price).all()
     return render_template('admin_tariffs.html', local=local, intercity=intercity,
-                           intercity_commission=INTERCITY_COMMISSION)
+                           commission_rate=int(COMMISSION_RATE * 100))
 
 
 @app.route('/admin/tariffs/add', methods=['POST'])
@@ -2129,13 +2164,14 @@ def admin_stats():
         start = datetime(2020, 1, 1)
         end   = now_utc
 
-    # ── Completed orders in range ─────────────────────────────────────────────
+    # ── Completed orders in range (по факту завершения; старые — по созданию) ─
+    done_ts = db.func.coalesce(Order.completed_at, Order.created_at)
     orders = (
         Order.query
         .filter(Order.status == 'completed',
-                Order.created_at >= start,
-                Order.created_at <= end)
-        .order_by(Order.created_at.asc())
+                done_ts >= start,
+                done_ts <= end)
+        .order_by(done_ts.asc())
         .all()
     )
 
@@ -2171,6 +2207,7 @@ def admin_stats():
                 'name': (drv_obj.name if drv_obj else None) or o.driver_name or '(не назначен)',
                 'orders': 0, 'revenue': 0,
                 'balance': drv_obj.balance if drv_obj else 0,
+                'due': (drv_obj.commission_due or 0) if drv_obj else 0,
             }
         drv_map[key]['orders']  += 1
         drv_map[key]['revenue'] += o.estimated_price or 0
@@ -2184,7 +2221,7 @@ def admin_stats():
     daily = defaultdict(int)
     daily_orders = defaultdict(int)
     for o in orders:
-        day = (o.created_at + timedelta(hours=5)).strftime('%d.%m')
+        day = ((o.completed_at or o.created_at) + timedelta(hours=5)).strftime('%d.%m')
         daily[day]        += o.estimated_price or 0
         daily_orders[day] += 1
 
@@ -2775,19 +2812,20 @@ def driver_api_orders():
     _today_ekb = (_now + timedelta(hours=5)).replace(hour=0, minute=0, second=0, microsecond=0)
     _today_utc = _today_ekb - timedelta(hours=5)
     _my_tids = [driver.telegram_id, f'app:{driver.id}'] if driver.telegram_id else [f'app:{driver.id}']
+    _done_ts = db.func.coalesce(Order.completed_at, Order.created_at)
     today_earnings = db.session.query(db.func.sum(Order.estimated_price)).filter(
         Order.driver_telegram_id.in_(_my_tids),
         Order.status == 'completed',
-        Order.created_at >= _today_utc,
+        _done_ts >= _today_utc,
     ).scalar() or 0
     _week_utc  = _now - timedelta(days=7)
     _month_utc = _now - timedelta(days=30)
     week_earnings = db.session.query(db.func.sum(Order.estimated_price)).filter(
         Order.driver_telegram_id.in_(_my_tids), Order.status == 'completed',
-        Order.created_at >= _week_utc).scalar() or 0
+        _done_ts >= _week_utc).scalar() or 0
     month_earnings = db.session.query(db.func.sum(Order.estimated_price)).filter(
         Order.driver_telegram_id.in_(_my_tids), Order.status == 'completed',
-        Order.created_at >= _month_utc).scalar() or 0
+        _done_ts >= _month_utc).scalar() or 0
     _rating, _rating_count = _driver_rating(_my_tids)
     _unread_group, _unread_direct = _driver_chat_unread(driver)
     return jsonify({
@@ -2861,15 +2899,16 @@ def driver_complete_order(order_id):
             amount = int(request.get_json(silent=True).get('actual_price', 0) or 0)
         except Exception:
             amount = 0
-    commission = INTERCITY_COMMISSION if telegram_bot._is_intercity(order) else 0
     order.status = 'completed'
     if amount:
         order.estimated_price = amount
-        driver.balance = (driver.balance or 0) + amount - commission
+        driver.balance = (driver.balance or 0) + amount
+    _register_completion(order, driver, amount)
+    commission = int(round(amount * COMMISSION_RATE)) if amount else 0
     db.session.commit()
     _log('status_changed', actor=driver.name, order_id=order.id,
          details=f'Завершён через приложение. Сумма: {amount} ₽' +
-                 (f', комиссия: -{commission} ₽' if commission else ''))
+                 (f', комиссия в долг: {commission} ₽' if commission else ''))
     _notify_client(order, '🏁 Поездка завершена',
                    f'Спасибо! Стоимость: {amount} ₽' if amount else 'Спасибо за поездку!')
     return jsonify({'ok': True, 'amount': amount, 'commission': commission})
@@ -3212,7 +3251,8 @@ def admin_analytics():
 
     def rev(since):
         return db.session.query(db.func.sum(Order.estimated_price)).filter(
-            Order.status == 'completed', Order.created_at >= since).scalar() or 0
+            Order.status == 'completed',
+            db.func.coalesce(Order.completed_at, Order.created_at) >= since).scalar() or 0
 
     orders_today = Order.query.filter(Order.created_at >= day).count()
     orders_week  = Order.query.filter(Order.created_at >= week).count()

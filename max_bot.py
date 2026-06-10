@@ -170,10 +170,16 @@ def handle_update(update):
                 continue
             order.status = 'completed'
             amount = getattr(order, 'estimated_price', None) or 0
+            driver_obj2 = None
             if amount > 0:
                 driver_obj2 = _Driver.query.filter_by(max_id=user_id).first()
                 if driver_obj2:
                     driver_obj2.balance = (driver_obj2.balance or 0) + amount
+            try:
+                import app as _appm
+                _appm._register_completion(order, driver_obj2, amount)
+            except Exception as _rc_e:
+                print(f'[MAX-COMPLETE-REG] {_rc_e}')
             db.session.commit()
             try:
                 db.session.add(DispatchLog(

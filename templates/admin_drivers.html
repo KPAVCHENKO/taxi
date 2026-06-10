@@ -282,7 +282,23 @@
           <span class="driver-stat-val" style="color:#34d399;">{{ '{:,}'.format(d.balance or 0).replace(',', ' ') }}₽</span>
           <span class="driver-stat-label">Баланс</span>
         </div>
+        <div class="driver-stat">
+          <span class="driver-stat-val" style="color:{{ '#f87171' if (d.commission_due or 0) > 0 else '#34d399' }};">
+            {{ '{:,}'.format(d.commission_due or 0).replace(',', ' ') }}₽</span>
+          <span class="driver-stat-label">Долг (комиссия)</span>
+        </div>
       </div>
+      {% if (d.commission_due or 0) != 0 %}
+      <form method="POST" action="{{ url_for('admin_driver_commission', driver_id=d.id) }}"
+            style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+        <input type="number" name="amount" min="1" value="{{ d.commission_due if (d.commission_due or 0) > 0 else '' }}"
+               placeholder="Сумма ₽"
+               style="width:110px;padding:6px 10px;background:rgba(255,255,255,0.06);
+                      border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:13px;">
+        <button type="submit" class="btn btn-success" style="font-size:12px;padding:6px 12px;"
+                onclick="return confirm('Принять оплату комиссии от {{ d.name }}?');">💵 Принять оплату</button>
+      </form>
+      {% endif %}
     </div>
 
     <!-- Status -->

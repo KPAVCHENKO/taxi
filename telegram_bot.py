@@ -627,11 +627,17 @@ def handle_update(update):
 
         order.status = 'completed'
         amount = getattr(order, 'estimated_price', None) or 0
+        _d = None
         if amount > 0:
             from models import Driver as _DrvModel
             _d = _DrvModel.query.filter_by(telegram_id=driver_tid).first()
             if _d:
                 _d.balance = (_d.balance or 0) + amount
+        try:
+            import app as _appm
+            _appm._register_completion(order, _d, amount)
+        except Exception as _rc_e:
+            print(f'[TG-COMPLETE-REG] {_rc_e}')
         db.session.commit()
 
         try:

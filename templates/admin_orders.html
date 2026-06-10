@@ -336,6 +336,9 @@
 
         <td style="font-size:11px; color:#64748b; white-space:nowrap;">
           {{ o.created_at | ekb }}
+          {% if o.completed_at %}
+            <div style="color:#34d399;">🏁 {{ o.completed_at | ekb }}</div>
+          {% endif %}
         </td>
 
         <td>
