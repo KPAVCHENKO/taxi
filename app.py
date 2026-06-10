@@ -268,7 +268,7 @@ GEO_LON = os.environ.get('GEO_LON', '69.2206')
 # Сервер отдаёт max(этой константы, значения из админки) — приложения у которых
 # код версии меньше, увидят обновление, даже если в админке версию не меняли.
 LATEST_DRIVER_VERSION = 9
-LATEST_CLIENT_VERSION = 7
+LATEST_CLIENT_VERSION = 8
 
 def legal_ctx():
     return dict(
@@ -517,6 +517,24 @@ def sitemap_xml():
     return Response(xml, mimetype='application/xml')
 
 
+def _price_from_addresses(from_addr, to_addr):
+    """Серверный фолбэк цены по адресам (если клиент прислал 0/пусто).
+    Использует таблицы и формулу из telegram_bot (село↔село = дальняя+половина)."""
+    try:
+        def _match(a):
+            al = (a or '').lower()
+            for k in telegram_bot._PRICE_IC:
+                if k in al:
+                    return k
+            for k, _label in telegram_bot._SETTLE:
+                if k in al:
+                    return k
+            return None
+        return telegram_bot._calc_price(_match(from_addr), _match(to_addr))
+    except Exception:
+        return None
+
+
 @app.route('/order', methods=['POST'])
 def create_order():
     data = request.get_json(silent=True)
@@ -538,6 +556,9 @@ def create_order():
         estimated_price = int(_ep) if _ep not in (None, '', 'null') else None
     except (ValueError, TypeError):
         estimated_price = None
+    # Фолбэк: если клиент не прислал цену (старая версия / село↔село) — считаем на сервере
+    if not estimated_price:
+        estimated_price = _price_from_addresses(from_address, to_address)
 
     if not phone:
         return jsonify({'error': 'Укажите телефон'}), 400

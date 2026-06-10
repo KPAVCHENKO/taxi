@@ -283,13 +283,14 @@ def _calc_price(fk, tk):
         return _PRICE_IC[fk]
     if tk in _PRICE_IC:
         return _PRICE_IC[tk]
-    if fk == _HUB:
-        dest = tk
-    elif tk == _HUB:
-        dest = fk
-    else:
+    pf = _PRICE_LOCAL.get(fk)
+    pt = _PRICE_LOCAL.get(tk)
+    if pf is None or pt is None:
         return None
-    return _PRICE_LOCAL.get(dest)
+    hi, lo = (pf, pt) if pf >= pt else (pt, pf)
+    # село↔село: дальняя + половина ближней; село↔Казанское: цена села; минимум 150
+    price = hi if (fk == _HUB or tk == _HUB) else hi + lo // 2
+    return max(price, 150)
 
 def _ic_kb(prefix, exclude=None):
     rows = [[{'text': l, 'callback_data': f'{prefix}{k}'}] for k, l in _IC if k != exclude]

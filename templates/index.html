@@ -1705,9 +1705,12 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:clam
     if(!mA||!mB)return null;
     if(mA.type==='ic')return PRICE_IC[mA.name].one_way;
     if(mB.type==='ic')return PRICE_IC[mB.name].one_way;
-    var dest=null;
-    if(mA.name==='казанское')dest=mB.name;else if(mB.name==='казанское')dest=mA.name;else return null;
-    return (PRICE_LOCAL[dest]!=null)?PRICE_LOCAL[dest]:null;
+    var pf=PRICE_LOCAL[mA.name], pt=PRICE_LOCAL[mB.name];
+    if(pf==null||pt==null)return null;
+    var hi=Math.max(pf,pt), lo=Math.min(pf,pt);
+    // село↔село: дальняя + половина ближней; село↔Казанское: цена села; минимум 150
+    var p=(mA.name==='казанское'||mB.name==='казанское')?hi:(hi+Math.floor(lo/2));
+    return Math.max(p,150);
   }
   function recalcPrice(){var p=calcPrice();if(p!=null)state.price=p;updateSummary();}
 

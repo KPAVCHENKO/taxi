@@ -54,19 +54,18 @@ class Tariffs {
     return null;
   }
 
-  /// Цена по ключам населённых пунктов. null — «уточнит диспетчер».
+  /// Цена по ключам населённых пунктов. null — «уточнит диспетчер» (адрес не распознан).
+  /// Село↔Казанское: цена села. Село↔село: дальняя + половина ближней. Минимум 150 ₽.
   static int? price(String? fromKey, String? toKey) {
     if (fromKey == null || toKey == null) return null;
     if (intercity.containsKey(fromKey)) return intercity[fromKey];
     if (intercity.containsKey(toKey)) return intercity[toKey];
-    String? dest;
-    if (fromKey == Settlements.hub) {
-      dest = toKey;
-    } else if (toKey == Settlements.hub) {
-      dest = fromKey;
-    } else {
-      return null; // ни один не Казанское — диспетчер уточнит
-    }
-    return local[dest];
+    final pf = local[fromKey];
+    final pt = local[toKey];
+    if (pf == null || pt == null) return null;
+    final hi = pf >= pt ? pf : pt;
+    final lo = pf >= pt ? pt : pf;
+    final p = (fromKey == Settlements.hub || toKey == Settlements.hub) ? hi : hi + lo ~/ 2;
+    return p < 150 ? 150 : p;
   }
 }
