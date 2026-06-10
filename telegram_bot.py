@@ -244,7 +244,31 @@ _IC = [('казанское', 'Казанское'), ('ишим', 'Ишим'), (
 _LOCAL = [s for s in _SETTLE if s[0] not in _PRICE_IC]
 _PER = 8  # населённых пунктов на страницу
 
-_pending = {}  # chat_id -> {'kind','from','to'}
+# Черновик заказа из бота храним в БД (Setting), т.к. gunicorn — несколько воркеров,
+# и в памяти состояние терялось между нажатиями.
+def _pend_get(chat_id):
+    from models import Setting
+    s = Setting.query.filter_by(key=f'tgpend:{chat_id}').first()
+    if s and s.value:
+        try:
+            return json.loads(s.value)
+        except Exception:
+            return {}
+    return {}
+
+def _pend_set(chat_id, d):
+    from models import db, Setting
+    s = Setting.query.filter_by(key=f'tgpend:{chat_id}').first()
+    if not s:
+        s = Setting(key=f'tgpend:{chat_id}', value='')
+        db.session.add(s)
+    s.value = json.dumps(d, ensure_ascii=False)
+    db.session.commit()
+
+def _pend_clear(chat_id):
+    from models import db, Setting
+    Setting.query.filter_by(key=f'tgpend:{chat_id}').delete()
+    db.session.commit()
 
 def _settle_label(key):
     for k, l in _SETTLE:
@@ -302,10 +326,12 @@ def handle_update(update):
     message = update.get('message')
     if message:
         chat_id  = str(message.get('chat', {}).get('id', ''))
+        _pend = _pend_get(chat_id)
         # Пассажир прислал контакт — создаём заказ
         contact = message.get('contact')
-        if contact and chat_id in _pending and _pending[chat_id].get('to'):
-            st = _pending.pop(chat_id)
+        if contact and _pend.get('to'):
+            st = _pend
+            _pend_clear(chat_id)
             phone = contact.get('phone_number', '')
             fk, tk = st.get('from'), st.get('to')
             import secrets as _sec
@@ -341,8 +367,8 @@ def handle_update(update):
                 {'remove_keyboard': True})
             return
         raw_text = (message.get('text', '') or '').strip()
-        # Свободный текст от пассажира с активным заказом → сообщение водителю (чат)
-        if raw_text and not raw_text.startswith('/') and chat_id not in _pending:
+        # Свободный текст от пассажира → сообщение водителю (если заказ принят)
+        if raw_text and not raw_text.startswith('/') and not _pend:
             o = (Order.query.filter_by(tg_chat_id=chat_id, status='accepted')
                  .order_by(Order.id.desc()).first())
             if o:
@@ -356,6 +382,12 @@ def handle_update(update):
                 except Exception:
                     pass
                 send_message(chat_id, '✉️ Передал водителю.')
+                return
+            o_new = (Order.query.filter_by(tg_chat_id=chat_id, status='new')
+                     .order_by(Order.id.desc()).first())
+            if o_new:
+                send_message(chat_id,
+                    '🔎 Заказ ещё ищет водителя. Как только примут — сможете написать ему прямо сюда.')
                 return
         msg_text = raw_text.lower()
         if msg_text.startswith('/start') or msg_text.startswith('/balance') or msg_text.startswith('/баланс'):
@@ -411,7 +443,7 @@ def handle_update(update):
         return
     if data == 'c_order':
         answer_callback_query(cq_id)
-        _pending[msg_chat_id] = {}
+        _pend_set(msg_chat_id, {})
         send_message(msg_chat_id,
             '🚕 <b>Новый заказ</b>\n\nКуда поедем?',
             {'inline_keyboard': [
@@ -421,7 +453,9 @@ def handle_update(update):
         return
     if data.startswith('c_kind:'):
         kind = data.split(':', 1)[1]
-        _pending.setdefault(msg_chat_id, {})['kind'] = kind
+        _st = _pend_get(msg_chat_id)
+        _st['kind'] = kind
+        _pend_set(msg_chat_id, _st)
         answer_callback_query(cq_id)
         kb = _ic_kb('c_from:') if kind == 'ic' else _page_kb(_LOCAL, 'c_from:', 'c_fromp:', 0)
         edit_message_text(msg_chat_id, msg_id, _FROM_Q, kb)
@@ -433,8 +467,9 @@ def handle_update(update):
         edit_message_text(msg_chat_id, msg_id, _FROM_Q, _page_kb(_LOCAL, 'c_from:', 'c_fromp:', page))
         return
     if data.startswith('c_from:'):
-        st = _pending.setdefault(msg_chat_id, {})
+        st = _pend_get(msg_chat_id)
         st['from'] = data.split(':', 1)[1]
+        _pend_set(msg_chat_id, st)
         answer_callback_query(cq_id)
         to_q = f'📍 Откуда: <b>{_settle_label(st["from"])}</b>\n\n🏁 <b>Куда едем?</b>'
         if st.get('kind') == 'ic':
@@ -445,7 +480,7 @@ def handle_update(update):
         return
     if data.startswith('c_top:'):
         answer_callback_query(cq_id)
-        st = _pending.get(msg_chat_id, {})
+        st = _pend_get(msg_chat_id)
         try: page = int(data.split(':', 1)[1])
         except ValueError: page = 0
         to_q = f'📍 Откуда: <b>{_settle_label(st.get("from"))}</b>\n\n🏁 <b>Куда едем?</b>'
@@ -453,8 +488,9 @@ def handle_update(update):
         edit_message_text(msg_chat_id, msg_id, to_q, kb)
         return
     if data.startswith('c_to:'):
-        st = _pending.setdefault(msg_chat_id, {})
+        st = _pend_get(msg_chat_id)
         st['to'] = data.split(':', 1)[1]
+        _pend_set(msg_chat_id, st)
         answer_callback_query(cq_id)
         _pr = _calc_price(st.get('from'), st.get('to'))
         _ptxt = f'\n💰 Примерно: <b>{_pr} ₽</b>' if _pr else '\n💰 Цену уточнит диспетчер'
