@@ -1619,27 +1619,7 @@ def order_chat_post(order_id):
     return jsonify({'ok': True, 'id': m.id})
 
 
-@app.route('/driver/order/<int:order_id>/chat')
-@driver_required
-def driver_order_chat_get(order_id):
-    return jsonify({'messages': _order_chat_list(order_id, request.args.get('after', 0, type=int))})
-
-
-@app.route('/driver/order/<int:order_id>/chat', methods=['POST'])
-@driver_required
-def driver_order_chat_post(order_id):
-    order = Order.query.get_or_404(order_id)
-    driver = _get_driver_session()
-    data = request.get_json(silent=True) or {}
-    body = (data.get('body', '') or '').strip()[:500]
-    if not body:
-        return jsonify({'error': 'empty'}), 400
-    m = ChatMessage(room=f'order:{order_id}', sender='driver',
-                    author_name=(driver.name if driver else 'Водитель'), body=body)
-    db.session.add(m)
-    db.session.commit()
-    _notify_client(order, '💬 Сообщение от водителя', body)
-    return jsonify({'ok': True, 'id': m.id})
+# driver-эндпоинты чата заказа — в конце файла (после определения driver_required)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -3231,6 +3211,29 @@ def admin_analytics():
         completed_month=completed_month, cancelled_month=cancelled_month,
         rev_today=rev(day), rev_week=rev(week), rev_month=rev(month),
         hours=hours, hours_max=hours_max, top_dest=top_dest, drv_stats=drv_stats)
+
+
+@app.route('/driver/order/<int:order_id>/chat')
+@driver_required
+def driver_order_chat_get(order_id):
+    return jsonify({'messages': _order_chat_list(order_id, request.args.get('after', 0, type=int))})
+
+
+@app.route('/driver/order/<int:order_id>/chat', methods=['POST'])
+@driver_required
+def driver_order_chat_post(order_id):
+    order = Order.query.get_or_404(order_id)
+    driver = _get_driver_session()
+    data = request.get_json(silent=True) or {}
+    body = (data.get('body', '') or '').strip()[:500]
+    if not body:
+        return jsonify({'error': 'empty'}), 400
+    m = ChatMessage(room=f'order:{order_id}', sender='driver',
+                    author_name=(driver.name if driver else 'Водитель'), body=body)
+    db.session.add(m)
+    db.session.commit()
+    _notify_client(order, '💬 Сообщение от водителя', body)
+    return jsonify({'ok': True, 'id': m.id})
 
 
 @app.route('/admin/export')
