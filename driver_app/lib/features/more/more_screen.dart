@@ -8,6 +8,7 @@ import '../../core/storage/token_storage.dart';
 import '../../core/update/update_service.dart';
 import '../../state/orders_controller.dart';
 import '../../state/providers.dart';
+import '../guide/guide_screen.dart';
 import '../history/history_screen.dart';
 import '../instructions/instructions_screen.dart';
 import '../settings/settings_screen.dart';
@@ -27,6 +28,8 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           _tile(context, Icons.history, 'История поездок',
               () => _push(context, const HistoryScreen())),
+          _tile(context, Icons.menu_book_outlined, 'Как пользоваться',
+              () => _push(context, const GuideScreen())),
           _tile(context, Icons.shield_outlined, 'Надёжная работа',
               () => _push(context, const InstructionsScreen())),
           _tile(context, Icons.volume_up_outlined, 'Звук и вибрация',

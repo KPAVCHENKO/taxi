@@ -7,6 +7,7 @@ import '../../config/theme.dart';
 import '../../core/update/update_service.dart';
 import '../../state/theme_provider.dart';
 import '../../widgets/ui.dart';
+import '../guide/guide_screen.dart';
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
@@ -46,6 +47,8 @@ class AboutScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
+          _tile(context, Icons.menu_book_outlined, 'Как заказать',
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GuideScreen()))),
           _tile(context, Icons.phone, 'Позвонить диспетчеру', () => _call()),
           _tile(context, Icons.system_update, 'Проверить обновление', () => runUpdateCheck(context, manual: true)),
           _tile(context, Icons.description_outlined, 'Условия использования Яндекс.Карт', () => _open(AppConfig.yandexTermsUrl)),
