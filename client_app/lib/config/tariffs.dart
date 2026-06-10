@@ -54,8 +54,11 @@ class Tariffs {
     return null;
   }
 
+  /// Новоселезнёво — фактически рядом с Казанским: цены из него те же (второй хаб).
+  static const Set<String> hubs = {'казанское', 'новоселезнево'};
+
   /// Цена по ключам населённых пунктов. null — «уточнит диспетчер» (адрес не распознан).
-  /// Село↔Казанское: цена села. Село↔село: дальняя + половина ближней. Минимум 150 ₽.
+  /// Хаб↔село: цена села. Село↔село: дальняя + половина ближней. Минимум 150 ₽.
   static int? price(String? fromKey, String? toKey) {
     if (fromKey == null || toKey == null) return null;
     if (intercity.containsKey(fromKey)) return intercity[fromKey];
@@ -65,7 +68,7 @@ class Tariffs {
     if (pf == null || pt == null) return null;
     final hi = pf >= pt ? pf : pt;
     final lo = pf >= pt ? pt : pf;
-    final p = (fromKey == Settlements.hub || toKey == Settlements.hub) ? hi : hi + lo ~/ 2;
+    final p = (hubs.contains(fromKey) || hubs.contains(toKey)) ? hi : hi + lo ~/ 2;
     return p < 150 ? 150 : p;
   }
 }

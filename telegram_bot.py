@@ -276,6 +276,9 @@ def _settle_label(key):
             return l
     return key or ''
 
+# Новоселезнёво — фактически рядом с Казанским: цены из него те же (второй хаб)
+_HUBS = {'казанское', 'новоселезнево'}
+
 def _calc_price(fk, tk):
     if not fk or not tk:
         return None
@@ -288,8 +291,8 @@ def _calc_price(fk, tk):
     if pf is None or pt is None:
         return None
     hi, lo = (pf, pt) if pf >= pt else (pt, pf)
-    # село↔село: дальняя + половина ближней; село↔Казанское: цена села; минимум 150
-    price = hi if (fk == _HUB or tk == _HUB) else hi + lo // 2
+    # хаб↔село: цена села; хаб↔хаб: по таблице (200); село↔село: дальняя + половина ближней
+    price = hi if (fk in _HUBS or tk in _HUBS) else hi + lo // 2
     return max(price, 150)
 
 def _ic_kb(prefix, exclude=None):
