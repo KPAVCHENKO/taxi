@@ -23,12 +23,12 @@
   <div class="an-cell"><div class="an-val">{{ orders_today }}</div><div class="an-lbl">Заказов за сутки</div></div>
   <div class="an-cell"><div class="an-val">{{ orders_week }}</div><div class="an-lbl">За неделю</div></div>
   <div class="an-cell"><div class="an-val">{{ orders_month }}</div><div class="an-lbl">За месяц</div></div>
-  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ rev_month }} ₽</div><div class="an-lbl">Выручка за месяц</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ '{:,}'.format(rev_month).replace(',', ' ') }} ₽</div><div class="an-lbl">Выручка за месяц</div></div>
 </div>
 
 <div class="an-grid">
-  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ rev_today }} ₽</div><div class="an-lbl">Выручка за сутки</div></div>
-  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ rev_week }} ₽</div><div class="an-lbl">За неделю</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ '{:,}'.format(rev_today).replace(',', ' ') }} ₽</div><div class="an-lbl">Выручка за сутки</div></div>
+  <div class="an-cell"><div class="an-val" style="color:#34d399;">{{ '{:,}'.format(rev_week).replace(',', ' ') }} ₽</div><div class="an-lbl">За неделю</div></div>
   <div class="an-cell"><div class="an-val" style="color:#7dd3fc;">{{ completed_month }}</div><div class="an-lbl">Выполнено (мес.)</div></div>
   <div class="an-cell"><div class="an-val" style="color:#f87171;">{{ cancelled_month }}</div><div class="an-lbl">Отменено (мес.)</div></div>
 </div>
@@ -66,7 +66,7 @@
       <tr>
         <td>{{ d.name }}</td>
         <td class="num">{{ d.completed }}</td>
-        <td class="num">{{ d.revenue }} ₽</td>
+        <td class="num">{{ '{:,}'.format(d.revenue).replace(',', ' ') }} ₽</td>
         <td class="num">{% if d.rating %}⭐ {{ d.rating }} <span style="color:#64748b;font-weight:400;">({{ d.rating_count }})</span>{% else %}—{% endif %}</td>
       </tr>
     {% endfor %}

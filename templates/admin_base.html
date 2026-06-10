@@ -232,7 +232,7 @@
       <span class="nav-icon">⭐</span> <span>Отзывы</span>
     </a>
     <a href="{{ url_for('admin_stats') }}" class="{{ 'active' if request.endpoint == 'admin_stats' else '' }}">
-      <span class="nav-icon">📈</span> <span>Статистика</span>
+      <span class="nav-icon">💵</span> <span>Статистика (деньги)</span>
     </a>
     <a href="{{ url_for('admin_tariffs') }}" class="{{ 'active' if request.endpoint in ('admin_tariffs',) else '' }}">
       <span class="nav-icon">💰</span> <span>Тарифы</span>
@@ -241,7 +241,7 @@
       <span class="nav-icon">📜</span> <span>Лог</span>
     </a>
     <a href="{{ url_for('admin_dispatcher') }}" target="_blank">
-      <span class="nav-icon">📱</span> <span>Приложение</span>
+      <span class="nav-icon">📱</span> <span>Диспетчерская</span>
     </a>
     <a href="{{ url_for('admin_dispatcher_guide') }}" class="{{ 'active' if request.endpoint == 'admin_dispatcher_guide' else '' }}">
       <span class="nav-icon">📖</span> <span>Регламент</span>
@@ -259,7 +259,7 @@
       <span class="nav-icon">💾</span> <span>Бэкап</span>
     </a>
     <a href="{{ url_for('admin_app_version') }}" class="{{ 'active' if request.endpoint == 'admin_app_version' else '' }}">
-      <span class="nav-icon">📲</span> <span>Приложение</span>
+      <span class="nav-icon">📲</span> <span>Версии приложений</span>
     </a>
     <a href="{{ url_for('index') }}" target="_blank">
       <span class="nav-icon">🌐</span> <span>Сайт</span>

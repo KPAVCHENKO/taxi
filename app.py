@@ -2148,18 +2148,32 @@ def admin_stats():
     transfer_rev = sum(o.estimated_price or 0 for o in orders if o.payment == 'transfer')
 
     # ── Per-driver breakdown ──────────────────────────────────────────────────
+    def _resolve_driver(tid):
+        """tid может быть telegram_id или 'app:<driver_id>' (заказ из приложения)."""
+        if not tid:
+            return None
+        if tid.startswith('app:'):
+            try:
+                return Driver.query.get(int(tid[4:]))
+            except (ValueError, TypeError):
+                return None
+        return Driver.query.filter_by(telegram_id=tid).first()
+
     drv_map = {}
     for o in orders:
         tid = o.driver_telegram_id or '__none__'
-        if tid not in drv_map:
-            drv_obj = Driver.query.filter_by(telegram_id=tid).first() if tid != '__none__' else None
-            drv_map[tid] = {
-                'name': o.driver_name or '(не назначен)',
+        drv_obj = _resolve_driver(tid) if tid != '__none__' else None
+        # Группируем по водителю (а не по сырому tid), чтобы один водитель
+        # с заказами из ТГ и из приложения не превращался в две строки
+        key = f'drv:{drv_obj.id}' if drv_obj else tid
+        if key not in drv_map:
+            drv_map[key] = {
+                'name': (drv_obj.name if drv_obj else None) or o.driver_name or '(не назначен)',
                 'orders': 0, 'revenue': 0,
                 'balance': drv_obj.balance if drv_obj else 0,
             }
-        drv_map[tid]['orders']  += 1
-        drv_map[tid]['revenue'] += o.estimated_price or 0
+        drv_map[key]['orders']  += 1
+        drv_map[key]['revenue'] += o.estimated_price or 0
 
     driver_rows = sorted(drv_map.values(), key=lambda x: x['revenue'], reverse=True)
     for d in driver_rows:
@@ -2178,17 +2192,22 @@ def admin_stats():
     chart_revenue  = list(daily.values())
     chart_orders   = [daily_orders[d] for d in chart_labels]
 
+    # ── Отменённые за период (качество сервиса) ──────────────────────────────
+    cancelled_cnt = Order.query.filter(
+        Order.status == 'cancelled',
+        Order.created_at >= start, Order.created_at <= end).count()
+
     # ── All-time totals for header cards ─────────────────────────────────────
     all_total = db.session.query(db.func.sum(Order.estimated_price)).filter(
         Order.status == 'completed').scalar() or 0
-    all_count = Order.query.filter_by(status == 'completed').count() if False else \
-                Order.query.filter(Order.status == 'completed').count()
+    all_count = Order.query.filter(Order.status == 'completed').count()
 
     return render_template('admin_stats.html',
         period=period, date_from=date_from, date_to=date_to,
         total_revenue=total_revenue, total_orders=total_orders,
         commission_sum=commission_sum, commission_rate=int(COMMISSION_RATE * 100),
         avg_order=avg_order, cash_rev=cash_rev, transfer_rev=transfer_rev,
+        cancelled_cnt=cancelled_cnt,
         driver_rows=driver_rows,
         chart_labels=_json.dumps(chart_labels),
         chart_revenue=_json.dumps(chart_revenue),
