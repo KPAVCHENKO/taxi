@@ -37,6 +37,20 @@ class OrdersRepository {
   Future<ActionResult> setOnline(bool online) =>
       _post('/driver/status', data: {'online': online});
 
+  Future<List<Map<String, dynamic>>> chatGet(int orderId, int after) async {
+    try {
+      final r = await _dio.get('/driver/order/$orderId/chat',
+          queryParameters: {'after': after});
+      final list = (r.data is Map ? r.data['messages'] : null) as List? ?? [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<ActionResult> chatSend(int orderId, String body) =>
+      _post('/driver/order/$orderId/chat', data: {'body': body});
+
   Future<ActionResult> _post(String path, {Object? data}) async {
     try {
       final r = await _dio.post(path, data: data);

@@ -10,6 +10,7 @@ import '../../core/push/push_service.dart';
 import '../../data/models/models.dart';
 import '../../state/providers.dart';
 import '../../widgets/ui.dart';
+import 'order_chat_screen.dart';
 
 class OrderStatusScreen extends ConsumerStatefulWidget {
   final int orderId;
@@ -150,6 +151,26 @@ class _OrderStatusScreenState extends ConsumerState<OrderStatusScreen> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 50,
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OrderChatScreen(
+                            orderId: widget.orderId,
+                            token: widget.token,
+                            driverName: st.driverName ?? 'Водитель',
+                          ),
+                        ),
+                      ),
+                      icon: Icon(Icons.chat_bubble_outline, color: p.accent),
+                      label: Text('Написать водителю', style: TextStyle(fontSize: 16, color: p.accent)),
+                      style: OutlinedButton.styleFrom(side: BorderSide(color: p.accent.withValues(alpha: 0.5))),
+                    ),
+                  ),
                 ],
                 if (status == 'new' && widget.noDriversOnline) ...[
                   const SizedBox(height: 10),

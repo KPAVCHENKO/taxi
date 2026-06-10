@@ -267,8 +267,8 @@ GEO_LON = os.environ.get('GEO_LON', '69.2206')
 # Актуальные версии собранных APK (поднимать при каждой новой сборке).
 # Сервер отдаёт max(этой константы, значения из админки) — приложения у которых
 # код версии меньше, увидят обновление, даже если в админке версию не меняли.
-LATEST_DRIVER_VERSION = 8
-LATEST_CLIENT_VERSION = 6
+LATEST_DRIVER_VERSION = 9
+LATEST_CLIENT_VERSION = 7
 
 def legal_ctx():
     return dict(

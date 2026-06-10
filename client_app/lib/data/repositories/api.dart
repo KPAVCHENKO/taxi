@@ -74,6 +74,27 @@ class Api {
     }
   }
 
+  Future<List<Map<String, dynamic>>> chatGet(int orderId, String token, int after) async {
+    try {
+      final r = await _dio.get('/order/$orderId/chat',
+          queryParameters: {'token': token, 'after': after});
+      final list = (r.data['messages'] as List?) ?? [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> chatSend(int orderId, String token, String body) async {
+    try {
+      final r = await _dio.post('/order/$orderId/chat',
+          data: {'token': token, 'body': body});
+      return r.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<List<Review>> getReviews() async {
     try {
       final r = await _dio.get('/api/reviews');

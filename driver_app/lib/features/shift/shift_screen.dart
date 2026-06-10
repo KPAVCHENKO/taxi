@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../core/fgs/shift_service.dart';
 import '../../core/nav/navigation.dart';
+import '../chat/order_chat_screen.dart';
 import '../../data/models/order.dart';
 import '../../state/orders_controller.dart';
 import '../../widgets/order_card.dart';
@@ -180,6 +181,17 @@ class _ActiveOrder extends ConsumerWidget {
               child: const Text('✓ Пассажир уведомлён, что вы на месте',
                   style: TextStyle(color: AppColors.green)),
             ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 50, width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => OrderChatScreen(orderId: order.id))),
+              icon: const Icon(Icons.chat_bubble_outline, color: AppColors.blue),
+              label: const Text('Чат с пассажиром', style: TextStyle(fontSize: 16, color: AppColors.blue)),
+              style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.blue.withOpacity(0.4))),
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [

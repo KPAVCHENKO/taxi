@@ -8,7 +8,7 @@ class AppConfig {
 
   /// Код версии этой сборки. Поднимайте вместе с versionCode в build.gradle —
   /// приложение сверяет его с /api/driver/app-version и предлагает обновиться.
-  static const int appVersionCode = 8;
+  static const int appVersionCode = 9;
 
   // ── Тайминги ───────────────────────────────────────────────────────────────
   /// Таймер кольца на экране входящего заказа.

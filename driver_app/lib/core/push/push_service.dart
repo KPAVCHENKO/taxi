@@ -19,11 +19,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Notifications.instance.showIncomingOrder(TaxiOrder.fromFcm(data));
   } else if (type == 'order_taken' || type == 'order_cancelled') {
     await Notifications.instance.cancelIncoming();
-  } else if (type == 'chat') {
+  } else if (type == 'chat' || type == 'order_chat') {
     await Notifications.instance.showChat(
       data['title']?.toString() ?? '💬 Сообщение',
       data['body']?.toString() ?? '',
-      data['room']?.toString() ?? 'group',
+      data['room']?.toString() ?? 'order',
     );
   }
 }
@@ -83,6 +83,11 @@ class PushService {
         break;
       case 'chat':
         _orders.refresh(silent: true);
+        break;
+      case 'order_chat':
+        Notifications.instance.showChat(
+          data['title']?.toString() ?? '💬 Сообщение пассажира',
+          data['body']?.toString() ?? '', 'order');
         break;
       default:
         _orders.refresh(silent: true);
